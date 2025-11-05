@@ -1,4 +1,3 @@
-import org.gradle.internal.impldep.org.codehaus.plexus.util.Os
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -16,34 +15,41 @@ kotlin {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
     sourceSets {
-        val desktopMain by getting
-        val desktopTest by getting
-        commonMain.dependencies {
+        val desktopMain by getting {
+            dependencies {
                 implementation(project(":shared"))
                 implementation(libs.logging.oshai)
                 implementation(libs.logging.logback)
                 implementation(libs.logging.log4j.core)
                 implementation(libs.console.progressbar)
+
+                implementation(compose.desktop.currentOs)
+                implementation(libs.ktor.server.netty)
+                implementation(libs.ktor.network)
+                when (System.getenv("TARGET_OS")) { // Conveyor building
+                    "windows" -> implementation(libs.hyperscan.windows)
+                    "unix" -> implementation(libs.hyperscan.default)
+                    else -> { //Compose default building
+                        when {
+                            "win" in System.getProperty("os.name").lowercase() -> implementation(libs.hyperscan.windows)
+                            else -> implementation(libs.hyperscan.default)
+                        }
+                    }
+                }
+                println("Target OS: ${System.getenv("TARGET_OS")}")
             }
-
-        desktopMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.ktor.server.netty)
-            implementation(libs.ktor.network)
         }
+        val desktopTest by getting {
+            dependencies {
+                implementation(compose.desktop.uiTestJUnit4)
+                implementation(libs.koin.core)
+                implementation(libs.koin.test.junit4)
 
-        desktopTest.dependencies {
-            implementation(compose.desktop.uiTestJUnit4)
-            implementation(libs.koin.core)
-            implementation(libs.koin.test.junit4)
-        }
+                implementation(kotlin("test"))
 
-        // Adds common test dependencies
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-
-            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-            implementation(compose.uiTest)
+                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+                implementation(compose.uiTest)
+            }
         }
     }
 }
@@ -111,18 +117,34 @@ compose.desktop {
     }
 }
 
-tasks.register<Exec>("convey") {
+tasks.register<Exec>("conveyUnix") {
     val dir = layout.buildDirectory.dir("packages")
     outputs.dir(dir)
-    environment.put("CONVEYOR_AGREE_TO_LICENSE", "1")
-    commandLine("conveyor", "make", "--output-dir", dir.get(), "site")
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor","-f", "conveyor.unix.conf", "make", "--output-dir", dir.get(), "site")
     dependsOn("fixConveyorConfig")
 }
-tasks.register<Exec>("conveyCI") {
+tasks.register<Exec>("conveyWindows") {
     val dir = layout.buildDirectory.dir("packages")
     outputs.dir(dir)
-    environment.put("CONVEYOR_AGREE_TO_LICENSE", "1")
-    commandLine("conveyor", "-f", "ci.conveyor.conf", "make", "--output-dir", dir.get(),  "site")
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor", "-f", "conveyor.win.conf", "make", "--output-dir", dir.get(), "site")
+    dependsOn("fixConveyorConfig")
+}
+
+tasks.register<Exec>("conveyUnixCI") {
+    val dir = layout.buildDirectory.dir("packages")
+    outputs.dir(dir)
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor", "-f", "ci.conveyor.unix.conf", "make", "--output-dir", dir.get(),  "site")
+    dependsOn("fixConveyorConfig")
+}
+
+tasks.register<Exec>("conveyWindowsCI") {
+    val dir = layout.buildDirectory.dir("packages")
+    outputs.dir(dir)
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor", "-f", "ci.conveyor.win.conf", "make", "--output-dir", dir.get(),  "site")
     dependsOn("fixConveyorConfig")
 }
 
@@ -134,11 +156,17 @@ tasks.register("fixConveyorConfig") {
             println("generated.conveyor.conf not found")
             return@doLast
         }
+        val winBuild = System.getenv("TARGET_OS") == "windows"
 
         tempFile.bufferedWriter().use { writer ->
             inputFile.forEachLine { line ->
                 // оставляем все строки, кроме android/ios
-                if (!line.contains("-android-") && !line.contains("-ios-")) {
+                if (
+                    !line.contains("-android-") &&
+                    !line.contains("-ios-") &&
+                    ((!winBuild && !line.contains("-windows-")) ||
+                    (winBuild && !line.contains("-linux-") && !line.contains("-macosx-")))
+                    ) {
                     writer.write(line)
                     writer.newLine()
                 }
@@ -157,19 +185,6 @@ tasks.register("printVersion") {
     doLast {
         print(version)
     }
-}
-
-tasks.register("getOS") {
-    println(
-        "Current OS: ${
-            when {
-                Os.isFamily(Os.FAMILY_WINDOWS) -> "Windows"
-                Os.isFamily(Os.FAMILY_UNIX) -> "Unix"
-                Os.isFamily(Os.FAMILY_MAC) -> "MacOS"
-                else -> "Unknown"
-            }
-        }"
-    )
 }
 
 configurations.all {
