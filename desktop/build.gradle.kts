@@ -26,17 +26,6 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.server.netty)
                 implementation(libs.ktor.network)
-                when (System.getenv("TARGET_OS")) { // Conveyor building
-                    "windows" -> implementation(libs.hyperscan.windows)
-                    "unix" -> implementation(libs.hyperscan.default)
-                    else -> { //Compose default building
-                        when {
-                            "win" in System.getProperty("os.name").lowercase() -> implementation(libs.hyperscan.windows)
-                            else -> implementation(libs.hyperscan.default)
-                        }
-                    }
-                }
-                println("Target OS: ${System.getenv("TARGET_OS")}")
             }
         }
         val desktopTest by getting {
