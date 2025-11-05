@@ -32,9 +32,10 @@ import org.angryscan.app.resources.ScanSettings_SelectAll
 fun MinimalSelectAllButton(
     scanSettings: ScanSettings
 ) {
-    val isAllSelected = MatchersRegister.containsAll(
-        scanSettings.matchers
-    )
+    val matchers = remember { scanSettings.matchers }
+    val isAllSelected = MatchersRegister.all { m ->
+        matchers.any { m::class == it::class }
+    }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.resources.*
@@ -28,7 +29,7 @@ import org.angryscan.app.ui.strings.composableName
 @Composable
 fun MinimalDetectionGroupCard(
     group: MatchersGroup,
-    scanSettings: org.angryscan.app.common.ScanSettings
+    scanSettings: ScanSettings
 ) {
     var groupExpanded by remember { mutableStateOf(false) }
 

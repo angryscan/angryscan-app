@@ -7,6 +7,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.common.matchers.*
 import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.resources.*
@@ -16,12 +17,13 @@ import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.app.ui.windows.screens.main.settings.items.MatchersGroup
 import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalDetectionGroupCard
 import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalSelectAllButton
+import org.koin.compose.koinInject
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsBoxDetectFunctionsGrouped(
-    scanSettings: org.angryscan.app.common.ScanSettings
+    scanSettings: ScanSettings
 ) {
     val detectFunctions = remember { scanSettings.matchers }
     var expanded by remember { scanSettings.matchersSettingsExpanded }
