@@ -30,9 +30,9 @@ jobs:
 
       - name: Install conveyor
         run: |
-          wget https://downloads.hydraulic.dev/conveyor/conveyor-20.0-linux-amd64.tar.gz
-          tar -xzf conveyor-20.0-linux-amd64.tar.gz
-          chmod +x conveyor-20.0/bin/conveyor
+          wget https://downloads.hydraulic.dev/conveyor/conveyor-18.0-linux-amd64.tar.gz
+          tar -xzf conveyor-18.0-linux-amd64.tar.gz
+          chmod +x conveyor-18.0/bin/conveyor
           echo "$(pwd)/conveyor-18.0/bin" >> $GITHUB_PATH
 
       - name: Build and push with conveyor
@@ -77,9 +77,9 @@ jobs:
 
       - name: Install conveyor
         run: |
-          wget https://downloads.hydraulic.dev/conveyor/conveyor-20.0-linux-amd64.tar.gz
-          tar -xzf conveyor-20.0-linux-amd64.tar.gz
-          chmod +x conveyor-20.0/bin/conveyor
+          wget https://downloads.hydraulic.dev/conveyor/conveyor-18.0-linux-amd64.tar.gz
+          tar -xzf conveyor-18.0-linux-amd64.tar.gz
+          chmod +x conveyor-18.0/bin/conveyor
           echo "$(pwd)/conveyor-18.0/bin" >> $GITHUB_PATH
 
       - name: Build and push with conveyor
