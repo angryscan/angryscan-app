@@ -1,7 +1,7 @@
 <resources>
     <string name="locale">English</string>
     <string name="appName">Angry Data Scanner</string>
-    <string name="plannerWindowTitle">BDS Planner</string>
+    <string name="plannerWindowTitle">ADS Planner</string>
     <string name="uiLanguage">Language</string>
     <string name="uiTheme">Theme</string>
     <string name="uiThreadCount">Thread count</string>
@@ -59,7 +59,7 @@
     <string name="settingsChangedText">Some of parameters will be applied on next run</string>
     <string name="settingsContextMenuTitle">Context menu</string>
     <string name="settingsContextMenuText">File explorer</string>
-    <string name="contextScanWith">Scan with BDS</string>
+    <string name="contextScanWith">Scan with ADS</string>
     <string name="uiUserSignature">User signature</string>
     <string name="add">Add</string>
     <string name="name">Name</string>
@@ -99,47 +99,55 @@
 
     <string name="ScanSettings-Tooltip-FastScan">Partially scan files to speed up the scan</string>
 
-    <string name="DetectFunction-Emails">Email</string>
-    <string name="DetectFunction-Phones">Phone</string>
-    <string name="DetectFunction-CardNumbers">Card number</string>
-    <string name="DetectFunction-CarNumber">Car number</string>
-    <string name="DetectFunction-SNILS">SNILS</string>
-    <string name="DetectFunction-Passport">Passport</string>
-    <string name="DetectFunction-OMS">OMS</string>
-    <string name="DetectFunction-INN">INN</string>
-    <string name="DetectFunction-AccountNumber">Account number</string>
-    <string name="DetectFunction-Address">Address</string>
-    <string name="DetectFunction-ValuableInfo">Valuable info</string>
-    <string name="DetectFunction-Login">Login</string>
-    <string name="DetectFunction-Password">Password</string>
-    <string name="DetectFunction-CVV">CVV</string>
-    <string name="DetectFunction-Name">Full name</string>
-    <string name="DetectFunction-IP">IP</string>
-    <string name="DetectFunction-IPv6">IPv6</string>
-    <string name="DetectFunction-Code">Program code</string>
-    <string name="DetectFunction-Cert">Certificate</string>
-    <string name="DetectFunction-DetectBlockedDomains">Domain</string>
-    <string name="DetectFunction-Description-Emails">Email</string>
-    <string name="DetectFunction-Description-Phones">Phone (+7)</string>
-    <string name="DetectFunction-Description-CardNumbers">Card number with BINs of russian banks</string>
-    <string name="DetectFunction-Description-CarNumber">Russian car numbers</string>
-    <string name="DetectFunction-Description-SNILS">SNILS</string>
-    <string name="DetectFunction-Description-Passport">Passport</string>
-    <string name="DetectFunction-Description-OMS">OMS</string>
-    <string name="DetectFunction-Description-INN">INN</string>
-    <string name="DetectFunction-Description-AccountNumber">Account number</string>
-    <string name="DetectFunction-Description-Address">Address</string>
-    <string name="DetectFunction-Description-ValuableInfo">Searching words. For example: </string>
-    <string name="DetectFunction-Description-Login">Login</string>
-    <string name="DetectFunction-Description-Password">Password</string>
-    <string name="DetectFunction-Description-CVV">CVV of credit card</string>
-    <string name="DetectFunction-Description-Name">Full name</string>
-    <string name="DetectFunction-Description-IP">IP address</string>
-    <string name="DetectFunction-Description-IPv6">IP address v6</string>
-    <string name="DetectFunction-Description-Code">Program code</string>
-    <string name="DetectFunction-Description-Cert">Certificate</string>
-    <string name="DetectFunction-Description-DetectBlockedDomains">Domain from registry blocked by RKN</string>
-    
+    <string name="Matcher-Emails">Email</string>
+    <string name="Matcher-Phones">Phone</string>
+    <string name="Matcher-CardNumbers">Card number</string>
+    <string name="Matcher-CarNumber">Car number</string>
+    <string name="Matcher-SNILS">SNILS</string>
+    <string name="Matcher-Passport">Passport</string>
+    <string name="Matcher-OMS">OMS</string>
+    <string name="Matcher-INN">INN</string>
+    <string name="Matcher-AccountNumber">Account number</string>
+    <string name="Matcher-Address">Address</string>
+    <string name="Matcher-ValuableInfo">Valuable info</string>
+    <string name="Matcher-Login">Login</string>
+    <string name="Matcher-Password">Password</string>
+    <string name="Matcher-CVV">CVV</string>
+    <string name="Matcher-Name">Full name</string>
+    <string name="Matcher-IP">IP</string>
+    <string name="Matcher-IPv6">IPv6</string>
+    <string name="Matcher-Code">Program code</string>
+    <string name="Matcher-Cert">Certificate</string>
+    <string name="Matcher-DetectBlockedDomains">Domain</string>
+    <string name="Matcher-Description-Emails">Email</string>
+    <string name="Matcher-Description-Phones">Phone (+7)</string>
+    <string name="Matcher-Description-CardNumbers">Card number with BINs of russian banks</string>
+    <string name="Matcher-Description-CarNumber">Russian car numbers</string>
+    <string name="Matcher-Description-SNILS">SNILS</string>
+    <string name="Matcher-Description-Passport">Passport</string>
+    <string name="Matcher-Description-OMS">OMS</string>
+    <string name="Matcher-Description-INN">INN</string>
+    <string name="Matcher-Description-AccountNumber">Account number</string>
+    <string name="Matcher-Description-Address">Address</string>
+    <string name="Matcher-Description-ValuableInfo">Searching words. For example: </string>
+    <string name="Matcher-Description-Login">Login</string>
+    <string name="Matcher-Description-Password">Password</string>
+    <string name="Matcher-Description-CVV">CVV of credit card</string>
+    <string name="Matcher-Description-Name">Full name</string>
+    <string name="Matcher-Description-IP">IP address</string>
+    <string name="Matcher-Description-IPv6">IP address v6</string>
+    <string name="Matcher-Description-Code">Program code</string>
+    <string name="Matcher-Description-Cert">Certificate</string>
+    <string name="Matcher-Description-DetectBlockedDomains">Domain from registry blocked by RKN</string>
+    <string name="Matcher-UserSignature-Name">Signature name</string>
+    <string name="Matcher-UserSignature-Signature">User signature</string>
+    <string name="Matcher-UserSignature-Title">User signature</string>
+    <string name="Matcher-UserSignature-ErrorTitle">User signature save error</string>
+    <string name="Matcher-UserSignature-ErrorMessage">User signature with this name already exist</string>
+
+    <string name="ScanEngine-HyperScan">HyperScan</string>
+    <string name="ScanEngine-Kotlin">Kotlin Regex</string>
+
     <!-- Detection Groups -->
     <string name="DetectGroup-PersonalDataNumbers">Personal Data (numbers)</string>
     <string name="DetectGroup-PersonalDataText">Personal Data (text)</string>
@@ -153,6 +161,7 @@
     <string name="SettingsScreen-Theme">Theme</string>
     <string name="SettingsScreen-Logging">Logging</string>
     <string name="SettingsScreen-OpenFolder">Open folder</string>
+    <string name="SettingsScreen-ScanEngine">Scan engine</string>
 
     <string name="ThemeType-Light">Light</string>
     <string name="ThemeType-Dark">Dark</string>
@@ -190,12 +199,6 @@
     <string name="FileSave-AlreadyExistText">File with this name already exist. Do you want to replace it?</string>
     <string name="FileSave-ErrorTitle">Error saving file!</string>
     <string name="FileSave-ErrorText">Cannot save file. Check it is in use by another process!</string>
-
-    <string name="Signature-Name">Signature name</string>
-    <string name="Signature-Signature">User signature</string>
-    <string name="Signature-Title">User signature</string>
-    <string name="Signature-ErrorTitle">User signature save error</string>
-    <string name="Signature-ErrorMessage">User signature with this name already exist</string>
 
     <string name="AboutScreen-Version">Version: %1$s</string>
     <string name="AboutScreen-Copyright">Open Source Software, 2025</string>

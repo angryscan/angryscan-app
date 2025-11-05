@@ -1,55 +1,55 @@
-                        Emails	Phones	CardNumbers	CarNumber	SNILS	Passport	OMS	INN	AccountNumber	Address	ValuableInfo	Login	Password	CVV	Name	IP	IPv6
-1.docx	                0	    0	    0	        0			0		0			0	0	0				0		0				0		0			0	0		0	0
-emails_result.xlsx	    0	    0	    0	        0			0		0			0	0	0				0		0				0		0			0	0		0	0
-third.xlsx	            3	    1	    0	        0			0		0			0	0	0				0		0				0		0			0	0		0	0
-fourth.xlsx	            0	    0	    0	        0			0		0			0	0	0				0		0				0		0			0	0		0	0
-TestText.txt	        1	    1	    1	        1			1		1			1	1	1				1		1				1		1			1	1		1	1
-5.csv	                0	    0	    0	        0			1		0			1	1	0				0		0				0		0			0	0		0	0
-first.doc	            2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-small.xls	            3	    1	    0	        0			0		0			0	0	0				0		0				0		0			0	0		0	0
-first.pdf	            2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.zip	            1	    1	    1	        1			1		1			1	1	1				1		2				1		1			1	1		1	1
-first.docx              2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.odt               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.odp               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.otp               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.potx              2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.pptx              2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.ppsx              2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.pptm              2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.ppt               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.pps               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.pot               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.xlsx              2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.csv               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.xls               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-first.ods               2	    2	    1	        1			1		2			1	1	1				1		2				1		1			1	2		1	1
-very_short.xlsx	        2	    1	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-inns/braces.txt	        0	    0	    0			0			0		0			0	3	0				0		0				0		0			0	0		0	0
-inns/edge.txt	        0	    0	    0			0			0		0			0	6	0				0		0				0		0			0	0		0	0
-inns/notValid.txt	    0	    0	    0			0			3		0			0	0	0				0		0				0		0			0	0		0	0
-inns/smth.txt	        0	    0	    0			0			0		0			0	6	0				0		0				0		0			0	0		0	0
-inns/star.txt	        0	    0	    0			0			0		0			0	1	0				0		0				0		0			0	0		0	0
-snils/braces.txt	    0	    0	    0			0			5		0			0	0	0				0		0				0		0			0	0		0	0
-snils/edge.txt	        0	    0	    0			0			6		0			0	0	0				0		0				0		0			0	0		0	0
-snils/notValid.txt	    0	    0	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-snils/smth.txt	        0	    0	    0			0			6		0			0	0	0				0		0				0		0			0	0		0	0
-snils/star.txt	        0	    0	    0			0			1		0			0	0	0				0		0				0		0			0	0		0	0
-cardNumber/braces.txt	0	    0	    3			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-cardNumber/edge.txt	    0	    0	    5			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-cardNumber/notValid.txt	0	    0	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-cardNumber/smth.txt	    0	    0	    4			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-cardNumber/star.txt	    0	    0	    2			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.csv	60033   2	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.doc	0	    1	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.docx	0	    1	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.json	59951   1	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.log	0	    2	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.pdf	0	    1	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.txt	0	    1	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.xls	119998  4	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.xlsx	119998  4	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-veryLong/very_long.xml	59979   2	    0			0			0		0			0	0	0				0		0				0		0			0	0		0	0
-TestText.rar	        1	    1	    1			1			1		1			1	1	1				1		2				1		1			1	1		0	0
-ip.txt					0		0		0			0			0		0			0	0	0				0		0				0		0			0	0		4   0
-ipv6.txt                0       0       0           0           0       0           0   0   0               0       0               0       0           0   0       0   3
+                        Email	Phone	CardNumber	CarNumber	SNILS	Passport	OMS	INN	AccountNumber	Address		Login	Password	CVV	FullName	IPv4	IPv6
+1.docx	                0	    0	    0	        0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+emails_result.xlsx	    0	    0	    0	        0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+third.xlsx	            3	    1	    0	        0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+fourth.xlsx	            0	    0	    0	        0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+TestText.txt	        1	    1	    1	        1			1		1			1	1	1				1		    1		1			1	1		    1   	1
+5.csv	                0	    0	    0	        0			1		0			1	1	0				0		    0		0			0	0		    0   	0
+small.xls	            3	    1	    0	        0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+first/first.doc	        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.pdf	        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.zip	        1	    1	    1	        1			1		1			1	1	1				1		    1		1			1	1		    1   	1
+first/first.docx        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.odt         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.odp         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.otp         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.potx        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.pptx        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.ppsx        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.pptm        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.ppt         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.pps         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.pot         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.xlsx        2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.csv         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.xls         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+first/first.ods         2	    2	    1	        1			1		2			1	1	1				1		    1		1			1	2		    1   	1
+very_short.xlsx	        2	    1	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+inns/braces.txt	        0	    0	    0			0			0		0			0	3	0				0		    0		0			0	0		    0   	0
+inns/edge.txt	        0	    0	    0			0			0		0			0	6	0				0		    0		0			0	0		    0   	0
+inns/notValid.txt	    0	    0	    0			0			3		0			0	0	0				0		    0		0			0	0		    0   	0
+inns/smth.txt	        0	    0	    0			0			0		0			0	6	0				0		    0		0			0	0		    0   	0
+inns/star.txt	        0	    0	    0			0			0		0			0	1	0				0		    0		0			0	0		    0   	0
+snils/braces.txt	    0	    0	    0			0			5		0			0	0	0				0		    0		0			0	0		    0   	0
+snils/edge.txt	        0	    0	    0			0			6		0			0	0	0				0		    0		0			0	0		    0   	0
+snils/notValid.txt	    0	    0	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+snils/smth.txt	        0	    0	    0			0			6		0			0	0	0				0		    0		0			0	0		    0   	0
+snils/star.txt	        0	    0	    0			0			1		0			0	0	0				0		    0		0			0	0		    0   	0
+cardNumber/braces.txt	0	    0	    3			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+cardNumber/edge.txt	    0	    0	    5			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+cardNumber/notValid.txt	0	    0	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+cardNumber/smth.txt	    0	    0	    4			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+cardNumber/star.txt	    0	    0	    2			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.csv	60033   2	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.doc	0	    1	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.docx	0	    1	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.json	59951   1	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.log	0	    2	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.pdf	0	    1	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.txt	0	    1	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.xls	119998  4	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.xlsx	119998  4	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+veryLong/very_long.xml	59979   2	    0			0			0		0			0	0	0				0		    0		0			0	0		    0   	0
+TestText.rar	        1	    1	    1			1			1		1			1	1	1				1		    1		1			1	1		    0   	0
+ip.txt					0		0		0			0			0		0			0	0	0				0		    0		0			0	0		    4       0
+ipv6.txt                0       0       0           0           0       0           0   0   0               0           0       0           0   0           0       3

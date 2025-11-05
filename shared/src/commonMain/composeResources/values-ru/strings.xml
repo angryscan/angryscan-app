@@ -1,6 +1,6 @@
 <resources>
     <string name="locale">Русский</string>
-    <string name="plannerWindowTitle">BDS Планировщик</string>
+    <string name="plannerWindowTitle">ADS Планировщик</string>
     <string name="uiLanguage">Язык</string>
     <string name="uiTheme">Тема</string>
     <string name="uiThreadCount">Количество потоков</string>
@@ -57,7 +57,7 @@
     <string name="settingsChangedText">Некоторые параметры будут применены при следующем запуске</string>
     <string name="settingsContextMenuTitle">Контекстное меню</string>
     <string name="settingsContextMenuText">Файловый проводник</string>
-    <string name="contextScanWith">Сканировать при помощи BDS</string>
+    <string name="contextScanWith">Сканировать при помощи ADS</string>
     <string name="uiUserSignature">Пользовательские сигнатуры</string>
     <string name="add">Добавить</string>
     <string name="name">Наименование</string>
@@ -95,49 +95,56 @@
     <string name="ScanSettings-SelectAll">Выбрать все</string>
     <string name="SettingsScreen-Logging">Журналирование</string>
     <string name="SettingsScreen-OpenFolder">Открыть папку</string>
+    <string name="SettingsScreen-ScanEngine">Движок сканирования</string>
     <string name="ScanSettings-DebugMode">Собирать отладочную информацию</string>
+
 
     <string name="ScanSettings-Tooltip-FastScan">Частично сканировать файлы, чтобы ускорить сканирование</string>
 
-    <string name="DetectFunction-Emails">Эл. адрес</string>
-    <string name="DetectFunction-Phones">Телефон</string>
-    <string name="DetectFunction-CardNumbers">Номер карты</string>
-    <string name="DetectFunction-CarNumber">Номер авто</string>
-    <string name="DetectFunction-SNILS">СНИЛС</string>
-    <string name="DetectFunction-Passport">Паспорт</string>
-    <string name="DetectFunction-OMS">ОМС</string>
-    <string name="DetectFunction-INN">ИНН</string>
-    <string name="DetectFunction-AccountNumber">Номер счета</string>
-    <string name="DetectFunction-Address">Адрес</string>
-    <string name="DetectFunction-BlackList">Черный список</string>
-    <string name="DetectFunction-ValuableInfo">Ценная информация</string>
-    <string name="DetectFunction-Login">Логин</string>
-    <string name="DetectFunction-Password">Пароль</string>
-    <string name="DetectFunction-Name">ФИО</string>
-    <string name="DetectFunction-Code">Программный код</string>
-    <string name="DetectFunction-Cert">Сертификат</string>
-    <string name="DetectFunction-DetectBlockedDomains">Домен</string>
-    <string name="DetectFunction-Description-Emails">Электронная почта</string>
-    <string name="DetectFunction-Description-Phones">Номер телефона (+7)</string>
-    <string name="DetectFunction-Description-CardNumbers">Номера карт с БИНами русских банков</string>
-    <string name="DetectFunction-Description-CarNumber">Российские номера автомобилей</string>
-    <string name="DetectFunction-Description-SNILS">Страховой номер индивидуального лицевого счёта</string>
-    <string name="DetectFunction-Description-Passport">Номер и серия паспорта</string>
-    <string name="DetectFunction-Description-OMS">Полис обязательного медицинского страхования</string>
-    <string name="DetectFunction-Description-INN">Идентификационный номер налогоплательщика</string>
-    <string name="DetectFunction-Description-AccountNumber">Номер банковского счета</string>
-    <string name="DetectFunction-Description-Address">Адрес</string>
-    <string name="DetectFunction-Description-ValuableInfo">Поиск слов в тексте. Например: Министерств*, МЧС, VIP, Инкассация, Государств*</string>
-    <string name="DetectFunction-Description-Login">Логин</string>
-    <string name="DetectFunction-Description-Password">Пароль</string>
-    <string name="DetectFunction-Description-CVV">CVV банковской карты</string>
-    <string name="DetectFunction-Description-Name">Фамилия, имя и отчество</string>
-    <string name="DetectFunction-Description-IP">IP адрес</string>
-    <string name="DetectFunction-Description-IPv6">IP адрес v6</string>
-    <string name="DetectFunction-Description-Code">Поиск программный кода</string>
-    <string name="DetectFunction-Description-Cert">Поиск сертификатов</string>
-    <string name="DetectFunction-Description-DetectBlockedDomains">Поиск доменлв из реестра заблокированных РосКомНадзором</string>
-    
+    <string name="Matcher-Emails">Эл. адрес</string>
+    <string name="Matcher-Phones">Телефон</string>
+    <string name="Matcher-CardNumbers">Номер карты</string>
+    <string name="Matcher-CarNumber">Номер авто</string>
+    <string name="Matcher-SNILS">СНИЛС</string>
+    <string name="Matcher-Passport">Паспорт</string>
+    <string name="Matcher-OMS">ОМС</string>
+    <string name="Matcher-INN">ИНН</string>
+    <string name="Matcher-AccountNumber">Номер счета</string>
+    <string name="Matcher-Address">Адрес</string>
+    <string name="Matcher-BlackList">Черный список</string>
+    <string name="Matcher-ValuableInfo">Ценная информация</string>
+    <string name="Matcher-Login">Логин</string>
+    <string name="Matcher-Password">Пароль</string>
+    <string name="Matcher-Name">ФИО</string>
+    <string name="Matcher-Code">Программный код</string>
+    <string name="Matcher-Cert">Сертификат</string>
+    <string name="Matcher-DetectBlockedDomains">Домен</string>
+    <string name="Matcher-Description-Emails">Электронная почта</string>
+    <string name="Matcher-Description-Phones">Номер телефона (+7)</string>
+    <string name="Matcher-Description-CardNumbers">Номера карт с БИНами русских банков</string>
+    <string name="Matcher-Description-CarNumber">Российские номера автомобилей</string>
+    <string name="Matcher-Description-SNILS">Страховой номер индивидуального лицевого счёта</string>
+    <string name="Matcher-Description-Passport">Номер и серия паспорта</string>
+    <string name="Matcher-Description-OMS">Полис обязательного медицинского страхования</string>
+    <string name="Matcher-Description-INN">Идентификационный номер налогоплательщика</string>
+    <string name="Matcher-Description-AccountNumber">Номер банковского счета</string>
+    <string name="Matcher-Description-Address">Адрес</string>
+    <string name="Matcher-Description-ValuableInfo">Поиск слов в тексте. Например: Министерств*, МЧС, VIP, Инкассация, Государств*</string>
+    <string name="Matcher-Description-Login">Логин</string>
+    <string name="Matcher-Description-Password">Пароль</string>
+    <string name="Matcher-Description-CVV">CVV банковской карты</string>
+    <string name="Matcher-Description-Name">Фамилия, имя и отчество</string>
+    <string name="Matcher-Description-IP">IP адрес</string>
+    <string name="Matcher-Description-IPv6">IP адрес v6</string>
+    <string name="Matcher-Description-Code">Поиск программный кода</string>
+    <string name="Matcher-Description-Cert">Поиск сертификатов</string>
+    <string name="Matcher-Description-DetectBlockedDomains">Поиск доменлв из реестра заблокированных РосКомНадзором</string>
+    <string name="Matcher-UserSignature-Name">Наименование сигнатуры</string>
+    <string name="Matcher-UserSignature-Signature">Сигнатура</string>
+    <string name="Matcher-UserSignature-Title">Пользовательская сигнатура</string>
+    <string name="Matcher-UserSignature-ErrorTitle">Ошибка сохранения</string>
+    <string name="Matcher-UserSignature-ErrorMessage">Пользовательская сигнатура с таким именем уже существует</string>
+
     <!-- Группы детектирования -->
     <string name="DetectGroup-PersonalDataNumbers">Персональные данные (числа)</string>
     <string name="DetectGroup-PersonalDataText">Персональные данные (текст)</string>
@@ -186,12 +193,6 @@
     <string name="FileSave-AlreadyExistText">Файл с таким именем уже существует! Вы уверены, что хотите перезаписать его?</string>
     <string name="FileSave-ErrorTitle">Ошибка сохранения файла!</string>
     <string name="FileSave-ErrorText">Не удалось сохранить файл. Проверьте, что файл не занят другим процессом!</string>
-
-    <string name="Signature-Name">Наименование сигнатуры</string>
-    <string name="Signature-Signature">Сигнатура</string>
-    <string name="Signature-Title">Пользовательская сигнатура</string>
-    <string name="Signature-ErrorTitle">Ошибка сохранения</string>
-    <string name="Signature-ErrorMessage">Пользовательская сигнатура с таким именем уже существует</string>
 
     <string name="AboutScreen-Version">Версия программы: %1$s</string>
     <string name="AboutScreen-Copyright">Open Source Software, 2025</string>

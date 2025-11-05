@@ -5,7 +5,7 @@ on:
       - "v*.*.*"
 
 jobs:
-  Build-Convey:
+  Build-Convey-Unix:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,28 +38,69 @@ jobs:
       - name: Build and push with conveyor
         uses: coactions/setup-xvfb@v1
         with:
-          run: ./gradlew conveyCI
+          run: ./gradlew conveyUnixCI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          TARGET_OS: "unix"
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            desktop/build/packages/big-data-scanner.appinstaller
-            desktop/build/packages/big-data-scanner.crt
-            desktop/build/packages/big-data-scanner.exe
-            desktop/build/packages/big-data-scanner-${{ env.VERSION }}-windows-amd64.zip
-            desktop/build/packages/big-data-scanner-${{ env.VERSION }}.x64.msix
-            desktop/build/packages/install.ps1
-            desktop/build/packages/big-data-scanner-${{ env.VERSION }}-linux-amd64.tar.gz
-            desktop/build/packages/big-data-scanner_${{ env.VERSION }}_amd64.deb
+            desktop/build/packages/angry-data-scanner-${{ env.VERSION }}-linux-amd64.tar.gz
+            desktop/build/packages/angry-data-scanner_${{ env.VERSION }}_amd64.deb
             desktop/build/packages/launch.mac
-            desktop/build/packages/big-data-scanner-${{ env.VERSION }}-mac-amd64.zip
-            desktop/build/packages/big-data-scanner-${{ env.VERSION }}-mac-aarch64.zip
+            desktop/build/packages/angry-data-scanner-${{ env.VERSION }}-mac-amd64.zip
+            desktop/build/packages/angry-data-scanner-${{ env.VERSION }}-mac-aarch64.zip
             desktop/build/packages/appcast-aarch64.rss
             desktop/build/packages/appcast-amd64.rss
+            LICENSE.txt
+            LICENSE.en.txt
+
+  Build-Convey-Win:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Validate gradle wrappers
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Install conveyor
+        run: |
+          wget https://downloads.hydraulic.dev/conveyor/conveyor-18.0-linux-amd64.tar.gz
+          tar -xzf conveyor-18.0-linux-amd64.tar.gz
+          chmod +x conveyor-18.0/bin/conveyor
+          echo "$(pwd)/conveyor-18.0/bin" >> $GITHUB_PATH
+
+      - name: Build and push with conveyor
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: ./gradlew conveyWindowsCI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          TARGET_OS: "windows"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/build/packages/angry-data-scanner.appinstaller
+            desktop/build/packages/angry-data-scanner.crt
+            desktop/build/packages/angry-data-scanner.exe
+            desktop/build/packages/angry-data-scanner-${{ env.VERSION }}-windows-amd64.zip
+            desktop/build/packages/angry-data-scanner-${{ env.VERSION }}.x64.msix
+            desktop/build/packages/install.ps1
             LICENSE.txt
             LICENSE.en.txt
             

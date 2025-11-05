@@ -1,4 +1,4 @@
-rootProject.name = "BigDataScanner"
+rootProject.name = "AngryDataScanner"
 
 pluginManagement {
     repositories {
