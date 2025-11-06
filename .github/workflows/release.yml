@@ -75,6 +75,12 @@ jobs:
       - name: Validate gradle wrappers
         uses: gradle/actions/wrapper-validation@v4
 
+      - name: Extract version from tag
+        uses: damienaicheh/extract-version-from-tag-action@v1.3.0
+
+      - name: Set version
+        run: echo "VERSION=${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}" >> $GITHUB_ENV
+
       - name: Install conveyor
         run: |
           wget https://downloads.hydraulic.dev/conveyor/conveyor-18.0-linux-amd64.tar.gz
