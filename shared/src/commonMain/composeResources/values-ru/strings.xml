@@ -1,6 +1,6 @@
 <resources>
     <string name="locale">Русский</string>
-    <string name="plannerWindowTitle">BDS Планировщик</string>
+    <string name="plannerWindowTitle">ADS Планировщик</string>
     <string name="uiLanguage">Язык</string>
     <string name="uiTheme">Тема</string>
     <string name="uiThreadCount">Количество потоков</string>
@@ -57,7 +57,7 @@
     <string name="settingsChangedText">Некоторые параметры будут применены при следующем запуске</string>
     <string name="settingsContextMenuTitle">Контекстное меню</string>
     <string name="settingsContextMenuText">Файловый проводник</string>
-    <string name="contextScanWith">Сканировать при помощи BDS</string>
+    <string name="contextScanWith">Сканировать при помощи ADS</string>
     <string name="uiUserSignature">Пользовательские сигнатуры</string>
     <string name="add">Добавить</string>
     <string name="name">Наименование</string>
@@ -70,6 +70,8 @@
     <string name="SideMenu-ScanListPage">Список сканирований</string>
     <string name="SideMenu-SettingsPage">Параметры</string>
     <string name="SideMenu-AboutPage">О программе</string>
+    <string name="About-Description">Описание</string>
+    <string name="About-License">Лицензия</string>
 
     <string name="UpperMenu-Tooltip-FileShare">Сканирование файловых систем</string>
     <string name="UpperMenu-Tooltip-S3">Сканирование хранилища S3</string>
@@ -102,7 +104,7 @@
     <string name="Matcher-Emails">Эл. адрес</string>
     <string name="Matcher-Phones">Телефон</string>
     <string name="Matcher-CardNumbers">Номер карты</string>
-    <string name="Matcher-CarNumber">Номер авто (old)</string>
+    <string name="Matcher-CarNumber">Номер авто</string>
     <string name="Matcher-SNILS">СНИЛС</string>
     <string name="Matcher-Passport">Паспорт</string>
     <string name="Matcher-OMS">ОМС</string>
@@ -116,43 +118,6 @@
     <string name="Matcher-Name">ФИО</string>
     <string name="Matcher-Code">Программный код</string>
     <string name="Matcher-Cert">Сертификат</string>
-    <string name="Matcher-Birthday">Дата рождения</string>
-    <string name="Matcher-BirthCert">Св-во о рождении</string>
-    <string name="Matcher-DeathDate">Дата смерти</string>
-    <string name="Matcher-ForeignPassport">Иностранный паспорт</string>
-    <string name="Matcher-RefugeeCert">Беженец</string>
-    <string name="Matcher-ResidencePermit">ВНЖ</string>
-    <string name="Matcher-TemporaryID">Временное УЛ</string>
-    <string name="Matcher-MilitaryID">Военное УЛ</string>
-    <string name="Matcher-DriverLicense">Водительское</string>
-    <string name="Matcher-ForeignTIN">Иностранный ИНН</string>
-    <string name="Matcher-EducationDoc">Образование</string>
-    <string name="Matcher-MarriageCert">Брак</string>
-    <string name="Matcher-InheritanceDoc">Наследство</string>
-    <string name="Matcher-OGRNIP">ОГРНИП</string>
-    <string name="Matcher-OSAGOPolicy">Полис ОСАГО</string>
-    <string name="Matcher-SecurityAffiliation">Спецслужба</string>
-    <string name="Matcher-MilitaryRank">Воинское звание</string>
-    <string name="Matcher-EpCertificateNumber">Номер ЭП</string>
-    <string name="Matcher-CadastralNumber">Кадастр</string>
-    <string name="Matcher-VIN">VIN-номер</string>
-    <string name="Matcher-VehicleRegNumber">Номер авто</string>
-    <string name="Matcher-SocialUserId">Соцсети ID</string>
-    <string name="Matcher-LegalEntityName">Наименование ЮЛ</string>
-    <string name="Matcher-LegalEntityId">Идентификатор ЮЛ</string>
-    <string name="Matcher-OKPO">ОКПО ЮЛ</string>
-    <string name="Matcher-StateRegContract">Договор с ФЛ</string>
-    <string name="Matcher-UidContractBank">УИД ФЛ</string>
-    <string name="Matcher-ExecDocNumber">Номер ИД</string>
-    <string name="Matcher-BankAccount">Номер БС ФЛ</string>
-    <string name="Matcher-SberBook">Сберкнижка</string>
-    <string name="Matcher-BankAccountLE">Номер БС ЮЛ</string>
-    <string name="Matcher-HashData">Хеш</string>
-    <string name="Matcher-Geo">Геолокация</string>
-    <string name="Matcher-EducationLicense">Образ-ая лицензия</string>
-    <string name="Matcher-IdentityDocType">Наименование ДУЛ</string>
-    <string name="Matcher-MaritalStatus">Семейное положение</string>
-    <string name="Matcher-EducationLevel">Уровень образования</string>
     <string name="Matcher-DetectBlockedDomains">Домен</string>
     <string name="Matcher-Description-Emails">Электронная почта</string>
     <string name="Matcher-Description-Phones">Номер телефона (+7)</string>
@@ -173,49 +138,18 @@
     <string name="Matcher-Description-IPv6">IP адрес v6</string>
     <string name="Matcher-Description-Code">Поиск программный кода</string>
     <string name="Matcher-Description-Cert">Поиск сертификатов</string>
-    <string name="Matcher-Description-Birthday">Дата рождения</string>
-    <string name="Matcher-Description-BirthCert">Свидетельство о рождении</string>
-    <string name="Matcher-Description-DeathDate">Дата смерти</string>
-    <string name="Matcher-Description-ForeignPassport">Иностранный паспорт</string>
-    <string name="Matcher-Description-RefugeeCert">Свидетельство беженца (временное убежище или проживание)</string>
-    <string name="Matcher-Description-ResidencePermit">Вид на жительство</string>
-    <string name="Matcher-Description-TemporaryID">Временное удостоверение личности</string>
-    <string name="Matcher-Description-MilitaryID">Удостоверение личности военнослужащего</string>
-    <string name="Matcher-Description-DriverLicense">Водительское удостоверение</string>
-    <string name="Matcher-Description-ForeignTIN">Иностранный ИНН</string>
-    <string name="Matcher-Description-EducationDoc">Документ об образовании</string>
-    <string name="Matcher-Description-MarriageCert">Свидетельство о браке</string>
-    <string name="Matcher-Description-InheritanceDoc">Свидетельство о наследстве</string>
-    <string name="Matcher-Description-OGRNIP">ОГРНИП</string>
-    <string name="Matcher-Description-OSAGOPolicy">Полис ОСАГО</string>
-    <string name="Matcher-Description-SecurityAffiliation">Информация о спецслужбах</string>
-    <string name="Matcher-Description-MilitaryRank">Воинское звание</string>
-    <string name="Matcher-Description-EpCertificateNumber">Номер сертификата ЭП</string>
-    <string name="Matcher-Description-CadastralNumber">Кадастровый номер объекта недвижимости</string>
-    <string name="Matcher-Description-VIN">Идентификационный номер транспортного средства VIN</string>
-    <string name="Matcher-Description-VehicleRegNumber">Регистрационный номер транспортного средства</string>
-    <string name="Matcher-Description-SocialUserId">Идентификатор в социальных сетях/мессенджерах</string>
-    <string name="Matcher-Description-LegalEntityName">Наименование юридического лица</string>
-    <string name="Matcher-Description-LegalEntityId">Идентификатор юридического лица</string>
-    <string name="Matcher-Description-OKPO">ОКПО юридического лица</string>
-    <string name="Matcher-Description-StateRegContract">Номер государственной регистрации договора</string>
-    <string name="Matcher-Description-UidContractBank">Уникальный идентификатор договора ФЛ с банком для БКИ</string>
-    <string name="Matcher-Description-ExecDocNumber">Номер исполнительного договора</string>
-    <string name="Matcher-Description-BankAccount">Номер банковского счета ФЛ</string>
-    <string name="Matcher-Description-SberBook">Сберкнижка</string>
-    <string name="Matcher-Description-BankAccountLE">Номер банковского счета ЮЛ</string>
-    <string name="Matcher-Description-HashData">Хешированные данные</string>
-    <string name="Matcher-Description-Geo">Геолокация</string>
-    <string name="Matcher-Description-EducationLicense">Номер лицензии обучающей организации</string>
-    <string name="Matcher-Description-IdentityDocType">Наименование вида документа удостоверяющего личность</string>
-    <string name="Matcher-Description-MaritalStatus">Семейное положение</string>
-    <string name="Matcher-Description-EducationLevel">Уровень образования</string>
-    <string name="Matcher-Description-DetectBlockedDomains">Поиск доменов из реестра заблокированных РосКомНадзором</string>
+    <string name="Matcher-Description-DetectBlockedDomains">Поиск доменлв из реестра заблокированных РосКомНадзором</string>
     <string name="Matcher-UserSignature-Name">Наименование сигнатуры</string>
     <string name="Matcher-UserSignature-Signature">Сигнатура</string>
     <string name="Matcher-UserSignature-Title">Пользовательская сигнатура</string>
     <string name="Matcher-UserSignature-ErrorTitle">Ошибка сохранения</string>
     <string name="Matcher-UserSignature-ErrorMessage">Пользовательская сигнатура с таким именем уже существует</string>
+
+    <!-- Группы детектирования -->
+    <string name="DetectGroup-PersonalDataNumbers">Персональные данные (числа)</string>
+    <string name="DetectGroup-PersonalDataText">Персональные данные (текст)</string>
+    <string name="DetectGroup-BankingSecrecy">Банковская тайна</string>
+    <string name="DetectGroup-ITAssets">IT активы</string>
 
     <string name="SettingsScreen-ThreadsCount">Количество потоков</string>
     <string name="SettingsScreen-ContextMenu">Контекстное меню</string>
@@ -262,7 +196,7 @@
 
     <string name="AboutScreen-Version">Версия программы: %1$s</string>
     <string name="AboutScreen-Copyright">Open Source Software, 2025</string>
-    <string name="AboutScreen-Description">Big Data Scanner — персональное программное обеспечение для экспресс-проверки наличия в файлах персональных данных и номеров банковских карт. Big Data Scanner работает со следующими форматами файлов: .xlsx, .docx, .txt, .csv, .xml, .json, .log, .doc, .xls, .pdf, .zip.\nBig Data Scanner не вносит никаких изменений в проверяемые файлы, требуется доступ только для чтения файла.\n\nРезультат работы программы носит рекомендательный характер, может требоваться дополнительная верификация со стороны пользователя.</string>
+    <string name="AboutScreen-Description">Angry Data Scanner — персональное программное обеспечение для экспресс-проверки наличия в файлах персональных данных и номеров банковских карт. Angry Data Scanner работает со следующими форматами файлов: .xlsx, .docx, .txt, .csv, .xml, .json, .log, .doc, .xls, .pdf, .zip.\nAngry Data Scanner не вносит никаких изменений в проверяемые файлы, требуется доступ только для чтения файла.\n\nРезультат работы программы носит рекомендательный характер, может требоваться дополнительная верификация со стороны пользователя.</string>
 
     <string name="MessageBox-Cancel">Отмена</string>
     <string name="MessageBox-OK">ОК</string>

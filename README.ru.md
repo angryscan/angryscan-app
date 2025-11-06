@@ -1,6 +1,15 @@
+---
+title: "Быстрый сканер данных с удобным интерфейсом|Angry Data Scanner"
+layout: default
+---
 🇺🇸 [English](README.md)
 
-Big Data Scanner - кроссплатформенный сканер, выявляющих ценные данные (далее сканер). Сканер запускается на локальной машине и не требует для установки прав администратора.
+[![Latest release](https://img.shields.io/github/v/release/angryscan/angrydata-app?sort=semver)](https://github.com/angryscan/angrydata-app/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/angryscan/angrydata-app/total.svg)](https://github.com/angryscan/angrydata-app/releases)
+[![Release date](https://img.shields.io/github/release-date/angryscan/angrydata-app?label=release%20date&display_date=published_at&color=orange)](https://github.com/angryscan/angrydata-app/releases/latest)
+
+
+Angry Data Scanner - кроссплатформенный сканер, выявляющих ценные данные (далее сканер). Сканер запускается на локальной машине и не требует для установки прав администратора.
 Сканер не вносит никаких изменений в проверяемые файлы. Для сканирования требуется доступ только для чтения.
 Проект - open-source и поддерживается образовательными коллективами.
 
@@ -55,3 +64,12 @@ Big Data Scanner - кроссплатформенный сканер, выявл
 `400MB HDD` `4GB RAM` `1.3Ghz CPU`
 
 ## [Консольный режим](doc/CONSOLE.ru.md)
+
+## Прямая загрузка
+
+|             |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Windows** | <a href="https://github.com/angryscan/angrydata-app/releases/latest/download/angry-data-scanner.exe"><img src="https://img.shields.io/badge/Setup-x64-0078D6?style=for-the-badge&logo=windows" alt="Windows stable .exe"></a><br/> <a href="https://github.com/angryscan/angrydata-app/releases/latest/download/angry-data-scanner-1.3.0-windows-amd64.zip"><img src="https://img.shields.io/badge/portable-x64-0078D6?style=for-the-badge&logo=windows" alt="Windows portable .zip"></a>     |
+| **Linux**   | <a href="https://github.com/angryscan/angrydata-app/releases/latest/download/angry-data-scanner_1.3.0_amd64.deb"><img src="https://img.shields.io/badge/DEB-X64-A81D33?style=for-the-badge&logo=debian" alt="Linux .deb (amd64)"></a><br/> <a href="https://github.com/angryscan/angrydata-app/releases/latest/download/angry-data-scanner-1.3.0-linux-amd64.tar.gz"><img src="https://img.shields.io/badge/portable-x64-333?style=for-the-badge&logo=linux" alt="Linux portable binary"></a> |
+| **MacOS**   | <a href="https://github.com/angryscan/angrydata-app/releases/latest/download/angry-data-scanner_1.3.0_mac-amd64.zip"><img src="https://img.shields.io/badge/macOS-X64-000000?style=for-the-badge&logo=apple" alt="App amd64"></a> <br/> <a href="https://github.com/angryscan/angrydata-app/releases/latest/download/angry-data-scanner_1.3.0_mac-amd64.zip"><img src="https://img.shields.io/badge/macOS-ARM64-000000?style=for-the-badge&logo=apple" alt="App Arm64"></a>                   |
+

@@ -1,4 +1,3 @@
-import org.gradle.internal.impldep.org.codehaus.plexus.util.Os
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -16,34 +15,30 @@ kotlin {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
     sourceSets {
-        val desktopMain by getting
-        val desktopTest by getting
-        commonMain.dependencies {
+        val desktopMain by getting {
+            dependencies {
                 implementation(project(":shared"))
                 implementation(libs.logging.oshai)
                 implementation(libs.logging.logback)
                 implementation(libs.logging.log4j.core)
                 implementation(libs.console.progressbar)
+
+                implementation(compose.desktop.currentOs)
+                implementation(libs.ktor.server.netty)
+                implementation(libs.ktor.network)
             }
-
-        desktopMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.ktor.server.netty)
-            implementation(libs.ktor.network)
         }
+        val desktopTest by getting {
+            dependencies {
+                implementation(compose.desktop.uiTestJUnit4)
+                implementation(libs.koin.core)
+                implementation(libs.koin.test.junit4)
 
-        desktopTest.dependencies {
-            implementation(compose.desktop.uiTestJUnit4)
-            implementation(libs.koin.core)
-            implementation(libs.koin.test.junit4)
-        }
+                implementation(kotlin("test"))
 
-        // Adds common test dependencies
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-
-            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-            implementation(compose.uiTest)
+                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+                implementation(compose.uiTest)
+            }
         }
     }
 }
@@ -57,7 +52,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "ru.packetdima.datascanner.MainKt"
+        mainClass = "org.angryscan.app.MainKt"
 
 
         jvmArgs += listOf(
@@ -72,20 +67,24 @@ compose.desktop {
         }
 
         nativeDistributions {
-            packageName = "Big Data Scanner"
+            packageName = "Angry Data Scanner"
             packageVersion = version.toString()
             copyright = "Open Source Software, 2025"
             licenseFile.set(rootProject.file("LICENSE.en.txt"))
 
             modules("java.sql", "jdk.charsets", "jdk.unsupported", "java.naming")
 
-            targetFormats(TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(
+                TargetFormat.Msi,
+                TargetFormat.Deb,
+                TargetFormat.Dmg
+            )
 
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
 
             windows {
                 menuGroup = "start-menu-group"
-                installationPath = "Big Data Scanner"
+                installationPath = "Angry Data Scanner"
                 upgradeUuid = "baf17015-b8d3-4b88-9a59-0031a7b53b34"
                 iconFile.set(project(":shared").projectDir.resolve("src\\desktopMain\\composeResources\\files\\icon.ico"))
                 console = true
@@ -98,22 +97,76 @@ compose.desktop {
                 iconFile.set(project(":shared").projectDir.resolve("src\\desktopMain\\composeResources\\files\\icon.png"))
                 modules("jdk.security.auth")
             }
+            macOS {
+                iconFile.set(project(":shared").projectDir.resolve("src\\desktopMain\\composeResources\\files\\icon.icns"))
+                bundleID = "ru.packetdima.datascanner"
+                appCategory = "public.app-category.utilities"
+            }
         }
     }
 }
 
-tasks.register<Exec>("convey") {
+tasks.register<Exec>("conveyUnix") {
     val dir = layout.buildDirectory.dir("packages")
     outputs.dir(dir)
-    environment.put("CONVEYOR_AGREE_TO_LICENSE", "1")
-    commandLine("conveyor", "make", "--output-dir", dir.get(), "site")
-    dependsOn("build", "writeConveyorConfig")
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor","-f", "conveyor.unix.conf", "make", "--output-dir", dir.get(), "site")
+    dependsOn("fixConveyorConfig")
 }
-tasks.register<Exec>("conveyCI") {
+tasks.register<Exec>("conveyWindows") {
     val dir = layout.buildDirectory.dir("packages")
     outputs.dir(dir)
-    environment.put("CONVEYOR_AGREE_TO_LICENSE", "1")
-    commandLine("conveyor", "-f", "ci.conveyor.conf", "make", "--output-dir", dir.get(),  "site")
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor", "-f", "conveyor.win.conf", "make", "--output-dir", dir.get(), "site")
+    dependsOn("fixConveyorConfig")
+}
+
+tasks.register<Exec>("conveyUnixCI") {
+    val dir = layout.buildDirectory.dir("packages")
+    outputs.dir(dir)
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor", "-f", "ci.conveyor.unix.conf", "make", "--output-dir", dir.get(),  "site")
+    dependsOn("fixConveyorConfig")
+}
+
+tasks.register<Exec>("conveyWindowsCI") {
+    val dir = layout.buildDirectory.dir("packages")
+    outputs.dir(dir)
+    environment["CONVEYOR_AGREE_TO_LICENSE"] = "1"
+    commandLine("conveyor", "-f", "ci.conveyor.win.conf", "make", "--output-dir", dir.get(),  "site")
+    dependsOn("fixConveyorConfig")
+}
+
+tasks.register("fixConveyorConfig") {
+    val inputFile = file("generated.conveyor.conf")
+    val tempFile = layout.buildDirectory.file("generated.conveyor.tmp.conf").get().asFile
+    doLast {
+        if (!inputFile.exists()) {
+            println("generated.conveyor.conf not found")
+            return@doLast
+        }
+        val winBuild = System.getenv("TARGET_OS") == "windows"
+
+        tempFile.bufferedWriter().use { writer ->
+            inputFile.forEachLine { line ->
+                // оставляем все строки, кроме android/ios
+                if (
+                    !line.contains("-android-") &&
+                    !line.contains("-ios-") &&
+                    ((!winBuild && !line.contains("-windows-")) ||
+                    (winBuild && !line.contains("-linux-") && !line.contains("-macosx-")))
+                    ) {
+                    writer.write(line)
+                    writer.newLine()
+                }
+            }
+        }
+
+        // заменяем оригинальный файл
+        inputFile.delete()
+        tempFile.renameTo(inputFile)
+        println("Removed android/ios entries from generated.conveyor.conf")
+    }
     dependsOn("build", "writeConveyorConfig")
 }
 
@@ -121,19 +174,6 @@ tasks.register("printVersion") {
     doLast {
         print(version)
     }
-}
-
-tasks.register("getOS") {
-    println(
-        "Current OS: ${
-            when {
-                Os.isFamily(Os.FAMILY_WINDOWS) -> "Windows"
-                Os.isFamily(Os.FAMILY_UNIX) -> "Unix"
-                Os.isFamily(Os.FAMILY_MAC) -> "MacOS"
-                else -> "Unknown"
-            }
-        }"
-    )
 }
 
 configurations.all {

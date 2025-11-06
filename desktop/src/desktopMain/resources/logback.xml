@@ -1,5 +1,5 @@
 <configuration>
-    <contextListener class="ru.packetdima.datascanner.logging.LoggerStartupListener"/>
+    <contextListener class="org.angryscan.app.logging.LoggerStartupListener"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
