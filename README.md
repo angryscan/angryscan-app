@@ -33,9 +33,9 @@ The scanner detects the following types of data:
 | Data type | Country | Example                    |
 |-----------|---------|----------------------------|
 | Full name | RU      | Иван Иванович Иванов       |
-| Full name | US      | John Fitzgerald Kennedy    |
+| Full name | US      | `Work in progress`         |
 | Address   | RU      | Москва, ул. Ленина, д. 1   |
-| Address   | US      | Work in progress           |
+| Address   | US      | `Work in progress`         |
 | E-mail    | International | captainbull@gmail.com |
 | Login     | -       | username, user123          |
 | Password  | -       | password123, secret        |
@@ -43,13 +43,13 @@ The scanner detects the following types of data:
 
 ### Banking Secrecy
 
-| Data type                        | Example                    |
+| Data type                       | Example                    |
 |---------------------------------|----------------------------|
-| Payment card number             | 4400 5678 1234 5678       |
-| CVV                             | 123, 1234                 |
-| Account number                  | 40 817 810 099 910 000 000|
-| Cryptocurrency wallet number    | Work in progress           |
-| Cryptocurrency recovery-codes   | Work in progress           |
+| Payment card number             | 4400 5678 1234 5678        |
+| CVV                             | 123, 1234                  |
+| Account number                  | 40 817 810 099 910 000 000 |
+| Cryptocurrency wallet number    | `Work in progress`         |
+| Cryptocurrency recovery-codes   | `Work in progress`         |
 
 ### IT Assets
 
@@ -58,8 +58,8 @@ The scanner detects the following types of data:
 | Source code files | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
 | Passwords       | Finds files with passwords, secrets, API-keys |
 | TLS certificates| Finds folders with the most amount of TLS certificates |
-| Synthetic data  | Work in progress. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
-| AI-models       | Work in progress. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
+| Synthetic data  | `Work in progress`. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
+| AI-models       | `Work in progress`. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
 
 ### Network & Infrastructure
 
@@ -99,7 +99,7 @@ The scanner is intended to be a universal tool for scanning everything. Currentl
 | HDD/SDD                  | Scan local hard drive                                    |
 | S3                       | Scan files  in S3                                        |
 | HTTP/HTTPS               | Scans web site content                                   |
-| Database                 | `work in progress`                                       |
+| Database                 | `Work in progress`                                       |
 
 ## Use cases
 We share some practical use cases how Angry Data Scanner is used in real world.
