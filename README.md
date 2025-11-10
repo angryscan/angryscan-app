@@ -21,12 +21,12 @@ The scanner detects the following types of data:
 
 | Data type           | Country | Example                    |
 |---------------------|---------|----------------------------|
-| Phone number        | RU      | +7 926 123456             |
-| Passport number     | RU      | 4505 857555               |
-| Taxpayers number    | RU      | 123456789012              |
-| Car number          | RU      | A120AA23                  |
-| SNILS              | RU      | 123-456-789 00            |
-| OMS                | RU      | 1234567890123456          |
+| Phone number        | RU      | +7 926 123456              |
+| Passport number     | RU      | 4505 857555                |
+| Taxpayer number     | RU      | 123456789012               |
+| Car number          | RU      | A120AA23                   |
+| SNILS               | RU      | 123-456-789 00             |
+| OMS                 | RU      | 1234567890123456           |
 
 ### Personal Data (text)
 
