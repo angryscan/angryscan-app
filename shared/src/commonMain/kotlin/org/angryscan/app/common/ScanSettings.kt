@@ -50,8 +50,8 @@ class ScanSettings : KoinComponent {
     @Serializable(with = MutableStateSerializer::class)
     var userSignatureSettingsExpanded: MutableState<Boolean>
 
-    @Serializable(with = MutableStateSerializer::class)
-    var mainScreenSettingsExpanded: MutableState<Boolean>
+    @Transient
+    var mainScreenSettingsExpanded: MutableState<Boolean> = mutableStateOf(false)
 
     @Serializable(with = MutableStateSerializer::class)
     var selectionType: MutableState<SelectionTypes>
@@ -79,7 +79,6 @@ class ScanSettings : KoinComponent {
 
             this.userSignatures.addAll(prop.userSignatures.filter { it in userSignatureSettings.userSignatures })
             this.userSignatureSettingsExpanded = prop.userSignatureSettingsExpanded
-            this.mainScreenSettingsExpanded = prop.mainScreenSettingsExpanded
             this.selectionType = prop.selectionType
             this.engine = prop.engine
         } catch (_: Exception) {
@@ -100,7 +99,6 @@ class ScanSettings : KoinComponent {
             this.matchersSettingsExpanded = mutableStateOf(false)
             this.fastScan = mutableStateOf(false)
             this.userSignatureSettingsExpanded = mutableStateOf(false)
-            this.mainScreenSettingsExpanded = mutableStateOf(false)
             this.selectionType = mutableStateOf(SelectionTypes.Folder)
             this.engine = mutableStateOf(
                 when(OS.currentOS()) {

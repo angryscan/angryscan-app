@@ -70,11 +70,9 @@ fun MainScreen(
                             if (scanStateExpanded)
                                 scanStateExpanded = false
                             settingsExpandedState.value = true
-                            scanSettings.save()
                         },
                         hideSettings = {
                             settingsExpandedState.value = false
-                            scanSettings.save()
                         },
                         expandScanState = { taskId ->
                             scanStateExpanded = false
@@ -90,11 +88,9 @@ fun MainScreen(
                             if (scanStateExpanded)
                                 scanStateExpanded = false
                             settingsExpandedState.value = true
-                            scanSettings.save()
                         },
                         hideSettings = {
                             settingsExpandedState.value = false
-                            scanSettings.save()
                         },
                         expandScanState = { taskId ->
                             scanStateExpanded = false
@@ -110,11 +106,9 @@ fun MainScreen(
                             if (scanStateExpanded)
                                 scanStateExpanded = false
                             settingsExpandedState.value = true
-                            scanSettings.save()
                         },
                         hideSettings = {
                             settingsExpandedState.value = false
-                            scanSettings.save()
                         },
                         expandScanState = { taskId ->
                             scanStateExpanded = false
