@@ -127,7 +127,7 @@
     <string name="Matcher-EducationLicense">Education license</string>
     <string name="Matcher-EpCertificateNumber">EP cert #</string>
     <string name="Matcher-ExecDocNumber">Executive doc #</string>
-    <string name="Matcher-RIN">RIN</string>
+    <string name="Matcher-RIN">RIN (CN)</string>
     <string name="Matcher-Geo">Coordinates</string>
     <string name="Matcher-HashData">Hash data</string>
     <string name="Matcher-IdentityDocType">ID doc type</string>
@@ -230,6 +230,13 @@
     <string name="DetectGroup-PersonalDataText">Personal Data (text)</string>
     <string name="DetectGroup-BankingSecrecy">Banking Secrecy</string>
     <string name="DetectGroup-ITAssets">IT assets</string>
+
+    <!-- Matcher Countries -->
+    <string name="MatcherCountry-All">All</string>
+    <string name="MatcherCountry-Russia">Russia</string>
+    <string name="MatcherCountry-USA">USA</string>
+    <string name="MatcherCountry-China">China</string>
+    <string name="MatcherCountry-International">International</string>
 
     <string name="SettingsScreen-ThreadsCount">Threads count</string>
     <string name="SettingsScreen-ContextMenu">Context menu</string>

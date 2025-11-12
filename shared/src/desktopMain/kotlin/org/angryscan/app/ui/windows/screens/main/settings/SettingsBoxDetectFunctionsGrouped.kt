@@ -3,6 +3,7 @@ package org.angryscan.app.ui.windows.screens.main.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -12,9 +13,7 @@ import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.scan.functions.RKNDomainDetectFun
-import org.angryscan.app.ui.windows.screens.main.settings.items.MatchersGroup
-import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalDetectionGroupCard
-import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalSelectAllButton
+import org.angryscan.app.ui.windows.screens.main.settings.items.*
 import org.angryscan.common.matchers.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -26,6 +25,7 @@ fun SettingsBoxDetectFunctionsGrouped(
 ) {
     val detectFunctions = remember { scanSettings.matchers }
     var expanded by remember { scanSettings.matchersSettingsExpanded }
+    var selectedCountry by remember { mutableStateOf(MatcherCountry.ALL) }
 
     LaunchedEffect(detectFunctions, expanded) {
         scanSettings.save()
@@ -131,12 +131,24 @@ fun SettingsBoxDetectFunctionsGrouped(
         }
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
+            CountryFilterChips(
+                selectedCountry = selectedCountry,
+                onCountrySelected = { country ->
+                    selectedCountry = country
+                },
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
             MinimalSelectAllButton(scanSettings = scanSettings)
 
-            matchersGroups.forEach { group ->
+            val filteredGroups = remember(matchersGroups, selectedCountry) {
+                MatcherCountryMapping.filterGroups(matchersGroups, selectedCountry)
+            }
+
+            filteredGroups.forEach { group ->
                 MinimalDetectionGroupCard(
                     group = group,
                     scanSettings = scanSettings
