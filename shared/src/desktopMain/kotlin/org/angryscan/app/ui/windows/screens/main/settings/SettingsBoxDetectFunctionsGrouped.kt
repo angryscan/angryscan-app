@@ -142,7 +142,10 @@ fun SettingsBoxDetectFunctionsGrouped(
                 modifier = Modifier.padding(bottom = 4.dp)
             )
 
-            MinimalSelectAllButton(scanSettings = scanSettings)
+            MinimalSelectAllButton(
+                scanSettings = scanSettings,
+                selectedCountry = selectedCountry
+            )
 
             val filteredGroups = remember(matchersGroups, selectedCountry) {
                 MatcherCountryMapping.filterGroups(matchersGroups, selectedCountry)
