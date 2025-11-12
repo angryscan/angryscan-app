@@ -25,7 +25,8 @@ fun SettingsBoxDetectFunctionsGrouped(
     scanSettings: ScanSettings
 ) {
     val detectFunctions = remember { scanSettings.matchers }
-    var expanded by remember { scanSettings.matchersSettingsExpanded }
+    val expandedState = scanSettings.matchersSettingsExpanded
+    val expanded by expandedState
     var selectedCountry by remember { mutableStateOf(MatcherCountry.ALL) }
 
     LaunchedEffect(detectFunctions, expanded) {
@@ -128,7 +129,8 @@ fun SettingsBoxDetectFunctionsGrouped(
         text = stringResource(Res.string.ScanSettings_DetectFunctions),
         expanded = expanded,
         onExpandClick = {
-            expanded = !expanded
+            expandedState.value = !expandedState.value
+            scanSettings.save()
         }
     ) {
         Column(
