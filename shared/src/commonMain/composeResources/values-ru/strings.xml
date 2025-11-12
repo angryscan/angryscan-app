@@ -234,6 +234,7 @@
     <string name="MatcherCountry-USA">США</string>
     <string name="MatcherCountry-China">Китай</string>
     <string name="MatcherCountry-International">Международные</string>
+    <string name="MatcherCountry-International-Short">Межд.</string>
 
     <string name="SettingsScreen-ThreadsCount">Количество потоков</string>
     <string name="SettingsScreen-ContextMenu">Контекстное меню</string>

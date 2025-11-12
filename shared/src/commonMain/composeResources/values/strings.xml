@@ -237,6 +237,7 @@
     <string name="MatcherCountry-USA">USA</string>
     <string name="MatcherCountry-China">China</string>
     <string name="MatcherCountry-International">International</string>
+    <string name="MatcherCountry-International-Short">Intl.</string>
 
     <string name="SettingsScreen-ThreadsCount">Threads count</string>
     <string name="SettingsScreen-ContextMenu">Context menu</string>

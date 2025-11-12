@@ -13,18 +13,24 @@ import kotlin.reflect.KClass
 
 enum class MatcherCountry(
     val stringResource: StringResource,
+    val shortStringResource: StringResource? = null,
     val flag: String
 ) {
-    ALL(Res.string.MatcherCountry_All, "🌐"),
-    RUSSIA(Res.string.MatcherCountry_Russia, "🇷🇺"),
-    USA(Res.string.MatcherCountry_USA, "🇺🇸"),
-    CHINA(Res.string.MatcherCountry_China, "🇨🇳"),
-    INTERNATIONAL(Res.string.MatcherCountry_International, "🌍");
+    ALL(Res.string.MatcherCountry_All, null, "🌐"),
+    RUSSIA(Res.string.MatcherCountry_Russia, null, "🇷🇺"),
+    USA(Res.string.MatcherCountry_USA, null, "🇺🇸"),
+    CHINA(Res.string.MatcherCountry_China, null, "🇨🇳"),
+    INTERNATIONAL(Res.string.MatcherCountry_International, Res.string.MatcherCountry_International_Short, "🌍");
 }
 
 @Composable
-fun MatcherCountry.getLocalizedName(): String {
-    return stringResource(this.stringResource)
+fun MatcherCountry.getLocalizedName(useShort: Boolean = false): String {
+    val resource = if (useShort && shortStringResource != null) {
+        shortStringResource
+    } else {
+        stringResource
+    }
+    return stringResource(resource)
 }
 
 object MatcherCountryMapping {

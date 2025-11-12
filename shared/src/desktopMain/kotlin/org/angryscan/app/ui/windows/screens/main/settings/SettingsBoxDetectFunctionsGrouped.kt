@@ -8,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
@@ -139,7 +140,17 @@ fun SettingsBoxDetectFunctionsGrouped(
                 onCountrySelected = { country ->
                     selectedCountry = country
                 },
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = 4.dp),
+                getCountryStats = { country ->
+                    val countryMatchers = MatcherCountryMapping.filterMatchers(
+                        MatchersRegister,
+                        country
+                    )
+                    val selectedInCountry = countryMatchers.count { matcher ->
+                        detectFunctions.any { it::class == matcher::class }
+                    }
+                    selectedInCountry to countryMatchers.size
+                }
             )
 
             MinimalSelectAllButton(
