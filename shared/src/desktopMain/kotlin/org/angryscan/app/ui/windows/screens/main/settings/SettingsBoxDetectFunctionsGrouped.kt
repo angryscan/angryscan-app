@@ -8,8 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.angryscan.app.common.ScanSettings
-import org.angryscan.common.matchers.*
-import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
@@ -17,7 +15,8 @@ import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.app.ui.windows.screens.main.settings.items.MatchersGroup
 import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalDetectionGroupCard
 import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalSelectAllButton
-import org.koin.compose.koinInject
+import org.angryscan.common.matchers.*
+import org.jetbrains.compose.resources.stringResource
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,29 +47,66 @@ fun SettingsBoxDetectFunctionsGrouped(
                 name = personalDataNumbersName,
                 matchers = listOf(
                     Phone,
-                    CarNumber,
+                    PhoneUS,
                     SNILS,
+                    SSN,
                     Passport,
+                    PassportUS,
                     OMS,
-                    INN
+                    INN,
+                    Birthday,
+                    DeathDate,
+                    DriverLicense,
+                    RIN,
+                    MilitaryID,
+                    TemporaryID,
+                    ResidencePermit,
+                    SberBook,
+                    SocialUserId,
+                    VIN,
+                    VehicleRegNumber,
+                    LegalEntityId,
+                    OGRNIP,
+                    OKPO,
+                    StateRegContract,
+                    EpCertificateNumber,
+                    ExecDocNumber,
+                    CadastralNumber,
+                    MedicareUS,
+                    OSAGOPolicy
                 )
             ),
             MatchersGroup(
                 name = personalDataTextName,
                 matchers = listOf(
                     FullName,
+                    FullNameUS,
                     Email,
                     Address,
                     Login,
-                    Password
+                    Password,
+                    BirthCert,
+                    EducationDoc,
+                    EducationLevel,
+                    EducationLicense,
+                    IdentityDocType,
+                    InheritanceDoc,
+                    MaritalStatus,
+                    MarriageCert,
+                    MilitaryRank,
+                    SecurityAffiliation,
+                    Geo,
+                    LegalEntityName
                 )
             ),
             MatchersGroup(
                 name = bankingSecrecyName,
                 matchers = listOf(
                     CardNumber(),
-                    AccountNumber,
-                    CVV
+                    CVV,
+                    BankAccount,
+                    BankAccountLE,
+                    UidContractBankBki
                 )
             ),
             MatchersGroup(
@@ -80,7 +116,8 @@ fun SettingsBoxDetectFunctionsGrouped(
                     IPv6,
                     CodeDetectFun,
                     CertDetectFun,
-                    RKNDomainDetectFun
+                    RKNDomainDetectFun,
+                    HashData
                 )
             )
         )
