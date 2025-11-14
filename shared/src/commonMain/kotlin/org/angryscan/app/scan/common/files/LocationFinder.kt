@@ -45,7 +45,7 @@ object LocationFinder {
         }
     }
 
-    suspend fun maskLocations(filePath: String, locations: List<Location>): Boolean {
+    suspend fun maskLocations(filePath: String, locations: List<Location>): Int {
         val file = File(filePath)
         val type = FileType.getFileType(file = file) ?: throw NotSupportedTypeException
 
@@ -71,17 +71,16 @@ object LocationFinder {
                     Path(file.absolutePath),
                     StandardCopyOption.REPLACE_EXISTING
                 )
-                return true
+                return maskedCount
             } catch (_: IOException) {
                 tmpFile.delete()
-                return false
+                return 0
             }
         } else {
-            throw FailedToMaskException
+            return 0
         }
     }
 
     val NotSupportedTypeException = Exception("Not supported file type")
     val ScanException = Exception("Scan error")
-    val FailedToMaskException = Exception("Failed to mask file")
 }

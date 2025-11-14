@@ -6,9 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,22 +17,21 @@ import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberDialogState
 import kotlinx.coroutines.launch
-import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder
-import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DesktopWindowShapes
 import org.angryscan.app.ui.windows.components.TitleBar
 import org.angryscan.common.engine.IMask
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import java.awt.Desktop
 import java.io.File
 
@@ -46,7 +43,7 @@ fun AttributeLocationWindow(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    val locations = remember { mutableListOf<Location>() }
+    val locations = remember { mutableStateListOf<Location>() }
 
     var searching by remember { mutableStateOf(false) }
 
@@ -55,6 +52,8 @@ fun AttributeLocationWindow(
     var failedToFind by remember { mutableStateOf(false) }
 
     val scanSettings = koinInject<ScanSettings>()
+
+    val selectedLocations = remember { mutableStateListOf<Location>() }
 
     val fileType = FileType.getFileType(filePath)
     val maskingSupported = fileType?.let { LocationFinder.isMaskSupported(it) && attribute is IMask } ?: false
@@ -82,6 +81,7 @@ fun AttributeLocationWindow(
                     attribute
                 )
             )
+            selectedLocations.addAll(locations)
             if (locations.isEmpty())
                 failedToFind = true
         } catch (_: Exception) {
@@ -92,13 +92,15 @@ fun AttributeLocationWindow(
 
 
     val state = rememberDialogState(
-        width = 700.dp,
+        width = 800.dp,
         height = 500.dp
     )
 
     val scrollState = rememberLazyListState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var masking by remember { mutableStateOf(false) }
 
     DialogWindow(
         onCloseRequest = onClose,
@@ -183,37 +185,6 @@ fun AttributeLocationWindow(
                             .padding(4.dp)
                     )
                 }
-                if (maskingSupported && locations.any { it.isMaskable() }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    searching = true
-                                    if(LocationFinder.maskLocations(filePath, locations))
-                                        locations.clear()
-                                    searching = false
-                                }
-                            },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.VisibilityOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "Маскировать всё",
-                                modifier = Modifier.padding(start = 6.dp)
-                            )
-                        }
-                    }
-                }
                 if (errorSearching) {
                     Text(
                         text = stringResource(Res.string.LocationWindow_Error),
@@ -234,58 +205,151 @@ fun AttributeLocationWindow(
                         } else {
                             Scaffold(
                                 modifier = Modifier
-                                    .fillMaxSize(),
-                                snackbarHost = { SnackbarHost(snackbarHostState) }
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(8.dp)
-                                        .background(color = MaterialTheme.colorScheme.surface)
-                                        .padding(vertical = 8.dp)
-                                ) {
-
-                                    Column(
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        LazyColumn(
-                                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .padding(
-                                                    start = 8.dp,
-                                                    end = if (scrollState.canScrollBackward || scrollState.canScrollForward) 20.dp else 8.dp
-                                                ),
-                                            state = scrollState
-                                        ) {
-                                            items(locations) { location ->
-                                                AttributeLocationItem(
-                                                    location,
-                                                    maskingSupported,
-                                                    onMask = {
-                                                        coroutineScope.launch {
-                                                            searching = true
-                                                            if(LocationFinder.maskLocations(filePath, listOf(location)))
-                                                                locations.remove(location)
-                                                            searching = false
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.surface),
+                                snackbarHost = { SnackbarHost(snackbarHostState) },
+                                floatingActionButton = {
+                                    if (selectedLocations.isNotEmpty() && !masking) {
+                                        FloatingActionButton(
+                                            onClick = {
+                                                if (!masking) {
+                                                    masking = true
+                                                    coroutineScope.launch {
+                                                        val maskedCount =
+                                                            LocationFinder.maskLocations(filePath, selectedLocations)
+                                                        if (maskedCount == selectedLocations.size) {
+                                                            locations.removeAll(selectedLocations)
+                                                            selectedLocations.clear()
+                                                            coroutineScope.launch {
+                                                                snackbarHostState.showSnackbar(
+                                                                    getString(
+                                                                        Res.string.LocationWindow_MaskedCount,
+                                                                        maskedCount
+                                                                    )
+                                                                )
+                                                            }
+                                                        } else {
+                                                            coroutineScope.launch {
+                                                                snackbarHostState.showSnackbar(
+                                                                    getString(
+                                                                        Res.string.LocationWindow_MaskError
+                                                                    )
+                                                                )
+                                                            }
                                                         }
+                                                        masking = false
                                                     }
+                                                }
+                                            },
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        ) {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier
+                                                    .padding(horizontal = 10.dp)
+                                            ) {
+                                                Text(
+                                                    text = stringResource(
+                                                        Res.string.LocationWindow_MaskButton,
+                                                        selectedLocations.size
+                                                    )
+                                                )
+                                                Icon(
+                                                    imageVector = Icons.Outlined.VisibilityOff,
+                                                    contentDescription = null
                                                 )
                                             }
                                         }
                                     }
-
-                                    VerticalScrollbar(
-                                        adapter = rememberScrollbarAdapter(scrollState),
+                                }
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                ) {
+                                    Row(
                                         modifier = Modifier
-                                            .align(Alignment.CenterEnd)
-                                            .padding(end = 6.dp)
-                                            .width(10.dp),
-                                        style = LocalScrollbarStyle.current.copy(
-                                            hoverColor = MaterialTheme.colorScheme.primary,
-                                            unhoverColor = MaterialTheme.colorScheme.secondary
+                                            .padding(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(MaterialTheme.shapes.small)
+                                                .background(MaterialTheme.colorScheme.secondary)
+                                                .clickable {
+                                                    if (selectedLocations.containsAll(locations)) {
+                                                        selectedLocations.clear()
+                                                    } else {
+                                                        selectedLocations.addAll(
+                                                            locations.filter { !selectedLocations.contains(it) }
+                                                        )
+                                                    }
+                                                }
+                                                .padding(6.dp),
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = if(selectedLocations.containsAll(locations))
+                                                        Icons.Outlined.CheckBox
+                                                    else
+                                                        Icons.Outlined.CheckBoxOutlineBlank,
+                                                    contentDescription = null,
+                                                )
+                                                Text(
+                                                    text = stringResource(
+                                                        Res.string.LocationWindow_SelectAllButton
+                                                    )
+                                                )
+                                            }
+
+                                        }
+                                    }
+                                    Box {
+                                        Column(
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            LazyColumn(
+                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(
+                                                        start = 8.dp,
+                                                        end = if (scrollState.canScrollBackward || scrollState.canScrollForward) 20.dp else 8.dp
+                                                    ),
+                                                state = scrollState
+                                            ) {
+                                                items(locations) { location ->
+                                                    AttributeLocationItem(
+                                                        location = location,
+                                                        selectable = maskingSupported,
+                                                        checked = selectedLocations.contains(location),
+                                                        onCheckedChanged = { state ->
+                                                            if (state) {
+                                                                selectedLocations.add(location)
+                                                            } else {
+                                                                selectedLocations.remove(location)
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        VerticalScrollbar(
+                                            adapter = rememberScrollbarAdapter(scrollState),
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .padding(end = 6.dp)
+                                                .width(10.dp),
+                                            style = LocalScrollbarStyle.current.copy(
+                                                hoverColor = MaterialTheme.colorScheme.primary,
+                                                unhoverColor = MaterialTheme.colorScheme.secondary
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }

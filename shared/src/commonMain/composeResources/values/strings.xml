@@ -210,6 +210,10 @@
     <string name="LocationWindow-Title">Searching location for %1$s</string>
     <string name="LocationWindow-Error">Error while searching location.</string>
     <string name="LocationWindow-NotFound">Location not found.</string>
+    <string name="LocationWindow-MaskButton">Mask (%1$d)</string>
+    <string name="LocationWindow-MaskedCount">Masked attributes: %1$d</string>
+    <string name="LocationWindow-MaskError">Failed to mask attribute</string>
+    <string name="LocationWindow-SelectAllButton">Select all</string>
     <string name="Location-LongScanTitle">Attribute location deep search</string>
     <string name="Location-LongScanText">Searching for attribute location takes a long time to scan. Are you sure you want to scan it?</string>
     <string name="Location-LineNumber">Line %1$d</string>
