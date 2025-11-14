@@ -13,13 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
 import org.koin.compose.koinInject
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.ui.windows.screens.scans.components.ScanFilterChipBox
 import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskCard
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun ScansScreen(onTaskClick: (Int) -> Unit) {
     val scanService = koinInject<ScanService>()

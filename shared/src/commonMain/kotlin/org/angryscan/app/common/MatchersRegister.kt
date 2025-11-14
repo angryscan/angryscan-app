@@ -1,4 +1,4 @@
-@file:Suppress("OVERRIDE_DEPRECATION")
+@file:Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
 
 package org.angryscan.app.common
 

@@ -2,7 +2,6 @@ package org.angryscan.app.scan
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.angryscan.common.engine.IScanEngine
@@ -25,6 +24,8 @@ import org.angryscan.app.scan.engine.inappropriateMatchers
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
 
@@ -54,6 +55,7 @@ class ScanThread : KoinComponent {
         }.join()
     }
 
+    @OptIn(ExperimentalTime::class)
     fun start() {
         logger.debug { "Starting scan thread [$scanThreadScope]." }
         _started.set(true)
@@ -117,7 +119,7 @@ class ScanThread : KoinComponent {
                 val fileObject = taskEntity.dbTask.connector.getFile(filePath)
 
                 val matchers = database.transaction {
-                    taskEntity.dbTask.lastFileDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                    taskEntity.dbTask.lastFileDate =  Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
                     TaskMatchers
                         .select(TaskMatchers.matcher, TaskMatchers.id)

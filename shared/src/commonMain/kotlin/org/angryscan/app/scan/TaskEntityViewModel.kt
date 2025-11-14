@@ -8,7 +8,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.*
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.UserSignature
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -24,7 +27,9 @@ import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FilesCounter
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import kotlin.time.Clock
 import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
 
@@ -239,6 +244,7 @@ class TaskEntityViewModel(
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     fun setState(state: TaskState) {
         logger.debug { "Task state changed to $state. ID: ${_id.value}. Path: \"${_path.value}\"" }
 

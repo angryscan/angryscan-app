@@ -25,7 +25,6 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.char
@@ -52,10 +51,12 @@ import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
 import org.angryscan.app.ui.windows.screens.scans.components.*
 import java.awt.datatransfer.StringSelection
+import kotlin.time.Clock
 import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalTime::class)
 @Composable
 fun ScanResultScreen(
     taskId: Int,
@@ -169,7 +170,7 @@ fun ScanResultScreen(
         char('-')
         monthNumber()
         char('-')
-        dayOfMonth()
+        day()
         char('_')
         hour()
         char('-')

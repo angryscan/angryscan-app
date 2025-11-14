@@ -4,7 +4,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format.char
 
 val DateFormat = LocalDateTime.Format {
-    dayOfMonth()
+    day()
     char('.')
     monthNumber()
     char('.')
