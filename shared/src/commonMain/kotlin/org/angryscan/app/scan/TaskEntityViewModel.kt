@@ -22,7 +22,6 @@ import org.jetbrains.exposed.sql.update
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.angryscan.app.common.LogMarkers
-import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FilesCounter
@@ -121,8 +120,6 @@ class TaskEntityViewModel(
         get() = _foundFilesSize.asStateFlow()
 
     init {
-        val scanSettings = inject<ScanSettings>()
-
         if (_state.value == TaskState.LOADING) {
             taskScope.launch {
                 database.transaction {
