@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/angryscan/angrydata-app/total.svg)](https://github.com/angryscan/angrydata-app/releases)
 [![Release date](https://img.shields.io/github/release-date/angryscan/angrydata-app?label=release%20date&display_date=published_at&color=orange)](https://github.com/angryscan/angrydata-app/releases/latest)
 
-# Sensitive Data Discovery Tool
+# Free Open Source Sensitive Data Discovery Tool
 **Angry Data Scanner** is a sensitive data discovery tool that uses pattern matching to automatically discover sensitive data stored in folders, web pages, S3, database.  
 It helps organizations by identifying where sensitive data such as personally identifiable information (PII) and intellectual property is stored.   
 The tool provides visibility where your sensitive data is stored.  
