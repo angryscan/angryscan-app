@@ -7,13 +7,19 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.dhatim.fastexcel.reader.ReadableWorkbook
 import org.angryscan.app.scan.common.Document
+import org.angryscan.app.scan.common.files.IMaskLocation
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
+import org.angryscan.app.scan.common.files.extensions.isMaskable
+import org.angryscan.app.scan.common.files.extensions.mask
+import org.apache.poi.ss.usermodel.CellType
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
 
-object XLSXType : IFileType {
+object XLSXType : IFileType, IMaskLocation {
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,
@@ -115,5 +121,81 @@ object XLSXType : IFileType {
             throw ScanException
         }
         return locations
+    }
+
+    override suspend fun maskLocations(
+        inputFile: String,
+        outputFile: String,
+        locations: List<Location>
+    ): Int {
+        fun String.toColumnNumber(): Int {
+            var result = 0
+            for (ch in this) {
+                result = result * 26 + (ch.code - 'A'.code)
+            }
+            return result
+        }
+
+        var locationsMasked = 0
+        val sortedLocations = locations
+            .filter { it.isMaskable() }
+            .sortedBy { it.location.substringBefore(':') }
+        withContext(Dispatchers.IO) {
+            FileInputStream(inputFile).use { inputStream ->
+                XSSFWorkbook(inputStream).use { workbook ->
+                    sortedLocations.forEach { location ->
+                        val sheetName = location.location.substringBeforeLast(':')
+                        val sheet = workbook.getSheet(sheetName)
+                        val cellAddress = location.location.substringAfterLast(':') // Example address: E3
+                        val row = sheet.getRow(cellAddress.replace("[A-Z]*".toRegex(), "").toInt() - 1)
+                        val cellNumber = cellAddress
+                            .replace("[0-9]*".toRegex(), "")
+                            .toColumnNumber()
+                        val cell = row.getCell(cellNumber)
+                        when(cell.cellType) {
+                            CellType.STRING -> {
+                                val value = cell.stringCellValue
+                                val replaced = value.replace(location.entry.value, location.mask())
+                                if(value != replaced) {
+                                    cell.setCellValue(replaced)
+                                    locationsMasked++
+                                }
+                            }
+                            CellType.NUMERIC -> {
+                                val value = cell.numericCellValue.toString()
+                                val replaced = value.replace(location.entry.value, location.mask())
+                                if(value != replaced) {
+                                    cell.setCellValue(replaced)
+                                    cell.cellType = CellType.STRING
+                                    locationsMasked++
+                                }
+                            }
+                            CellType.BOOLEAN -> {
+                                val value = cell.booleanCellValue.toString()
+                                val replaced = value.replace(location.entry.value, location.mask())
+                                if(value != replaced) {
+                                    cell.setCellValue(replaced)
+                                    cell.cellType = CellType.STRING
+                                    locationsMasked++
+                                }
+                            }
+                            else -> {
+                                val value = cell.rawValue
+                                val replaced = value.replace(location.entry.value, location.mask())
+                                if(value != replaced) {
+                                    cell.setCellValue(replaced)
+                                    cell.cellType = CellType.STRING
+                                    locationsMasked++
+                                }
+                            }
+                        }
+                    }
+                    FileOutputStream(outputFile).use { outputStream ->
+                        workbook.write(outputStream)
+                    }
+                }
+            }
+        }
+        return locationsMasked
     }
 }

@@ -13,16 +13,19 @@ import kotlin.io.path.Path
 
 object LocationFinder {
     fun isSupported(type: FileType): Boolean = when (type) {
-        FileType.XLSX -> true
-        FileType.XLS -> true
-        FileType.Text -> true
-        FileType.DOCX -> true
+        FileType.XLSX,
+        FileType.XLS,
+        FileType.Text,
+        FileType.DOCX,
         FileType.DOC -> true
+
         else -> false
     }
 
     fun isMaskSupported(type: FileType): Boolean = when (type) {
-        FileType.Text -> true
+        FileType.Text,
+        FileType.XLSX -> true
+
         else -> false
     }
 
@@ -44,9 +47,7 @@ object LocationFinder {
 
     suspend fun maskLocations(filePath: String, locations: List<Location>): Boolean {
         val file = File(filePath)
-        val type = FileType.getFileType(file = file)
-        if (type == null || !isMaskSupported(type))
-            throw NotSupportedTypeException
+        val type = FileType.getFileType(file = file) ?: throw NotSupportedTypeException
 
         val tmpFile = File.createTempFile("ADS_mask", ".${file.extension}")
 
@@ -56,9 +57,14 @@ object LocationFinder {
                 tmpFile.absolutePath,
                 locations
             )
+            FileType.XLSX -> XLSXType.maskLocations(
+                filePath,
+                tmpFile.absolutePath,
+                locations
+            )
             else -> throw NotSupportedTypeException
         }
-        if(maskedCount == locations.size) {
+        if (maskedCount == locations.size) {
             try {
                 Files.move(
                     Path(tmpFile.absolutePath),
