@@ -14,4 +14,16 @@ class TextTypeTest : IKoinTestRule {
             TextType::findLocation
         )
     }
+
+    @Test
+    fun maskLocations() {
+        val fileName = "first/first.csv"
+
+        CheckLocation.maskLocations(
+            fileName,
+            TextType::findLocation,
+            TextType::maskLocations
+        )
+
+    }
 }

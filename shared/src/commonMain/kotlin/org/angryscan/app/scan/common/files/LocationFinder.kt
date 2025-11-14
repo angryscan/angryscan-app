@@ -6,6 +6,10 @@ import org.angryscan.app.scan.common.files.types.DOCXType
 import org.angryscan.app.scan.common.files.types.TextType
 import org.angryscan.app.scan.common.files.types.XLSXType
 import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import kotlin.io.path.Path
 
 object LocationFinder {
     fun isSupported(type: FileType): Boolean = when (type) {
@@ -14,6 +18,11 @@ object LocationFinder {
         FileType.Text -> true
         FileType.DOCX -> true
         FileType.DOC -> true
+        else -> false
+    }
+
+    fun isMaskSupported(type: FileType): Boolean = when (type) {
+        FileType.Text -> true
         else -> false
     }
 
@@ -33,6 +42,40 @@ object LocationFinder {
         }
     }
 
+    suspend fun maskLocations(filePath: String, locations: List<Location>): Boolean {
+        val file = File(filePath)
+        val type = FileType.getFileType(file = file)
+        if (type == null || !isMaskSupported(type))
+            throw NotSupportedTypeException
+
+        val tmpFile = File.createTempFile("ADS_mask", ".${file.extension}")
+
+        val maskedCount = when (type) {
+            FileType.Text -> TextType.maskLocations(
+                filePath,
+                tmpFile.absolutePath,
+                locations
+            )
+            else -> throw NotSupportedTypeException
+        }
+        if(maskedCount == locations.size) {
+            try {
+                Files.move(
+                    Path(tmpFile.absolutePath),
+                    Path(file.absolutePath),
+                    StandardCopyOption.REPLACE_EXISTING
+                )
+                return true
+            } catch (_: IOException) {
+                tmpFile.delete()
+                return false
+            }
+        } else {
+            throw FailedToMaskException
+        }
+    }
+
     val NotSupportedTypeException = Exception("Not supported file type")
     val ScanException = Exception("Scan error")
+    val FailedToMaskException = Exception("Failed to mask file")
 }

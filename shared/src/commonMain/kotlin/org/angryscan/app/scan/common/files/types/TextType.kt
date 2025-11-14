@@ -3,18 +3,21 @@ package org.angryscan.app.scan.common.files.types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import org.angryscan.app.scan.common.Document
+import org.angryscan.app.scan.common.files.IMaskLocation
+import org.angryscan.app.scan.common.files.Location
+import org.angryscan.app.scan.common.files.LocationFinder.ScanException
+import org.angryscan.app.scan.common.files.extensions.isMaskable
+import org.angryscan.app.scan.common.files.extensions.mask
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.mozilla.universalchardet.UniversalDetector
-import org.angryscan.app.scan.common.Document
-import org.angryscan.app.scan.common.files.Location
-import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import java.io.File
 import java.io.FileInputStream
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
-object TextType : IFileType {
+object TextType : IFileType, IMaskLocation {
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,
@@ -104,5 +107,67 @@ object TextType : IFileType {
             throw ScanException
         }
         return locations
+    }
+
+    override suspend fun maskLocations(
+        inputFile: String,
+        outputFile: String,
+        locations: List<Location>
+    ): Int {
+        val sortedLocations = locations
+            .filter { it.isMaskable() }
+            .sortedBy { it.location.substring(2).toInt() }
+        var lineNumber = 1
+        var locationIndex = 0
+        var locationRowIndex = sortedLocations[locationIndex]
+            .location
+            .substring(2)
+            .toInt()
+        var locationsMasked = 0
+
+        withContext(Dispatchers.IO) {
+            val file = File(inputFile)
+            val encoding = UniversalDetector.detectCharset(file)
+
+            File(outputFile)
+                .bufferedWriter(charset = Charset.forName(encoding))
+                .use { writer ->
+                    file
+                        .bufferedReader(charset = Charset.forName(encoding))
+                        .use { reader ->
+                            var line = reader.readLine()
+                            while (line != null) {
+                                var writeLine = line
+
+                                while (lineNumber == locationRowIndex) {
+                                    val tmp = writeLine
+                                        .replaceFirst(
+                                            sortedLocations[locationIndex].entry.value,
+                                            sortedLocations[locationIndex].mask()
+                                        )
+                                    if (tmp != writeLine) {
+                                        writeLine = tmp
+                                        locationsMasked++
+                                    }
+                                    locationIndex++
+                                    if(locationIndex < sortedLocations.size) {
+                                        locationRowIndex = sortedLocations[locationIndex]
+                                            .location
+                                            .substring(2)
+                                            .toInt()
+                                    } else {
+                                        locationRowIndex = -1
+                                    }
+                                }
+                                writer.write(writeLine)
+                                writer.newLine()
+
+                                lineNumber++
+                                line = reader.readLine()
+                            }
+                        }
+                }
+        }
+        return locationsMasked
     }
 }

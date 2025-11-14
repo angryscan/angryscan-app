@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,13 +25,16 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
+import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder
+import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DesktopWindowShapes
 import org.angryscan.app.ui.windows.components.TitleBar
+import org.angryscan.common.engine.IMask
 import java.awt.Desktop
 import java.io.File
 
@@ -42,7 +46,7 @@ fun AttributeLocationWindow(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    var locations by remember { mutableStateOf<List<Location>>(emptyList()) }
+    val locations = remember { mutableListOf<Location>() }
 
     var searching by remember { mutableStateOf(false) }
 
@@ -51,6 +55,9 @@ fun AttributeLocationWindow(
     var failedToFind by remember { mutableStateOf(false) }
 
     val scanSettings = koinInject<ScanSettings>()
+
+    val fileType = FileType.getFileType(filePath)
+    val maskingSupported = fileType?.let { LocationFinder.isMaskSupported(it) && attribute is IMask } ?: false
 
 
     coroutineScope.launch {
@@ -68,10 +75,12 @@ fun AttributeLocationWindow(
         }
 
         try {
-            locations = LocationFinder.findLocations(
-                filePath,
-                engine,
-                attribute
+            locations.addAll(
+                LocationFinder.findLocations(
+                    filePath,
+                    engine,
+                    attribute
+                )
             )
             if (locations.isEmpty())
                 failedToFind = true
@@ -174,6 +183,37 @@ fun AttributeLocationWindow(
                             .padding(4.dp)
                     )
                 }
+                if (maskingSupported && locations.any { it.isMaskable() }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    searching = true
+                                    if(LocationFinder.maskLocations(filePath, locations))
+                                        locations.clear()
+                                    searching = false
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.VisibilityOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Маскировать всё",
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
+                        }
+                    }
+                }
                 if (errorSearching) {
                     Text(
                         text = stringResource(Res.string.LocationWindow_Error),
@@ -205,47 +245,31 @@ fun AttributeLocationWindow(
                                         .padding(vertical = 8.dp)
                                 ) {
 
-                                    LazyColumn(
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        modifier = Modifier
-                                            .padding(
-                                                start = 8.dp,
-                                                end = if (scrollState.canScrollBackward || scrollState.canScrollForward) 20.dp else 8.dp
-                                            ),
-                                        state = scrollState
+                                    Column(
+                                        modifier = Modifier.fillMaxSize()
                                     ) {
-                                        items(locations) { location ->
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .weight(0.8f)
-                                                        .fillMaxWidth(),
-                                                ) {
-                                                    Text(
-                                                        text = location.entry.before,
-                                                        style = MaterialTheme.typography.bodySmall
-                                                    )
-                                                    Text(
-                                                        text = location.entry.value,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.primary
-                                                    )
-                                                    Text(
-                                                        text = location.entry.after,
-                                                        style = MaterialTheme.typography.bodySmall
-                                                    )
-                                                }
-
-                                                Text(
-                                                    modifier = Modifier
-                                                        .weight(0.2f)
-                                                        .fillMaxWidth(),
-                                                    text = location.location,
-                                                    style = MaterialTheme.typography.bodySmall
+                                        LazyColumn(
+                                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .padding(
+                                                    start = 8.dp,
+                                                    end = if (scrollState.canScrollBackward || scrollState.canScrollForward) 20.dp else 8.dp
+                                                ),
+                                            state = scrollState
+                                        ) {
+                                            items(locations) { location ->
+                                                AttributeLocationItem(
+                                                    location,
+                                                    maskingSupported,
+                                                    onMask = {
+                                                        coroutineScope.launch {
+                                                            searching = true
+                                                            if(LocationFinder.maskLocations(filePath, listOf(location)))
+                                                                locations.remove(location)
+                                                            searching = false
+                                                        }
+                                                    }
                                                 )
                                             }
                                         }
