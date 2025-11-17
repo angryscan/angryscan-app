@@ -24,6 +24,5 @@ class TextTypeTest : IKoinTestRule {
             TextType::findLocation,
             TextType::maskLocations
         )
-
     }
 }

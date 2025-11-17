@@ -1,6 +1,6 @@
 package org.angryscan.app.scan.common.files
 
-interface IMaskLocation {
+interface IMaskFile {
     suspend fun maskLocations(
         inputFile: String,
         outputFile: String,

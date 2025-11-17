@@ -7,7 +7,7 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.dhatim.fastexcel.reader.ReadableWorkbook
 import org.angryscan.app.scan.common.Document
-import org.angryscan.app.scan.common.files.IMaskLocation
+import org.angryscan.app.scan.common.files.IMaskFile
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import org.angryscan.app.scan.common.files.extensions.isMaskable
@@ -19,7 +19,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
 
-object XLSXType : IFileType, IMaskLocation {
+object XLSXType : IFileType, IMaskFile {
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,

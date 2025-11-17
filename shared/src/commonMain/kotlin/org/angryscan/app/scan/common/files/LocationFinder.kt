@@ -4,6 +4,7 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.angryscan.app.scan.common.files.types.DOCXType
 import org.angryscan.app.scan.common.files.types.TextType
+import org.angryscan.app.scan.common.files.types.XLSType
 import org.angryscan.app.scan.common.files.types.XLSXType
 import java.io.File
 import java.io.IOException
@@ -37,7 +38,7 @@ object LocationFinder {
 
         return when (type) {
             FileType.XLSX -> XLSXType.findLocation(filePath, engine, matcher)
-            FileType.XLS -> XLSXType.findLocation(filePath, engine, matcher)
+            FileType.XLS -> XLSType.findLocation(filePath, engine, matcher)
             FileType.Text -> TextType.findLocation(filePath, engine, matcher)
             FileType.DOCX -> DOCXType.findLocation(filePath, engine, matcher)
             FileType.DOC -> DOCXType.findLocation(filePath, engine, matcher)

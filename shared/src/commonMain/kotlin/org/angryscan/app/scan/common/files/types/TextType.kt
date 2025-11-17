@@ -4,7 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.angryscan.app.scan.common.Document
-import org.angryscan.app.scan.common.files.IMaskLocation
+import org.angryscan.app.scan.common.files.IMaskFile
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import org.angryscan.app.scan.common.files.extensions.isMaskable
@@ -17,7 +17,7 @@ import java.io.FileInputStream
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
-object TextType : IFileType, IMaskLocation {
+object TextType : IFileType, IMaskFile {
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,

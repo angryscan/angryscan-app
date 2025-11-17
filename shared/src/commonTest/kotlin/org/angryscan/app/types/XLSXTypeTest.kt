@@ -15,4 +15,15 @@ class XLSXTypeTest : IKoinTestRule {
             XLSXType::findLocation
         )
     }
+
+    @Test
+    fun maskLocation() {
+        val fileName = "first/first.xlsx"
+
+        CheckLocation.maskLocations(
+            fileName,
+            XLSXType::findLocation,
+            XLSXType::maskLocations
+        )
+    }
 }
