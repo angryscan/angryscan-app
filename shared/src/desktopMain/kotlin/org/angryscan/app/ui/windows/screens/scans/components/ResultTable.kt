@@ -71,7 +71,7 @@ fun ResultTable(
 
     val state by task.state.collectAsState()
 
-    var filePathSelected by remember { mutableStateOf("") }
+    var fileSelected by remember { mutableStateOf<TaskFileResult?>(null) }
     var attributeSelected by remember { mutableStateOf<IMatcher?>(null) }
     var locationWindowVisible by remember { mutableStateOf(false) }
 
@@ -89,14 +89,20 @@ fun ResultTable(
         )
     }
 
-    if (locationWindowVisible && attributeSelected != null) {
+    if (locationWindowVisible && attributeSelected != null && fileSelected != null) {
         AttributeLocationWindow(
-            filePathSelected,
+            fileSelected?.path ?: "",
             attribute = attributeSelected!!,
-            onClose = {
+            onClose = { allMasked ->
+                if(allMasked) {
+                    task.deleteFoundAttribute(fileSelected!!.id, attributeSelected!!)
+                    coroutineScope.launch {
+                        taskFilesViewModel.update()
+                    }
+                }
                 locationWindowVisible = false
                 attributeSelected = null
-                filePathSelected = ""
+                fileSelected = null
             }
         )
     }
@@ -522,7 +528,7 @@ fun ResultTable(
                                         attribute = attr,
                                         onClick = {
                                             attributeSelected = attr
-                                            filePathSelected = file.path
+                                            fileSelected = file
                                             longScanMessageBoxVisible = true
                                         },
                                         enabled = locationSupported && exist

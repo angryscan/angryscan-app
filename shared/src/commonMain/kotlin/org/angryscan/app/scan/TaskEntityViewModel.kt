@@ -8,7 +8,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.*
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.UserSignature
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -19,12 +22,13 @@ import org.jetbrains.exposed.sql.update
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.angryscan.app.common.LogMarkers
-import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FilesCounter
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import kotlin.time.Clock
 import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
 
@@ -116,8 +120,6 @@ class TaskEntityViewModel(
         get() = _foundFilesSize.asStateFlow()
 
     init {
-        val scanSettings = inject<ScanSettings>()
-
         if (_state.value == TaskState.LOADING) {
             taskScope.launch {
                 database.transaction {
@@ -163,6 +165,24 @@ class TaskEntityViewModel(
         _id.value = dbTask.id.value
         taskScope.launch {
             checkProgress()
+        }
+    }
+
+    fun deleteFoundAttribute(fileId: Int, matcher: IMatcher) {
+        taskScope.launch {
+            database.transaction {
+                val dbMatcher = dbTask.matchers.find { it.matcher::class == matcher::class }!!
+                TaskFileScanResults.deleteWhere {
+                    TaskFileScanResults.file.eq(fileId) and TaskFileScanResults.matcher.eq(dbMatcher.id)
+                }
+                _foundAttributes.value =
+                    TaskFileScanResults
+                        .innerJoin(TaskMatchers)
+                        .select(TaskMatchers.matcher)
+                        .where { TaskMatchers.task.eq(dbTask.id) }
+                        .map { it[TaskMatchers.matcher] }
+                        .toSet()
+            }
         }
     }
 
@@ -239,6 +259,7 @@ class TaskEntityViewModel(
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     fun setState(state: TaskState) {
         logger.debug { "Task state changed to $state. ID: ${_id.value}. Path: \"${_path.value}\"" }
 

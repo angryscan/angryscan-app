@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.navigation.AppScreen
@@ -30,6 +31,7 @@ import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.appName
 import org.angryscan.app.resources.icon
 
+val logger = KotlinLogging.logger { }
 @Composable
 fun AppLogo(
     navController: NavController
@@ -120,14 +122,10 @@ fun AppLogo(
                     onClick = {
                         try {
                             if (!isMainScreen) {
-                                println("Logo clicked - navigating to Main")
                                 navController.navigate(AppScreen.Main)
-                                println("Navigation to Main successful")
-                            } else {
-                                println("Already on Main screen - no navigation needed")
                             }
                         } catch (e: Exception) {
-                            println("Navigation error: ${e.message}")
+                            logger.error { "Navigation error: ${e.message}" }
                         }
                     }
                 )

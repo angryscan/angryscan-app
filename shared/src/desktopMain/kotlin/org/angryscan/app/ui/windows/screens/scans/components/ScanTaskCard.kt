@@ -20,7 +20,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.painterResource
@@ -39,9 +38,11 @@ import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.extensions.color
 import org.angryscan.app.ui.extensions.icon
 import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 import kotlin.time.toDuration
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalTime::class)
 @Composable
 fun ScanTaskCard(
     taskEntity: TaskEntityViewModel,
