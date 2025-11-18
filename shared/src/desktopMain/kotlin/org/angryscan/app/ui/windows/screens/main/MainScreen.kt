@@ -12,17 +12,21 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
+import org.koin.compose.koinInject
 
 
 @Composable
 fun MainScreen(
     showScan:(taskId:Int) -> Unit
 ) {
-    var settingsExpanded by remember { mutableStateOf(false) }
+    val scanSettings = koinInject<ScanSettings>()
+    val settingsExpandedState = scanSettings.mainScreenSettingsExpanded
+    val settingsExpanded by settingsExpandedState
 
     var scanStateExpanded by remember { mutableStateOf(false) }
 
@@ -65,10 +69,10 @@ fun MainScreen(
                         expandSettings = {
                             if (scanStateExpanded)
                                 scanStateExpanded = false
-                            settingsExpanded = true
+                            settingsExpandedState.value = true
                         },
                         hideSettings = {
-                            settingsExpanded = false
+                            settingsExpandedState.value = false
                         },
                         expandScanState = { taskId ->
                             scanStateExpanded = false
@@ -83,10 +87,10 @@ fun MainScreen(
                         expandSettings = {
                             if (scanStateExpanded)
                                 scanStateExpanded = false
-                            settingsExpanded = true
+                            settingsExpandedState.value = true
                         },
                         hideSettings = {
-                            settingsExpanded = false
+                            settingsExpandedState.value = false
                         },
                         expandScanState = { taskId ->
                             scanStateExpanded = false
@@ -101,10 +105,10 @@ fun MainScreen(
                         expandSettings = {
                             if (scanStateExpanded)
                                 scanStateExpanded = false
-                            settingsExpanded = true
+                            settingsExpandedState.value = true
                         },
                         hideSettings = {
-                            settingsExpanded = false
+                            settingsExpandedState.value = false
                         },
                         expandScanState = { taskId ->
                             scanStateExpanded = false

@@ -4,12 +4,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.engine.IScanEngine
-import org.angryscan.common.engine.custom.CustomEngine
-import org.angryscan.common.engine.hyperscan.HyperScanEngine
-import org.angryscan.common.engine.kotlin.KotlinEngine
-import org.angryscan.common.matchers.*
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
@@ -17,25 +11,69 @@ import org.angryscan.app.scan.common.connectors.IConnector
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.scan.functions.RKNDomainDetectFun
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.engine.IScanEngine
+import org.angryscan.common.engine.custom.CustomEngine
+import org.angryscan.common.engine.hyperscan.HyperScanEngine
+import org.angryscan.common.engine.kotlin.KotlinEngine
+import org.angryscan.common.matchers.*
 
 val PolymorphicSerializationModule = SerializersModule {
     polymorphic(IMatcher::class) {
-        subclass(AccountNumber::class)
         subclass(Address::class)
+        subclass(BankAccount::class)
+        subclass(BankAccountLE::class)
+        subclass(BirthCert::class)
+        subclass(Birthday::class)
+        subclass(CadastralNumber::class)
         subclass(CardNumber::class)
-        subclass(CarNumber::class)
         subclass(CVV::class)
+        subclass(DeathDate::class)
+        subclass(DriverLicense::class)
+        subclass(EducationDoc::class)
+        subclass(EducationLevel::class)
+        subclass(EducationLicense::class)
         subclass(Email::class)
+        subclass(EpCertificateNumber::class)
+        subclass(ExecDocNumber::class)
+        subclass(RIN::class)
         subclass(FullName::class)
+        subclass(FullNameUS::class)
+        subclass(Geo::class)
+        subclass(HashData::class)
+        subclass(IdentityDocType::class)
         subclass(INN::class)
+        subclass(InheritanceDoc::class)
         subclass(IPv4::class)
         subclass(IPv6::class)
+        subclass(LegalEntityId::class)
+        subclass(LegalEntityName::class)
         subclass(Login::class)
+        subclass(MaritalStatus::class)
+        subclass(MarriageCert::class)
+        subclass(MedicareUS::class)
+        subclass(MilitaryID::class)
+        subclass(MilitaryRank::class)
+        subclass(OGRNIP::class)
+        subclass(OKPO::class)
         subclass(OMS::class)
+        subclass(OSAGOPolicy::class)
         subclass(Passport::class)
+        subclass(PassportUS::class)
         subclass(Password::class)
         subclass(Phone::class)
+        subclass(PhoneUS::class)
+        subclass(ResidencePermit::class)
+        subclass(SberBook::class)
+        subclass(SecurityAffiliation::class)
         subclass(SNILS::class)
+        subclass(SocialUserId::class)
+        subclass(SSN::class)
+        subclass(StateRegContract::class)
+        subclass(TemporaryID::class)
+        subclass(UidContractBankBki::class)
+        subclass(VIN::class)
+        subclass(VehicleRegNumber::class)
         subclass(UserSignature::class)
         subclass(CertDetectFun::class)
         subclass(CodeDetectFun::class)

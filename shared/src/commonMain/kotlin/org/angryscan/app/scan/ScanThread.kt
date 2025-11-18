@@ -151,9 +151,7 @@ class ScanThread : KoinComponent {
                         )
 
                     engines.forEach { eng ->
-                        if(eng is AutoCloseable) {
-                            eng.close()
-                        }
+                        eng.close()
                     }
 
 

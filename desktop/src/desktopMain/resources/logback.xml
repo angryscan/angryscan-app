@@ -8,10 +8,10 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_DIR}/ads.log</file>
+        <file>${LOG_DIR}/bds.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>${LOG_DIR}/ads.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <fileNamePattern>${LOG_DIR}/bds.%d{yyyy-MM-dd}.gz</fileNamePattern>
 
             <!-- keep 60 days' worth of history capped at 10MB total size -->
             <maxHistory>60</maxHistory>

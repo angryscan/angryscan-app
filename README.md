@@ -4,8 +4,8 @@
 [![Downloads](https://img.shields.io/github/downloads/angryscan/angrydata-app/total.svg)](https://github.com/angryscan/angrydata-app/releases)
 [![Release date](https://img.shields.io/github/release-date/angryscan/angrydata-app?label=release%20date&display_date=published_at&color=orange)](https://github.com/angryscan/angrydata-app/releases/latest)
 
-# Sensitive Data Discovery Tool
-**Angry Data Scanner** is a data security and privacy tool that uses pattern matching to automatically discover sensitive data stored in folders, web pages, S3, database.  
+# Free Open Source Sensitive Data Discovery Tool
+**Angry Data Scanner** is a sensitive data discovery tool that uses pattern matching to automatically discover sensitive data stored in folders, web pages, S3, database.  
 It helps organizations by identifying where sensitive data such as personally identifiable information (PII) and intellectual property is stored.   
 The tool provides visibility where your sensitive data is stored.  
 
@@ -19,61 +19,91 @@ The scanner detects the following types of data:
 
 ### Personal Data (numbers)
 
-| Data type           | Country | Example                    |
-|---------------------|---------|----------------------------|
-| Phone number        | RU      | +7 926 123456              |
-| Passport number     | RU      | 4505 857555                |
-| Taxpayer number     | RU      | 123456789012               |
-| Car number          | RU      | A120AA23                   |
-| SNILS               | RU      | 123-456-789 00             |
-| OMS                 | RU      | 1234567890123456           |
+| Data type | Specific type | Country | Example |
+|-----------|---------------|---------|---------|
+| Phone number | - | RU | +7 926 3847291 |
+| Phone number | - | US | +1 212 5550198 |
+| Taxpayer number | INN | RU | 7707083893 |
+| Taxpayer number | SSN | US | 536-90-4399 |
+| Taxpayer number | RIN | CN | 110101199003078912 |
+| Passport | - | RU | 4505 857555 |
+| Passport | - | US | 847293641 |
+| Insurance number | SNILS | RU | 234-567-890 12 |
+| Insurance number | OMS | RU | 9876543210987654 |
+| Insurance number | Medicare | US | 1A2B3C4D5E |
+| Insurance number | OSAGO policy | RU | ААА3847291847 |
+| Driver license | - | RU | 77АВ987654 |
+| ID document | Military ID | RU | 3847291847 |
+| ID document | Temporary ID | RU | 2938475629 |
+| ID document | Residence permit | RU | 8472936418 |
+| ID document | SberBook | RU | 2938475629 |
+| Date | Birthday | International | 15.03.1985 |
+| Date | Death date | RU | 22.11.2023 |
+| User identifier | Social user ID | International | 3847291847 |
+| Vehicle identifier | VIN | International | 1HGBH41JXMN109186 |
+| Vehicle identifier | Vehicle registration number | RU | A120AA23 |
+| Legal entity identifier | Legal entity ID | RU | 7707083893 |
+| Legal entity identifier | OGRNIP | RU | 315774600001234 |
+| Legal entity identifier | OKPO | RU | 38472918 |
+| Document number | State registration contract | RU | 293847 |
+| Document number | EP certificate number | RU | 84729364182938475629 |
+| Document number | Executive document number | RU | 384729 |
+| Document number | Cadastral number | RU | 77:01:0001001:1001 |
 
 ### Personal Data (text)
 
-| Data type | Country | Example                    |
-|-----------|---------|----------------------------|
-| Full name | RU      | Иван Иванович Иванов       |
-| Full name | US      | `Work in progress`         |
-| Address   | RU      | Москва, ул. Ленина, д. 1   |
-| Address   | US      | `Work in progress`         |
-| E-mail    | International | captainbull@gmail.com |
-| Login     | -       | username, user123          |
-| Password  | -       | password123, secret        |
-| Valuable info | -   | Custom keywords search     |
+| Data type | Specific type | Country | Example |
+|-----------|---------------|---------|---------|
+| Full name | - | RU | Иван Иванович Иванов |
+| Full name | - | US | John Smith |
+| Contact information | E-mail | International | captainbull@gmail.com |
+| Contact information | Address | RU | Москва, ул. Ленина, д. 1 |
+| Contact information | Address | US | Work in progress |
+| Account credentials | Login | International | username |
+| Account credentials | Password | International | 	password123 |
+| Certificate | Birth certificate | RU | I-АБ 384729 |
+| Certificate | Marriage certificate | RU | II-АБ 384729 |
+| Education document | - | RU | 847293 |
+| Education document | Education level | RU | Высшее образование |
+| Education document | Education license | RU | 384729 |
+| Document | Identity document type | RU | Паспорт |
+| Document | Inheritance document | RU | 847293 |
+| Personal status | Marital status | RU | Женат/Замужем |
+| Military information | Military rank | RU | Рядовой |
+| Security information | Security affiliation | RU | Допуск |
+| Location | Geographic coordinates | International | 55.7558 |
+| Legal entity | Legal entity name | RU | ООО "Компания" |
 
 ### Banking Secrecy
 
-| Data type                       | Example                    |
-|---------------------------------|----------------------------|
-| Payment card number             | 4400 5678 1234 5678        |
-| CVV                             | 123, 1234                  |
-| Account number                  | 40 817 810 099 910 000 000 |
-| Cryptocurrency wallet number    | `Work in progress`         |
-| Cryptocurrency recovery-codes   | `Work in progress`         |
+| Data type | Specific type | Country | Example |
+|-----------|---------------|---------|---------|
+| Payment card | Payment card number | International | 4400 5678 9012 3456 |
+| Payment card | CVV | International | 456 |
+| Bank account | Bank account (Individual) | RU | 408 028 103 3 5300 5405 83 |
+| Bank account | Bank account (Legal entity) | RU | 407 028 103 3 5300 5405 83 |
+| Bank account | UID contract bank BKI | RU | 3847291847 |
+| Cryptocurrency | Cryptocurrency wallet number | International | Work in progress |
+| Cryptocurrency | Cryptocurrency recovery-codes | International | Work in progress |
 
 ### IT Assets
 
-| Data type        | Example                    |
-|------------------|----------------------------|
-| Source code files | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
-| Passwords       | Finds files with passwords, secrets, API-keys |
-| TLS certificates| Finds folders with the most amount of TLS certificates |
-| Synthetic data  | `Work in progress`. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
-| AI-models       | `Work in progress`. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
-
-### Network & Infrastructure
-
-| Data type        | Example                    |
-|------------------|----------------------------|
-| IPv4             | 192.168.1.1               |
-| IPv6             | 2001:db8::1               |
-| Blocked domains  | example.ru                |
+| Data type | Specific type | Country | Example |
+|-----------|---------------|---------|---------|
+| IP address | IPv4 | International | 192.168.1.1 |
+| IP address | IPv6 | International | 2001:db8::1 |
+| Source code | Source code files | International | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
+| Certificate | TLS certificates | International | Finds folders with the most amount of TLS certificates |
+| Domain | Blocked domains (RKN) | RU | example.ru |
+| Hash | Hash data | International | SHA256 |
+| Synthetic data | - | International | Work in progress. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
+| AI-models | - | International | Work in progress. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
 
 ### Custom Signatures
 
-| Data type           | Example                    |
-|---------------------|----------------------------|
-| User-defined patterns| Custom patterns            |
+| Data type | Specific type | Country | Example |
+|-----------|---------------|---------|---------|
+| User-defined patterns | - | International | Custom patterns |
 
 ## Supported file types
 The scanner supports the following file formats:

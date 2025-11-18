@@ -6,6 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.functions.RKNDomainDetectFun
+import org.angryscan.app.serializers.MutableStateKClassSerializer
+import org.angryscan.app.serializers.MutableStateSerializer
+import org.angryscan.app.serializers.PolymorphicFormatter
+import org.angryscan.app.ui.components.SelectionTypes
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
@@ -14,12 +20,6 @@ import org.angryscan.common.extensions.Matchers
 import org.angryscan.common.matchers.UserSignature
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import org.angryscan.app.scan.common.files.FileType
-import org.angryscan.app.scan.functions.RKNDomainDetectFun
-import org.angryscan.app.serializers.MutableStateKClassSerializer
-import org.angryscan.app.serializers.MutableStateSerializer
-import org.angryscan.app.serializers.PolymorphicFormatter
-import org.angryscan.app.ui.components.SelectionTypes
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -49,6 +49,9 @@ class ScanSettings : KoinComponent {
 
     @Serializable(with = MutableStateSerializer::class)
     var userSignatureSettingsExpanded: MutableState<Boolean>
+
+    @Transient
+    var mainScreenSettingsExpanded: MutableState<Boolean> = mutableStateOf(false)
 
     @Serializable(with = MutableStateSerializer::class)
     var selectionType: MutableState<SelectionTypes>
