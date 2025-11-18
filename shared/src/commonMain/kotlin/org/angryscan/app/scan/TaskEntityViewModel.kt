@@ -168,6 +168,24 @@ class TaskEntityViewModel(
         }
     }
 
+    fun deleteFoundAttribute(fileId: Int, matcher: IMatcher) {
+        taskScope.launch {
+            database.transaction {
+                val dbMatcher = dbTask.matchers.find { it.matcher::class == matcher::class }!!
+                TaskFileScanResults.deleteWhere {
+                    TaskFileScanResults.file.eq(fileId) and TaskFileScanResults.matcher.eq(dbMatcher.id)
+                }
+                _foundAttributes.value =
+                    TaskFileScanResults
+                        .innerJoin(TaskMatchers)
+                        .select(TaskMatchers.matcher)
+                        .where { TaskMatchers.task.eq(dbTask.id) }
+                        .map { it[TaskMatchers.matcher] }
+                        .toSet()
+            }
+        }
+    }
+
     fun addFoundAttribute(matcher: IMatcher) {
         //Check if user signature already added
         if (

@@ -1,5 +1,6 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,7 +40,7 @@ import java.io.File
 fun AttributeLocationWindow(
     filePath: String,
     attribute: IMatcher,
-    onClose: () -> Unit
+    onClose: (allMasked: Boolean) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -58,7 +59,6 @@ fun AttributeLocationWindow(
     val fileType = FileType.getFileType(filePath)
     val maskingSupported = fileType?.let { LocationFinder.isMaskSupported(it) && attribute is IMask } ?: false
 
-
     coroutineScope.launch {
         searching = true
         var engine = scanSettings.engine.value.getEngine(listOf(attribute))
@@ -66,7 +66,7 @@ fun AttributeLocationWindow(
             engine = engine.fallback().getEngine(listOf(attribute))
 
             if (engine::class == scanSettings.engine) {
-                onClose()
+                onClose(false)
                 errorSearching = true
                 searching = false
                 return@launch
@@ -81,7 +81,10 @@ fun AttributeLocationWindow(
                     attribute
                 )
             )
-            selectedLocations.addAll(locations)
+            selectedLocations.addAll(
+                locations
+                    .filter { it.entry.matcher is IMask }
+            )
             if (locations.isEmpty())
                 failedToFind = true
         } catch (_: Exception) {
@@ -103,7 +106,7 @@ fun AttributeLocationWindow(
     var masking by remember { mutableStateOf(false) }
 
     DialogWindow(
-        onCloseRequest = onClose,
+        onCloseRequest = { onClose(!searching && !errorSearching && !failedToFind && locations.isEmpty()) },
         state = state,
         undecorated = true,
         resizable = false
@@ -148,7 +151,7 @@ fun AttributeLocationWindow(
                             horizontalArrangement = Arrangement.End
                         ) {
                             IconButton(
-                                onClick = onClose
+                                onClick = { onClose(!searching && !errorSearching && !failedToFind && locations.isEmpty()) }
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Close,
@@ -272,39 +275,46 @@ fun AttributeLocationWindow(
                                         modifier = Modifier
                                             .padding(8.dp)
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(MaterialTheme.shapes.small)
-                                                .background(MaterialTheme.colorScheme.secondary)
-                                                .clickable {
-                                                    if (selectedLocations.containsAll(locations)) {
-                                                        selectedLocations.clear()
-                                                    } else {
-                                                        selectedLocations.addAll(
-                                                            locations.filter { !selectedLocations.contains(it) }
-                                                        )
+                                        AnimatedVisibility(locations.any { it.entry.matcher is IMask }) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(MaterialTheme.shapes.small)
+                                                    .background(MaterialTheme.colorScheme.secondary)
+                                                    .clickable {
+                                                        if (
+                                                            selectedLocations.containsAll(
+                                                                locations.filter { it.entry.matcher is IMask }
+                                                            )
+                                                        ) {
+                                                            selectedLocations.clear()
+                                                        } else {
+                                                            selectedLocations.addAll(
+                                                                locations
+                                                                    .filter { it.entry.matcher is IMask }
+                                                                    .filter { !selectedLocations.contains(it) }
+                                                            )
+                                                        }
                                                     }
-                                                }
-                                                .padding(6.dp),
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    .padding(6.dp),
                                             ) {
-                                                Icon(
-                                                    imageVector = if(selectedLocations.containsAll(locations))
-                                                        Icons.Outlined.CheckBox
-                                                    else
-                                                        Icons.Outlined.CheckBoxOutlineBlank,
-                                                    contentDescription = null,
-                                                )
-                                                Text(
-                                                    text = stringResource(
-                                                        Res.string.LocationWindow_SelectAllButton
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (selectedLocations.containsAll(locations))
+                                                            Icons.Outlined.CheckBox
+                                                        else
+                                                            Icons.Outlined.CheckBoxOutlineBlank,
+                                                        contentDescription = null,
                                                     )
-                                                )
+                                                    Text(
+                                                        text = stringResource(
+                                                            Res.string.LocationWindow_SelectAllButton
+                                                        )
+                                                    )
+                                                }
                                             }
-
                                         }
                                     }
                                     Box {
