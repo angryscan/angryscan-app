@@ -127,10 +127,11 @@ object TextType : IFileType, IMaskFile {
 
         withContext(Dispatchers.IO) {
             val file = File(inputFile)
-            val encoding = UniversalDetector.detectCharset(file)
+            val encoding = UniversalDetector.detectCharset(file) ?: "UTF-8"
+            val charset = runCatching { Charset.forName(encoding) }.getOrDefault(Charsets.UTF_8)
 
             File(outputFile)
-                .bufferedWriter(charset = Charset.forName(encoding))
+                .bufferedWriter(charset = charset)
                 .use { writer ->
                     file
                         .bufferedReader(charset = Charset.forName(encoding))

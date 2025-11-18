@@ -78,6 +78,7 @@ object LocationFinder {
                 return 0
             }
         } else {
+            tmpFile.delete()
             return 0
         }
     }
