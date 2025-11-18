@@ -1,11 +1,11 @@
 package ru.packetdima.datascanner.types
 
 import kotlinx.coroutines.runBlocking
+import org.angryscan.app.scan.common.files.Location
+import org.angryscan.app.searcher.Matrix
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
-import ru.packetdima.datascanner.scan.common.files.Location
 import ru.packetdima.datascanner.scan.engine.toHyperScanMatchers
-import ru.packetdima.datascanner.searcher.Matrix
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
