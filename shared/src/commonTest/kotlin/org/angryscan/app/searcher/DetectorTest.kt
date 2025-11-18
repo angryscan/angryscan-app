@@ -3,22 +3,37 @@ package org.angryscan.app.searcher
 import IKoinTestRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.engine.hyperscan.HyperScanEngine
-import org.angryscan.common.engine.kotlin.KotlinEngine
-import org.angryscan.common.extensions.Matchers
-import org.angryscan.common.matchers.CardNumber
-import org.angryscan.common.matchers.INN
-import org.angryscan.common.matchers.Passport
-import org.angryscan.common.matchers.SNILS
 import org.angryscan.app.scan.common.Document
 import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.app.scan.engine.toHyperScanMatchers
-import org.angryscan.app.scan.engine.toKotlinMatchers
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.engine.hyperscan.HyperScanEngine
+import org.angryscan.common.engine.kotlin.IKotlinMatcher
+import org.angryscan.common.engine.kotlin.KotlinEngine
+import org.angryscan.common.matchers.*
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+
+val matchers = listOf<IKotlinMatcher>(
+    Email,
+    CardNumber(),
+    Phone,
+    SNILS,
+    Passport,
+    OMS,
+    INN,
+    Address,
+    Login,
+    BankAccount,
+    VehicleRegNumber,
+    Password,
+    CVV,
+    FullName,
+    IPv4,
+    IPv6
+)
 
 internal class DetectorTest : IKoinTestRule {
     @Test
@@ -27,7 +42,7 @@ internal class DetectorTest : IKoinTestRule {
 583410778676
 омс 7755320882002755"""
         val doc = Document(1, "123")
-        val engine = KotlinEngine(Matchers.toKotlinMatchers())
+        val engine = KotlinEngine(matchers)
         engine
             .scan(sampleText)
             .groupBy { it.matcher }
@@ -44,7 +59,7 @@ internal class DetectorTest : IKoinTestRule {
         val file = javaClass.getResource("/files/TestText.txt")?.file
         assertNotNull(file)
         
-        for (attribute in Matchers) {
+        for (attribute in matchers) {
             assertEquals(1, getCountOfAttribute(file, attribute))
         }
     }

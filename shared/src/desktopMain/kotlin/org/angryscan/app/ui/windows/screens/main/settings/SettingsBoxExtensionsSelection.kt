@@ -13,29 +13,33 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.ScanSettings_FileExtensions
 import org.angryscan.app.resources.ScanSettings_SelectAll
 import org.angryscan.app.scan.common.files.FileType
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsBoxExtensionsSelection(scanSettings: ScanSettings) {
-    var expanded by remember { scanSettings.extensionsSettingsExpanded }
+    val expandedState = scanSettings.extensionsSettingsExpanded
+    val expanded by expandedState
 
 
     SettingsBoxSpan(
         text = stringResource(Res.string.ScanSettings_FileExtensions),
         expanded = expanded,
         onExpandClick = {
-            expanded = !expanded
+            expandedState.value = !expandedState.value
+            scanSettings.save()
         }
     ) {
         val fileTypeEntries = FileType.entries.filter { it != FileType.CODE && it != FileType.CERT }

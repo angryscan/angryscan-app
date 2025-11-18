@@ -3,17 +3,9 @@ package org.angryscan.app.ui.windows.screens.main.settings.items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -22,18 +14,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.ScanSettings_SelectAll
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MinimalSelectAllButton(
-    scanSettings: ScanSettings
+    scanSettings: ScanSettings,
+    selectedCountry: MatcherCountry = MatcherCountry.ALL
 ) {
     val matchers = remember { scanSettings.matchers }
-    val isAllSelected = MatchersRegister.all { m ->
+    
+    // Получаем мэтчеры для текущей страны
+    val countryMatchers = remember(selectedCountry) {
+        MatcherCountryMapping.filterMatchers(MatchersRegister, selectedCountry)
+    }
+    
+    val isAllSelected = countryMatchers.all { m ->
         matchers.any { m::class == it::class }
     }
 
@@ -45,9 +44,13 @@ fun MinimalSelectAllButton(
             .fillMaxWidth()
             .clickable {
                 if (isAllSelected) {
-                    scanSettings.matchers.clear()
+                    // Удаляем только мэтчеры текущей страны
+                    countryMatchers.forEach { matcher ->
+                        scanSettings.matchers.removeAll { it::class == matcher::class }
+                    }
                 } else {
-                    scanSettings.matchers.addAll(MatchersRegister.filter { m ->
+                    // Добавляем только мэтчеры текущей страны
+                    scanSettings.matchers.addAll(countryMatchers.filter { m ->
                         !scanSettings.matchers.any { it::class == m::class }
                     })
                 }
@@ -79,11 +82,15 @@ fun MinimalSelectAllButton(
                     checked = isAllSelected,
                     onCheckedChange = { checked ->
                         if (checked) {
-                            scanSettings.matchers.addAll(MatchersRegister.filter { m ->
+                            // Добавляем только мэтчеры текущей страны
+                            scanSettings.matchers.addAll(countryMatchers.filter { m ->
                                 !scanSettings.matchers.any { m::class == it::class }
                             })
                         } else {
-                            scanSettings.matchers.clear()
+                            // Удаляем только мэтчеры текущей страны
+                            countryMatchers.forEach { matcher ->
+                                scanSettings.matchers.removeAll { it::class == matcher::class }
+                            }
                         }
                         scanSettings.save()
                     },

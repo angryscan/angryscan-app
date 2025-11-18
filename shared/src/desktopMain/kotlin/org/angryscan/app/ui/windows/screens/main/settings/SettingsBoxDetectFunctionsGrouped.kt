@@ -3,21 +3,20 @@ package org.angryscan.app.ui.windows.screens.main.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
-import org.angryscan.common.matchers.*
-import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.scan.functions.RKNDomainDetectFun
-import org.angryscan.app.ui.windows.screens.main.settings.items.MatchersGroup
-import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalDetectionGroupCard
-import org.angryscan.app.ui.windows.screens.main.settings.items.MinimalSelectAllButton
-import org.koin.compose.koinInject
+import org.angryscan.app.ui.windows.screens.main.settings.items.*
+import org.angryscan.common.matchers.*
+import org.jetbrains.compose.resources.stringResource
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,7 +25,9 @@ fun SettingsBoxDetectFunctionsGrouped(
     scanSettings: ScanSettings
 ) {
     val detectFunctions = remember { scanSettings.matchers }
-    var expanded by remember { scanSettings.matchersSettingsExpanded }
+    val expandedState = scanSettings.matchersSettingsExpanded
+    val expanded by expandedState
+    var selectedCountry by remember { mutableStateOf(MatcherCountry.ALL) }
 
     LaunchedEffect(detectFunctions, expanded) {
         scanSettings.save()
@@ -48,29 +49,66 @@ fun SettingsBoxDetectFunctionsGrouped(
                 name = personalDataNumbersName,
                 matchers = listOf(
                     Phone,
-                    CarNumber,
+                    PhoneUS,
                     SNILS,
+                    SSN,
                     Passport,
+                    PassportUS,
                     OMS,
-                    INN
+                    INN,
+                    Birthday,
+                    DeathDate,
+                    DriverLicense,
+                    RIN,
+                    MilitaryID,
+                    TemporaryID,
+                    ResidencePermit,
+                    SberBook,
+                    SocialUserId,
+                    VIN,
+                    VehicleRegNumber,
+                    LegalEntityId,
+                    OGRNIP,
+                    OKPO,
+                    StateRegContract,
+                    EpCertificateNumber,
+                    ExecDocNumber,
+                    CadastralNumber,
+                    MedicareUS,
+                    OSAGOPolicy
                 )
             ),
             MatchersGroup(
                 name = personalDataTextName,
                 matchers = listOf(
                     FullName,
+                    FullNameUS,
                     Email,
                     Address,
                     Login,
-                    Password
+                    Password,
+                    BirthCert,
+                    EducationDoc,
+                    EducationLevel,
+                    EducationLicense,
+                    IdentityDocType,
+                    InheritanceDoc,
+                    MaritalStatus,
+                    MarriageCert,
+                    MilitaryRank,
+                    SecurityAffiliation,
+                    Geo,
+                    LegalEntityName
                 )
             ),
             MatchersGroup(
                 name = bankingSecrecyName,
                 matchers = listOf(
                     CardNumber(),
-                    AccountNumber,
-                    CVV
+                    CVV,
+                    BankAccount,
+                    BankAccountLE,
+                    UidContractBankBki
                 )
             ),
             MatchersGroup(
@@ -80,7 +118,8 @@ fun SettingsBoxDetectFunctionsGrouped(
                     IPv6,
                     CodeDetectFun,
                     CertDetectFun,
-                    RKNDomainDetectFun
+                    RKNDomainDetectFun,
+                    HashData
                 )
             )
         )
@@ -90,16 +129,42 @@ fun SettingsBoxDetectFunctionsGrouped(
         text = stringResource(Res.string.ScanSettings_DetectFunctions),
         expanded = expanded,
         onExpandClick = {
-            expanded = !expanded
+            expandedState.value = !expandedState.value
+            scanSettings.save()
         }
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            MinimalSelectAllButton(scanSettings = scanSettings)
+            CountryFilterChips(
+                selectedCountry = selectedCountry,
+                onCountrySelected = { country ->
+                    selectedCountry = country
+                },
+                modifier = Modifier.padding(bottom = 4.dp),
+                getCountryStats = { country ->
+                    val countryMatchers = MatcherCountryMapping.filterMatchers(
+                        MatchersRegister,
+                        country
+                    )
+                    val selectedInCountry = countryMatchers.count { matcher ->
+                        detectFunctions.any { it::class == matcher::class }
+                    }
+                    selectedInCountry to countryMatchers.size
+                }
+            )
 
-            matchersGroups.forEach { group ->
+            MinimalSelectAllButton(
+                scanSettings = scanSettings,
+                selectedCountry = selectedCountry
+            )
+
+            val filteredGroups = remember(matchersGroups, selectedCountry) {
+                MatcherCountryMapping.filterGroups(matchersGroups, selectedCountry)
+            }
+
+            filteredGroups.forEach { group ->
                 MinimalDetectionGroupCard(
                     group = group,
                     scanSettings = scanSettings

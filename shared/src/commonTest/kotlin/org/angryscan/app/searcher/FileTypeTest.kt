@@ -1,14 +1,7 @@
 package org.angryscan.app.searcher
 
-import org.apache.poi.openxml4j.util.ZipSecureFile
-import kotlinx.coroutines.*
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.engine.hyperscan.HyperScanEngine
-import org.angryscan.common.engine.kotlin.KotlinEngine
-import org.angryscan.common.extensions.Matchers
-import org.junit.Rule
-import org.koin.dsl.module
-import org.koin.test.KoinTestRule
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.runBlocking
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
@@ -17,9 +10,38 @@ import org.angryscan.app.di.scanModule
 import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.app.scan.engine.toKotlinMatchers
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.engine.hyperscan.HyperScanEngine
+import org.angryscan.common.engine.hyperscan.IHyperMatcher
+import org.angryscan.common.engine.kotlin.KotlinEngine
+import org.angryscan.common.extensions.Matchers
+import org.angryscan.common.matchers.*
+import org.apache.poi.openxml4j.util.ZipSecureFile
+import org.junit.Rule
+import org.koin.dsl.module
+import org.koin.test.KoinTestRule
 import java.io.File
 import java.io.FileWriter
 import kotlin.test.*
+
+val targetMatchers = listOf<IHyperMatcher>(
+    Email,
+    CardNumber(),
+    Phone,
+    SNILS,
+    Passport,
+    OMS,
+    INN,
+    Address,
+    Login,
+    BankAccount,
+    VehicleRegNumber,
+    Password,
+    CVV,
+    FullName,
+    IPv4,
+    IPv6
+)
 
 internal class FileTypeTest() {
     @get:Rule
@@ -61,6 +83,7 @@ internal class FileTypeTest() {
 
     @Test
     fun `Check file types`() {
+        val engines = listOf(HyperScanEngine(targetMatchers.toHyperScanMatchers()))
         listOf(
             "1.docx",
             "emails_result.xlsx",
@@ -99,7 +122,7 @@ internal class FileTypeTest() {
                         enumType?.scanFile(
                             f,
                             currentCoroutineContext(),
-                            listOf(HyperScanEngine(Matchers.toHyperScanMatchers())),
+                            engines,
                             false
                         ).let { doc ->
                             Matrix.getMap(filename)
@@ -112,6 +135,7 @@ internal class FileTypeTest() {
                     }
                 }
             }
+        engines.forEach { it.close() }
     }
 
     // проверить на очень длинном файле

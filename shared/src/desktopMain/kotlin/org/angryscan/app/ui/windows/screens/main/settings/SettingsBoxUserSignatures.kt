@@ -18,22 +18,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.common.matchers.UserSignature
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import javax.swing.JOptionPane
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsBoxUserSignature(scanSettings: ScanSettings) {
 
-    var expanded by remember { scanSettings.userSignatureSettingsExpanded }
+    val expandedState = scanSettings.userSignatureSettingsExpanded
+    val expanded by expandedState
 
     val userSignatureSettings = koinInject<UserSignatureSettings>()
 
@@ -96,7 +97,7 @@ fun SettingsBoxUserSignature(scanSettings: ScanSettings) {
         text = stringResource(Res.string.ScanSettings_UserSignatures),
         expanded = expanded,
         onExpandClick = {
-            expanded = !expanded
+            expandedState.value = !expandedState.value
             scanSettings.save()
         },
         textTail = {

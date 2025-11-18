@@ -6,18 +6,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.matchers.AccountNumber
-import org.angryscan.common.matchers.CardNumber
-import org.angryscan.common.matchers.FullName
-import org.jetbrains.exposed.sql.and
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FileSize
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.matchers.CardNumber
+import org.angryscan.common.matchers.FullName
+import org.jetbrains.exposed.sql.and
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 data class TaskFileResult(
     val id: Int,
@@ -87,7 +86,6 @@ class TaskFilesViewModel(val task: Task) : KoinComponent, ViewModel() {
                                 (when (row.first) {
                                     is FullName -> 5f
                                     is CardNumber -> 30f
-                                    is AccountNumber -> 30f
                                     is CodeDetectFun -> 0.01f
                                     is CertDetectFun -> 100f
                                     else -> 1f
