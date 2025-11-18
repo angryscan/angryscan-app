@@ -8,13 +8,12 @@ import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.db.DatabaseSettings
 import org.angryscan.app.di.scanModule
 import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.app.scan.engine.toKotlinMatchers
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
-import org.angryscan.common.engine.hyperscan.IHyperMatcher
 import org.angryscan.common.engine.kotlin.KotlinEngine
 import org.angryscan.common.extensions.Matchers
-import org.angryscan.common.matchers.*
 import org.apache.poi.openxml4j.util.ZipSecureFile
 import org.junit.Rule
 import org.koin.dsl.module
@@ -63,23 +62,6 @@ internal class FileTypeTest() {
 
     @Test
     fun `Check file types`() {
-        val targetMatchers = listOf<IHyperMatcher>(
-            Email,
-            CardNumber(),
-            Phone,
-            SNILS,
-            Passport,
-            OMS,
-            INN,
-            Address,
-            Login,
-            Password,
-            CVV,
-            FullName,
-            IPv4,
-            IPv6
-        )
-
         listOf(
             "1.docx",
             "emails_result.xlsx",
@@ -118,7 +100,7 @@ internal class FileTypeTest() {
                         enumType?.scanFile(
                             f,
                             currentCoroutineContext(),
-                            listOf(HyperScanEngine(targetMatchers)),
+                            listOf(HyperScanEngine(Matchers.toHyperScanMatchers())),
                             false
                         ).let { doc ->
                             Matrix.getMap(filename)
