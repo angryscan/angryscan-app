@@ -8,6 +8,7 @@ import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.db.DatabaseSettings
 import org.angryscan.app.di.scanModule
 import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.app.scan.engine.toKotlinMatchers
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
@@ -82,6 +83,7 @@ internal class FileTypeTest() {
 
     @Test
     fun `Check file types`() {
+        val engines = listOf(HyperScanEngine(targetMatchers.toHyperScanMatchers()))
         listOf(
             "1.docx",
             "emails_result.xlsx",
@@ -120,7 +122,7 @@ internal class FileTypeTest() {
                         enumType?.scanFile(
                             f,
                             currentCoroutineContext(),
-                            listOf(HyperScanEngine(targetMatchers)),
+                            engines,
                             false
                         ).let { doc ->
                             Matrix.getMap(filename)
@@ -133,6 +135,7 @@ internal class FileTypeTest() {
                     }
                 }
             }
+        engines.forEach { it.close() }
     }
 
     // проверить на очень длинном файле
