@@ -14,12 +14,12 @@ The tool provides visibility where your sensitive data is stored.
 - No additional software installation required  
 - Works on Linux, Mac, and Windows
 
-## Discovered sensitive data
+## Sensetive data discovery
 The scanner detects the following types of data: 
 
 ### Personal Data (numbers)
 
-| Data type | Specific type | Country | Example |
+| Data type | Local name | Country | Example |
 |-----------|---------------|---------|---------|
 | Phone number | - | RU | +7 926 3847291 |
 | Phone number | - | US | +1 212 5550198 |
@@ -36,11 +36,11 @@ The scanner detects the following types of data:
 | ID document | Military ID | RU | 3847291847 |
 | ID document | Temporary ID | RU | 2938475629 |
 | ID document | Residence permit | RU | 8472936418 |
-| ID document | SberBook | RU | 2938475629 |
-| Date | Birthday | International | 15.03.1985 |
+| ID document | Sberknizhka | RU | 2938475629 |
+| Date | Birthday | - | 15.03.1985 |
 | Date | Death date | RU | 22.11.2023 |
-| User identifier | Social user ID | International | 3847291847 |
-| Vehicle identifier | VIN | International | 1HGBH41JXMN109186 |
+| User identifier | Social user ID | - | 3847291847 |
+| Vehicle identifier | VIN | - | 1HGBH41JXMN109186 |
 | Vehicle identifier | Vehicle registration number | RU | A120AA23 |
 | Legal entity identifier | Legal entity ID | RU | 7707083893 |
 | Legal entity identifier | OGRNIP | RU | 315774600001234 |
@@ -52,15 +52,15 @@ The scanner detects the following types of data:
 
 ### Personal Data (text)
 
-| Data type | Specific type | Country | Example |
+| Data type | Local name | Country | Example |
 |-----------|---------------|---------|---------|
 | Full name | - | RU | Иван Иванович Иванов |
 | Full name | - | US | John Smith |
-| Contact information | E-mail | International | captainbull@gmail.com |
+| Contact information | E-mail | - | captainbull@gmail.com |
 | Contact information | Address | RU | Москва, ул. Ленина, д. 1 |
 | Contact information | Address | US | Work in progress |
-| Account credentials | Login | International | username |
-| Account credentials | Password | International | 	password123 |
+| Account credentials | Login | - | username |
+| Account credentials | Password | - | 	password123 |
 | Certificate | Birth certificate | RU | I-АБ 384729 |
 | Certificate | Marriage certificate | RU | II-АБ 384729 |
 | Education document | - | RU | 847293 |
@@ -71,39 +71,37 @@ The scanner detects the following types of data:
 | Personal status | Marital status | RU | Женат/Замужем |
 | Military information | Military rank | RU | Рядовой |
 | Security information | Security affiliation | RU | Допуск |
-| Location | Geographic coordinates | International | 55.7558 |
+| Location | Geographic coordinates | - | 55.7558 |
 | Legal entity | Legal entity name | RU | ООО "Компания" |
 
 ### Banking Secrecy
 
-| Data type | Specific type | Country | Example |
+| Data type | Local name | Country | Example |
 |-----------|---------------|---------|---------|
-| Payment card | Payment card number | International | 4400 5678 9012 3456 |
-| Payment card | CVV | International | 456 |
+| Payment card | Payment card number | - | 4400 5678 9012 3456 |
+| Payment card | CVV | - | 456 |
 | Bank account | Bank account (Individual) | RU | 408 028 103 3 5300 5405 83 |
 | Bank account | Bank account (Legal entity) | RU | 407 028 103 3 5300 5405 83 |
 | Bank account | UID contract bank BKI | RU | 3847291847 |
-| Cryptocurrency | Cryptocurrency wallet number | International | Work in progress |
-| Cryptocurrency | Cryptocurrency recovery-codes | International | Work in progress |
+| Cryptocurrency | Cryptocurrency wallet number | - | Work in progress |
+| Cryptocurrency | Cryptocurrency recovery-codes | - | Work in progress |
 
 ### IT Assets
 
-| Data type | Specific type | Country | Example |
-|-----------|---------------|---------|---------|
-| IP address | IPv4 | International | 192.168.1.1 |
-| IP address | IPv6 | International | 2001:db8::1 |
-| Source code | Source code files | International | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
-| Certificate | TLS certificates | International | Finds folders with the most amount of TLS certificates |
-| Domain | Blocked domains (RKN) | RU | example.ru |
-| Hash | Hash data | International | SHA256 |
-| Synthetic data | - | International | Work in progress. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
-| AI-models | - | International | Work in progress. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
+| Data type | Local name | Example |
+|-----------|---------------|---------|
+| IP address | IPv4 | 192.168.1.1 |
+| IP address | IPv6 | 2001:db8::1 |
+| Source code | Source code files | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
+| Certificate | TLS certificates | Finds folders with the most amount of TLS certificates |
+| Domain | Blocked domains (RKN) | example.ru |
+| Hash | Hash data | SHA256 |
+| Synthetic data | - | Work in progress. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
+| AI-models | - | Work in progress. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
 
 ### Custom Signatures
 
-| Data type | Specific type | Country | Example |
-|-----------|---------------|---------|---------|
-| User-defined patterns | - | International | Custom patterns |
+It is possible to add custom data search signatures using plain text: `FBR`, `FSB`, `Central bank` or any other.
 
 ## Supported file types
 The scanner supports the following file formats:
