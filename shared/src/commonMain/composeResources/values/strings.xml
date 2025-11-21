@@ -78,6 +78,7 @@
     <string name="UpperMenu-Tooltip-FileShare">File share scanning</string>
     <string name="UpperMenu-Tooltip-S3">S3 storage scanning</string>
     <string name="UpperMenu-Tooltip-HTTP">Web scanning</string>
+    <string name="S3Screen-Tooltip-ConnectionSettings">Connection parameters</string>
 
     <string name="MainScreen-SelectPathPlaceholder">Choose paths to scan separated by semicolon (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Choose file with paths</string>

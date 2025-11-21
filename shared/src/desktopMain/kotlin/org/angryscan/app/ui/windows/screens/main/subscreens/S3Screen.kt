@@ -35,9 +35,11 @@ import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
 import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.S3Screen_Tooltip_ConnectionSettings
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
 import org.angryscan.app.ui.windows.screens.main.components.S3FileChooser
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
@@ -202,6 +204,7 @@ fun S3Screen(
             secretKeyError = false
             bucketError = false
             scanNotCorrectPath = false
+            incorrectConnection = false
         }
     }
 
@@ -284,40 +287,44 @@ fun S3Screen(
                         label = "scale"
                     )
                     
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(
-                                when {
-                                    connectionSettingsExpanded -> 
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-                                    isHovered -> 
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                    else -> 
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    DescriptionTooltip(
+                        description = stringResource(Res.string.S3Screen_Tooltip_ConnectionSettings)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(
+                                    when {
+                                        connectionSettingsExpanded -> 
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                                        isHovered -> 
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                        else -> 
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                    }
+                                )
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null,
+                                    onClick = { connectionSettingsExpanded = !connectionSettingsExpanded }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Key,
+                                contentDescription = "Connection settings",
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .scale(scale),
+                                tint = when {
+                                    connectionSettingsExpanded -> MaterialTheme.colorScheme.primary
+                                    isHovered -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 }
                             )
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                onClick = { connectionSettingsExpanded = !connectionSettingsExpanded }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Key,
-                            contentDescription = "Connection settings",
-                            modifier = Modifier
-                                .size(20.dp)
-                                .scale(scale),
-                            tint = when {
-                                connectionSettingsExpanded -> MaterialTheme.colorScheme.primary
-                                isHovered -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
+                        }
                     }
                     Box(
                         modifier = Modifier
@@ -328,16 +335,21 @@ fun S3Screen(
                             .background(MaterialTheme.colorScheme.onBackground)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
-                                if (endpoint.isNotEmpty() &&
+                                val areFieldsFilled = endpoint.isNotEmpty() &&
                                     accessKey.isNotEmpty() &&
                                     secretKey.isNotEmpty() &&
                                     bucket.isNotEmpty()
-                                ) {
+                                
+                                if (areFieldsFilled) {
                                     selectPathDialog = true
                                 } else {
+                                    // Если поля не заполнены и блок не раскрыт, раскрыть его
+                                    if (!connectionSettingsExpanded) {
+                                        connectionSettingsExpanded = true
+                                    }
+                                    // Активировать моргающую красную обводку через LaunchedEffect
                                     incorrectConnection = true
                                 }
-
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -382,7 +394,10 @@ fun S3Screen(
                             .height(32.dp)
                             .weight(1f),
                         value = endpoint,
-                        onValueChange = { endpoint = it },
+                        onValueChange = { 
+                            endpoint = it
+                            if (it.isNotEmpty()) endpointError = false
+                        },
                         placeholder = "Endpoint",
                         isError = endpointError,
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -395,7 +410,10 @@ fun S3Screen(
                             .height(32.dp)
                             .weight(1f),
                         value = bucket,
-                        onValueChange = { bucket = it },
+                        onValueChange = { 
+                            bucket = it
+                            if (it.isNotEmpty()) bucketError = false
+                        },
                         placeholder = "Bucket",
                         isError = bucketError,
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -412,7 +430,10 @@ fun S3Screen(
                             .height(32.dp)
                             .weight(1f),
                         value = accessKey,
-                        onValueChange = { accessKey = it },
+                        onValueChange = { 
+                            accessKey = it
+                            if (it.isNotEmpty()) accessKeyError = false
+                        },
                         placeholder = "Access key",
                         isError = accessKeyError,
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -425,7 +446,10 @@ fun S3Screen(
                             .height(32.dp)
                             .weight(1f),
                         value = secretKey,
-                        onValueChange = { secretKey = it },
+                        onValueChange = { 
+                            secretKey = it
+                            if (it.isNotEmpty()) secretKeyError = false
+                        },
                         placeholder = "Secret key",
                         isError = secretKeyError,
                         visualTransformation = PasswordVisualTransformation(),
@@ -441,11 +465,12 @@ fun S3Screen(
         Row {
                 Button(
                     onClick = {
-                        if (endpoint.isNotEmpty() &&
+                        val areFieldsFilled = endpoint.isNotEmpty() &&
                             accessKey.isNotEmpty() &&
                             secretKey.isNotEmpty() &&
                             bucket.isNotEmpty()
-                        ) {
+                        
+                        if (areFieldsFilled) {
                             coroutineScope.launch {
                                 val task = scanService.createTask(
                                     path = path,
@@ -466,6 +491,12 @@ fun S3Screen(
 
                             }
                         } else {
+                            // Если поля не заполнены и блок не раскрыт, раскрыть его
+                            if (!connectionSettingsExpanded) {
+                                connectionSettingsExpanded = true
+                            }
+                            // Активировать моргающую красную обводку через LaunchedEffect
+                            incorrectConnection = true
                             scanNotCorrectPath = true
                         }
                     },

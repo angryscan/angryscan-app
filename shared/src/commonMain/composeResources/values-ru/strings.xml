@@ -76,6 +76,7 @@
     <string name="UpperMenu-Tooltip-FileShare">Сканирование файловых систем</string>
     <string name="UpperMenu-Tooltip-S3">Сканирование хранилища S3</string>
     <string name="UpperMenu-Tooltip-HTTP">Сканирование веб-сайтов</string>
+    <string name="S3Screen-Tooltip-ConnectionSettings">Параметры подключения</string>
 
     <string name="MainScreen-SelectPathPlaceholder">Укажите пути для сканирования через точку с запятой (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Укажите файл с путями</string>
