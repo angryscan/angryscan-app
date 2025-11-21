@@ -262,6 +262,11 @@
     <string name="TaskStateChipFilter-Paused">На паузе</string>
     <string name="TaskStateChipFilter-Error">Ошибка</string>
     <string name="TaskStateChipFilter-Completed">Завершенные</string>
+    
+    <string name="TaskState-Active">Активен</string>
+    <string name="TaskState-Paused">На паузе</string>
+    <string name="TaskState-Error">Ошибка</string>
+    <string name="TaskState-Completed">Завершен</string>
 
     <string name="ScanResultScreen-ClipboardCopiedMessage">Скопировано в буфер обмена</string>
 

@@ -33,6 +33,7 @@ import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.extensions.color
 import org.angryscan.app.ui.extensions.icon
+import org.angryscan.app.ui.extensions.text
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -134,34 +135,47 @@ fun ScanTaskCard(
                         )
                     }
 
-                    Box(
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
-                        if (state == TaskState.SCANNING) {
-                            val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                            val rotationAngle by infiniteTransition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 360f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(2000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                ),
-                                label = "rotation"
-                            )
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (state == TaskState.SCANNING) {
+                                val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                                val rotationAngle by infiniteTransition.animateFloat(
+                                    initialValue = 0f,
+                                    targetValue = 360f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(2000, easing = LinearEasing),
+                                        repeatMode = RepeatMode.Restart
+                                    ),
+                                    label = "rotation"
+                                )
+                                
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .rotate(rotationAngle),
+                                    strokeWidth = 2.dp,
+                                    color = state.color()
+                                )
+                            }
                             
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .rotate(rotationAngle),
-                                strokeWidth = 2.dp,
-                                color = state.color()
+                            Icon(
+                                imageVector = state.icon(),
+                                contentDescription = null,
+                                tint = state.color(),
+                                modifier = Modifier.size(32.dp)
                             )
                         }
                         
-                        Icon(
-                            imageVector = state.icon(),
-                            contentDescription = null,
-                            tint = state.color()
+                        Text(
+                            text = state.text(),
+                            fontSize = 10.sp,
+                            color = state.color(),
+                            letterSpacing = 0.1.sp
                         )
                     }
 

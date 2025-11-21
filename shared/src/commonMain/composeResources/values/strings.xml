@@ -268,6 +268,11 @@
     <string name="TaskStateChipFilter-Paused">Paused</string>
     <string name="TaskStateChipFilter-Error">Error</string>
     <string name="TaskStateChipFilter-Completed">Completed</string>
+    
+    <string name="TaskState-Active">Active</string>
+    <string name="TaskState-Paused">Paused</string>
+    <string name="TaskState-Error">Error</string>
+    <string name="TaskState-Completed">Completed</string>
 
     <string name="ScanResultScreen-ClipboardCopiedMessage">Copied to clipboard</string>
 
