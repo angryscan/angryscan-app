@@ -14,7 +14,7 @@ The tool provides visibility where your sensitive data is stored.
 - No additional software installation required  
 - Works on Linux, Mac, and Windows
 
-## Sensetive data discovery
+## Sensitive data discovery
 The scanner detects the following types of data: 
 
 ### Personal Data (numbers)
