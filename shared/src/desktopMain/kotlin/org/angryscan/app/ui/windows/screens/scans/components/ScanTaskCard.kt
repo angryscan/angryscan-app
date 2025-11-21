@@ -22,10 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.Task_FoundAttributes
@@ -37,6 +33,10 @@ import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.extensions.color
 import org.angryscan.app.ui.extensions.icon
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -104,9 +104,6 @@ fun ScanTaskCard(
                 width = 1.dp,
                 color = state.color(),
                 shape = MaterialTheme.shapes.medium
-            )
-            .clickable(
-                onClick = onClick
             )
             .padding(14.dp),
 
@@ -195,16 +192,22 @@ fun ScanTaskCard(
                         }
                     }
 
-                    Text(
-                        text = name ?: path,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
-                        fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                        letterSpacing = 0.1.sp,
-                        style = TextStyle.Default.copy(
-                            lineBreak = LineBreak.Heading
+                    Box(
+                        modifier = Modifier
+                            .clickable(onClick = onClick)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = name ?: path,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
+                            fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
+                            letterSpacing = 0.1.sp,
+                            style = TextStyle.Default.copy(
+                                lineBreak = LineBreak.Heading
+                            )
                         )
-                    )
+                    }
                 }
 
             }
@@ -234,7 +237,8 @@ fun ScanTaskCard(
                     selectedFilesSize = selectedFilesSize,
                     foundFilesSize = foundFilesSize,
                     scanTime = scanTime,
-                    scoreSum = scoreSum
+                    scoreSum = scoreSum,
+                    onClick = onClick
                 )
             }
 

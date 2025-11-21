@@ -4,9 +4,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.resources.*
 import org.angryscan.app.ui.extensions.toHumanReadable
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ScanStat(
@@ -17,7 +17,8 @@ fun ScanStat(
     selectedFilesSize: Long,
     foundFilesSize: Long,
     scanTime: String,
-    scoreSum: Long
+    scoreSum: Long,
+    onClick: (() -> Unit)? = null
 ) {
     // Total files count
     ScanStatItem(
@@ -41,7 +42,8 @@ fun ScanStat(
             "$selectedFiles (${selectedFilesSize.toHumanReadable()})"
         } else {
             selectedFiles.toString()
-        }
+        },
+        onClick = onClick
     )
 
     VerticalDivider(
@@ -56,7 +58,8 @@ fun ScanStat(
             "$foundFiles (${foundFilesSize.toHumanReadable()})"
         } else {
             foundFiles.toString()
-        }
+        },
+        onClick = onClick
     )
 
     VerticalDivider(
