@@ -20,8 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
@@ -33,6 +31,8 @@ import org.angryscan.app.ui.windows.components.RadioButtonNavigation
 import org.angryscan.app.ui.windows.screens.main.components.S3FileChooser
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @Composable
 fun S3Screen(
@@ -227,6 +227,16 @@ fun S3Screen(
                 }
             }
         )
+        Box(
+            modifier = Modifier
+                .width(700.dp)
+                .padding(vertical = 0.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            RadioButtonNavigation(
+                navController = navController
+            )
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -281,18 +291,9 @@ fun S3Screen(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .width(700.dp)
-                .padding(vertical = 0.dp),
-            contentAlignment = Alignment.CenterStart
+        Row(
+            modifier = Modifier.padding(top = 16.dp)
         ) {
-            RadioButtonNavigation(
-                navController = navController
-            )
-        }
-
-        Row {
                 Button(
                     onClick = {
                         if (endpoint.isNotEmpty() &&
