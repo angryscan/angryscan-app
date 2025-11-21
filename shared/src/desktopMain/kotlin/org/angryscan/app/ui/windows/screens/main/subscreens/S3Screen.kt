@@ -29,9 +29,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
 import org.angryscan.app.resources.Res
@@ -41,6 +44,7 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
+import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.S3FileChooser
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
@@ -120,18 +124,18 @@ fun S3Screen(
     val scanService = koinInject<ScanService>()
 
     val scanSettings = koinInject<ScanSettings>()
+    val screenStateSettings = koinInject<ScreenStateSettings>()
 
     val helperPath by ScanPathHelper.path.collectAsState()
-    var path by remember { mutableStateOf(helperPath) }
-    var endpoint by remember { mutableStateOf("") }
-    var accessKey by remember { mutableStateOf("") }
-    var secretKey by remember { mutableStateOf("") }
-    var bucket by remember { mutableStateOf("") }
+    var path by remember { mutableStateOf(screenStateSettings.s3ScreenState.path) }
+    var endpoint by remember { mutableStateOf(screenStateSettings.s3ScreenState.endpoint) }
+    var accessKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.accessKey) }
+    var secretKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.secretKey) }
+    var bucket by remember { mutableStateOf(screenStateSettings.s3ScreenState.bucket) }
 
     val settingsButtonTransition = updateTransition(settingsExpanded)
 
     val settingsBoxTransition = updateTransition(settingsExpanded)
-
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -213,19 +217,118 @@ fun S3Screen(
     LaunchedEffect(helperPath) {
         if (helperPath.isNotEmpty()) {
             path = helperPath
+            coroutineScope.launch {
+                delay(100)
+                screenStateSettings.s3ScreenState.path = path
+                screenStateSettings.save()
+            }
             if (focusRequested)
                 ScanPathHelper.resetFocus()
         }
     }
 
     var selectPathDialog by remember { mutableStateOf(false) }
-    var connectionSettingsExpanded by remember { mutableStateOf(false) }
+    var connectionSettingsExpanded by remember { mutableStateOf(screenStateSettings.s3ScreenState.connectionSettingsExpanded) }
+    
+    var saveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    
+    fun saveScreenState() {
+        saveJob?.cancel()
+        saveJob = coroutineScope.launch {
+            delay(500) // Debounce 500ms
+            screenStateSettings.s3ScreenState.path = path
+            screenStateSettings.s3ScreenState.endpoint = endpoint
+            screenStateSettings.s3ScreenState.accessKey = accessKey
+            screenStateSettings.s3ScreenState.secretKey = secretKey
+            screenStateSettings.s3ScreenState.bucket = bucket
+            screenStateSettings.s3ScreenState.connectionSettingsExpanded = connectionSettingsExpanded
+            screenStateSettings.s3ScreenState.extensions.clear()
+            screenStateSettings.s3ScreenState.extensions.addAll(scanSettings.extensions)
+            screenStateSettings.s3ScreenState.matchers.clear()
+            screenStateSettings.s3ScreenState.matchers.addAll(scanSettings.matchers)
+            screenStateSettings.s3ScreenState.userSignatures.clear()
+            screenStateSettings.s3ScreenState.userSignatures.addAll(scanSettings.userSignatures)
+            screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
+            screenStateSettings.save()
+        }
+    }
+    
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val isOnS3Screen = backStackEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
+    
+    var hasLoadedS3Settings by remember { mutableStateOf(false) }
+    
+    // Load detection settings when entering this screen
+    LaunchedEffect(isOnS3Screen) {
+        if (isOnS3Screen && !hasLoadedS3Settings) {
+            val hasSavedDetectionSettings = screenStateSettings.s3ScreenState.extensions.isNotEmpty() || 
+                                           screenStateSettings.s3ScreenState.matchers.isNotEmpty() || 
+                                           screenStateSettings.s3ScreenState.userSignatures.isNotEmpty()
+            val hasOtherSavedState = screenStateSettings.s3ScreenState.path.isNotEmpty() ||
+                                    screenStateSettings.s3ScreenState.endpoint.isNotEmpty() ||
+                                    screenStateSettings.s3ScreenState.accessKey.isNotEmpty() ||
+                                    screenStateSettings.s3ScreenState.bucket.isNotEmpty()
+            val hasSavedState = hasSavedDetectionSettings || hasOtherSavedState
+            
+            if (hasSavedState) {
+                scanSettings.extensions.clear()
+                scanSettings.extensions.addAll(screenStateSettings.s3ScreenState.extensions)
+                scanSettings.matchers.clear()
+                scanSettings.matchers.addAll(screenStateSettings.s3ScreenState.matchers)
+                scanSettings.userSignatures.clear()
+                scanSettings.userSignatures.addAll(screenStateSettings.s3ScreenState.userSignatures)
+                scanSettings.fastScan.value = screenStateSettings.s3ScreenState.fastScan.value
+                scanSettings.save()
+            }
+            hasLoadedS3Settings = true
+        } else if (!isOnS3Screen) {
+            hasLoadedS3Settings = false
+        }
+    }
+    
+    // Save detection settings using snapshotFlow to detect changes in mutableStateListOf
+    LaunchedEffect(isOnS3Screen) {
+        if (!isOnS3Screen) return@LaunchedEffect
+        
+        var saveJob: kotlinx.coroutines.Job? = null
+        
+        snapshotFlow { 
+            Triple(
+                scanSettings.extensions.size to scanSettings.extensions.joinToString(",") { it.name },
+                scanSettings.matchers.size to scanSettings.matchers.joinToString(",") { it::class.simpleName ?: "" },
+                scanSettings.userSignatures.size to scanSettings.userSignatures.joinToString(",") { it.name }
+            )
+        }.collect { (_, _, _) ->
+            if (isOnS3Screen) {
+                saveJob?.cancel()
+                saveJob = coroutineScope.launch {
+                    delay(300)
+                    screenStateSettings.s3ScreenState.extensions.clear()
+                    screenStateSettings.s3ScreenState.extensions.addAll(scanSettings.extensions)
+                    screenStateSettings.s3ScreenState.matchers.clear()
+                    screenStateSettings.s3ScreenState.matchers.addAll(scanSettings.matchers)
+                    screenStateSettings.s3ScreenState.userSignatures.clear()
+                    screenStateSettings.s3ScreenState.userSignatures.addAll(scanSettings.userSignatures)
+                    screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
+                    screenStateSettings.save()
+                }
+            }
+        }
+    }
+    
+    LaunchedEffect(isOnS3Screen, scanSettings.fastScan.value) {
+        if (isOnS3Screen) {
+            screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
+            screenStateSettings.save()
+        }
+    }
 
     if (selectPathDialog) {
         S3FileChooser(
             onAccept = {
                 path = it.path
                 selectPathDialog = false
+                saveScreenState()
             },
             onDecline = { selectPathDialog = false },
             connector = ConnectorS3(
@@ -248,7 +351,10 @@ fun S3Screen(
                 .height(80.dp)
                 .width(700.dp),
             value = path,
-            onValueChange = { path = it },
+            onValueChange = { 
+                path = it
+                saveScreenState()
+            },
             placeholder = { Text(text = stringResource(Res.string.MainScreen_SelectPathPlaceholder)) },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
@@ -308,7 +414,10 @@ fun S3Screen(
                                 .clickable(
                                     interactionSource = interactionSource,
                                     indication = null,
-                                    onClick = { connectionSettingsExpanded = !connectionSettingsExpanded }
+                                    onClick = { 
+                                        connectionSettingsExpanded = !connectionSettingsExpanded
+                                        saveScreenState()
+                                    }
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -346,6 +455,7 @@ fun S3Screen(
                                     // Если поля не заполнены и блок не раскрыт, раскрыть его
                                     if (!connectionSettingsExpanded) {
                                         connectionSettingsExpanded = true
+                                        saveScreenState()
                                     }
                                     // Активировать моргающую красную обводку через LaunchedEffect
                                     incorrectConnection = true
@@ -397,6 +507,7 @@ fun S3Screen(
                         onValueChange = { 
                             endpoint = it
                             if (it.isNotEmpty()) endpointError = false
+                            saveScreenState()
                         },
                         placeholder = "Endpoint",
                         isError = endpointError,
@@ -413,6 +524,7 @@ fun S3Screen(
                         onValueChange = { 
                             bucket = it
                             if (it.isNotEmpty()) bucketError = false
+                            saveScreenState()
                         },
                         placeholder = "Bucket",
                         isError = bucketError,
@@ -433,6 +545,7 @@ fun S3Screen(
                         onValueChange = { 
                             accessKey = it
                             if (it.isNotEmpty()) accessKeyError = false
+                            saveScreenState()
                         },
                         placeholder = "Access key",
                         isError = accessKeyError,
@@ -449,6 +562,7 @@ fun S3Screen(
                         onValueChange = { 
                             secretKey = it
                             if (it.isNotEmpty()) secretKeyError = false
+                            saveScreenState()
                         },
                         placeholder = "Secret key",
                         isError = secretKeyError,
@@ -471,6 +585,8 @@ fun S3Screen(
                             bucket.isNotEmpty()
                         
                         if (areFieldsFilled) {
+                            // Save state before scanning
+                            saveScreenState()
                             coroutineScope.launch {
                                 val task = scanService.createTask(
                                     path = path,
@@ -494,6 +610,7 @@ fun S3Screen(
                             // Если поля не заполнены и блок не раскрыт, раскрыть его
                             if (!connectionSettingsExpanded) {
                                 connectionSettingsExpanded = true
+                                saveScreenState()
                             }
                             // Активировать моргающую красную обводку через LaunchedEffect
                             incorrectConnection = true

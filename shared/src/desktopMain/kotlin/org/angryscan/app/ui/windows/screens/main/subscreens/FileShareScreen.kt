@@ -16,6 +16,8 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
@@ -23,9 +25,8 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
@@ -33,8 +34,11 @@ import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
+import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import java.io.File
 
 @Composable
@@ -48,9 +52,10 @@ fun FileShareScreen(
     val scanService = koinInject<ScanService>()
 
     val scanSettings = koinInject<ScanSettings>()
+    val screenStateSettings = koinInject<ScreenStateSettings>()
 
     val helperPath by ScanPathHelper.path.collectAsState()
-    var path by remember { mutableStateOf(helperPath) }
+    var path by remember { mutableStateOf(screenStateSettings.fileShareScreenState.path) }
 
 
     val settingsButtonTransition = updateTransition(settingsExpanded)
@@ -60,8 +65,95 @@ fun FileShareScreen(
     var selectionType by remember { scanSettings.selectionType }
     var selectionTypeChooserExpanded by remember { mutableStateOf(false) }
 
-
     val coroutineScope = rememberCoroutineScope()
+    
+    var saveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    
+    fun saveScreenState() {
+        saveJob?.cancel()
+        saveJob = coroutineScope.launch {
+            delay(500) // Debounce 500ms
+            screenStateSettings.fileShareScreenState.path = path
+            screenStateSettings.fileShareScreenState.selectionType.value = selectionType
+            screenStateSettings.fileShareScreenState.extensions.clear()
+            screenStateSettings.fileShareScreenState.extensions.addAll(scanSettings.extensions)
+            screenStateSettings.fileShareScreenState.matchers.clear()
+            screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+            screenStateSettings.fileShareScreenState.userSignatures.clear()
+            screenStateSettings.fileShareScreenState.userSignatures.addAll(scanSettings.userSignatures)
+            screenStateSettings.fileShareScreenState.fastScan.value = scanSettings.fastScan.value
+            screenStateSettings.save()
+        }
+    }
+    
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val isOnFileShareScreen = backStackEntry?.destination?.hasRoute(MainScreenConnector.FileShare::class) == true
+    
+    var hasLoadedFileShareSettings by remember { mutableStateOf(false) }
+    
+    // Load detection settings when entering this screen
+    LaunchedEffect(isOnFileShareScreen) {
+        if (isOnFileShareScreen && !hasLoadedFileShareSettings) {
+            selectionType = screenStateSettings.fileShareScreenState.selectionType.value
+            
+            val hasSavedDetectionSettings = screenStateSettings.fileShareScreenState.extensions.isNotEmpty() || 
+                                           screenStateSettings.fileShareScreenState.matchers.isNotEmpty() || 
+                                           screenStateSettings.fileShareScreenState.userSignatures.isNotEmpty()
+            val hasOtherSavedState = screenStateSettings.fileShareScreenState.path.isNotEmpty()
+            val hasSavedState = hasSavedDetectionSettings || hasOtherSavedState
+            
+            if (hasSavedState) {
+                scanSettings.extensions.clear()
+                scanSettings.extensions.addAll(screenStateSettings.fileShareScreenState.extensions)
+                scanSettings.matchers.clear()
+                scanSettings.matchers.addAll(screenStateSettings.fileShareScreenState.matchers)
+                scanSettings.userSignatures.clear()
+                scanSettings.userSignatures.addAll(screenStateSettings.fileShareScreenState.userSignatures)
+                scanSettings.fastScan.value = screenStateSettings.fileShareScreenState.fastScan.value
+                scanSettings.save()
+            }
+            hasLoadedFileShareSettings = true
+        } else if (!isOnFileShareScreen) {
+            hasLoadedFileShareSettings = false
+        }
+    }
+    
+    // Save detection settings using snapshotFlow to detect changes in mutableStateListOf
+    LaunchedEffect(isOnFileShareScreen) {
+        if (!isOnFileShareScreen) return@LaunchedEffect
+        
+        var saveJob: kotlinx.coroutines.Job? = null
+        
+        snapshotFlow { 
+            Triple(
+                scanSettings.extensions.size to scanSettings.extensions.joinToString(",") { it.name },
+                scanSettings.matchers.size to scanSettings.matchers.joinToString(",") { it::class.simpleName ?: "" },
+                scanSettings.userSignatures.size to scanSettings.userSignatures.joinToString(",") { it.name }
+            )
+        }.collect { (_, _, _) ->
+            saveJob?.cancel()
+            saveJob = coroutineScope.launch {
+                delay(300)
+                screenStateSettings.fileShareScreenState.extensions.clear()
+                screenStateSettings.fileShareScreenState.extensions.addAll(scanSettings.extensions)
+                screenStateSettings.fileShareScreenState.matchers.clear()
+                screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+                screenStateSettings.fileShareScreenState.userSignatures.clear()
+                screenStateSettings.fileShareScreenState.userSignatures.addAll(scanSettings.userSignatures)
+                screenStateSettings.fileShareScreenState.fastScan.value = scanSettings.fastScan.value
+                screenStateSettings.fileShareScreenState.selectionType.value = selectionType
+                screenStateSettings.save()
+            }
+        }
+    }
+    
+    LaunchedEffect(isOnFileShareScreen, scanSettings.fastScan.value, selectionType) {
+        if (isOnFileShareScreen) {
+            screenStateSettings.fileShareScreenState.fastScan.value = scanSettings.fastScan.value
+            screenStateSettings.fileShareScreenState.selectionType.value = selectionType
+            screenStateSettings.save()
+        }
+    }
 
     val filePicker = rememberFilePickerLauncher(
         type = FileKitType.File(),
@@ -71,6 +163,7 @@ fun FileShareScreen(
     ) { result ->
         if (result != null) {
             path = result.joinToString(";")
+            saveScreenState()
         }
 
     }
@@ -83,6 +176,7 @@ fun FileShareScreen(
     ) { result ->
         if (result != null) {
             path = result.path
+            saveScreenState()
         }
 
     }
@@ -93,6 +187,7 @@ fun FileShareScreen(
     ) { dir ->
         if (dir != null) {
             path = dir.path
+            saveScreenState()
         }
     }
 
@@ -122,6 +217,11 @@ fun FileShareScreen(
     LaunchedEffect(helperPath) {
         if (helperPath.isNotEmpty()) {
             path = helperPath
+            coroutineScope.launch {
+                delay(100)
+                screenStateSettings.fileShareScreenState.path = path
+                screenStateSettings.save()
+            }
             if (focusRequested)
                 ScanPathHelper.resetFocus()
         }
@@ -138,7 +238,10 @@ fun FileShareScreen(
                 .height(80.dp)
                 .width(700.dp),
             value = path,
-            onValueChange = { path = it },
+            onValueChange = { 
+                path = it
+                saveScreenState()
+            },
             placeholder = {
                 Text(
                     text = when (selectionType) {
@@ -237,6 +340,7 @@ fun FileShareScreen(
                                 selectionType = SelectionTypes.Folder
                                 selectionTypeChooserExpanded = false
                                 scanSettings.save()
+                                saveScreenState()
                                 folderPicker.launch()
                             },
                             text = { Text(text = stringResource(Res.string.MainScreen_SelectTypeFolder)) }
@@ -248,6 +352,7 @@ fun FileShareScreen(
                                 selectionType = SelectionTypes.File
                                 selectionTypeChooserExpanded = false
                                 scanSettings.save()
+                                saveScreenState()
                                 filePicker.launch()
                             },
                             text = { Text(text = stringResource(Res.string.MainScreen_SelectTypeFile)) }
@@ -259,6 +364,7 @@ fun FileShareScreen(
                                 selectionType = SelectionTypes.FileWithPaths
                                 selectionTypeChooserExpanded = false
                                 scanSettings.save()
+                                saveScreenState()
                                 pathFilePicker.launch()
                             },
                             text = { Text(text = stringResource(Res.string.MainScreen_SelectTypeFileWithPaths)) }
@@ -296,6 +402,8 @@ fun FileShareScreen(
                             } else {
                                 path
                             }
+                            // Save state before scanning
+                            saveScreenState()
                             coroutineScope.launch {
                                 val task = scanService.createTask(
                                     name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
