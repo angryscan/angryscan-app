@@ -3,20 +3,23 @@ package org.angryscan.app.ui.dialogs
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberDialogState
+import org.angryscan.app.scan.common.mainWindow
 import org.angryscan.app.ui.windows.components.DesktopWindowShapes
 import org.angryscan.app.ui.windows.components.TitleBar
 
@@ -27,9 +30,26 @@ fun DesktopAlertDialog(
     message: String,
     dialogSettings: DialogWindowSettings = DialogWindowSettings()
 ) {
+    // Calculate center position relative to main window
+    val centerPosition = remember {
+        try {
+            val mainWindowBounds = mainWindow.bounds
+            val dialogWidth = dialogSettings.width.value.toInt()
+            val dialogHeight = dialogSettings.height.value.toInt()
+            
+            val centerX = mainWindowBounds.x + (mainWindowBounds.width - dialogWidth) / 2
+            val centerY = mainWindowBounds.y + (mainWindowBounds.height - dialogHeight) / 2
+            
+            WindowPosition.Absolute(x = centerX.dp, y = centerY.dp)
+        } catch (e: UninitializedPropertyAccessException) {
+            WindowPosition.PlatformDefault // Use default position if mainWindow not initialized
+        }
+    }
+
     val state = rememberDialogState(
         width = dialogSettings.width,
-        height = dialogSettings.height
+        height = dialogSettings.height,
+        position = centerPosition
     )
 
     DialogWindow(

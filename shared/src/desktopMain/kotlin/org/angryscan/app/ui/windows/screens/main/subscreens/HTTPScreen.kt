@@ -25,6 +25,8 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
+import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
 import org.jetbrains.compose.resources.stringResource
@@ -53,6 +55,8 @@ fun HTTPScreen(
     var scanNotCorrectPath by remember { mutableStateOf(false) }
 
     var selectPathError by remember { mutableStateOf(false) }
+    
+    val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
     val coroutineScope = rememberCoroutineScope()
     
@@ -213,31 +217,36 @@ fun HTTPScreen(
         Row {
                 Button(
                     onClick = {
-
-                        if (
-                            path.split(";").all {
+                        // Validate path first
+                        if (!path.split(";").all {
                                 it.startsWith("http://") ||
                                         it.startsWith("https://")
                             }
                         ) {
-                            // Save state before scanning
-                            saveScreenState()
-                            coroutineScope.launch {
-                                val task = scanService.createTask(
-                                    path = path,
-                                    extensions = scanSettings.extensions,
-                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                    fastScan = scanSettings.fastScan.value,
-                                    connector = ConnectorHTTP()
-                                )
-                                scanService.startTask(task)
-                                task.id.value?.let { taskId ->
-                                    expandScanState(taskId)
-                                }
-
-                            }
-                        } else {
                             scanNotCorrectPath = true
+                            return@Button
+                        }
+                        
+                        // Validate scan settings
+                        if (!validateAndShowError()) {
+                            return@Button
+                        }
+                        
+                        // Save state before scanning
+                        saveScreenState()
+                        coroutineScope.launch {
+                            val task = scanService.createTask(
+                                path = path,
+                                extensions = scanSettings.extensions,
+                                matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorHTTP()
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { taskId ->
+                                expandScanState(taskId)
+                            }
+
                         }
                     },
                     modifier = Modifier
@@ -275,4 +284,10 @@ fun HTTPScreen(
             )
         }
     }
+    
+    // Validation error dialog
+    ScanValidationErrorDialog(
+        validationError = validationErrorDialog,
+        onDismiss = dismissValidationError
+    )
 }

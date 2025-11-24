@@ -302,4 +302,9 @@
     <string name="Location-LongScanTitle">Глубокий поиск местонахождения атрибутов</string>
     <string name="Location-LongScanText">Поиск местонахождения атрибутов занимает много времени. Вы уверены, что хотите продолжить?</string>
     <string name="Location-LineNumber">Строка %1$d</string>
+
+    <string name="Validation-NoExtensionsTitle">Не выбраны расширения файлов</string>
+    <string name="Validation-NoExtensionsMessage">Пожалуйста, выберите хотя бы одно расширение файла для сканирования.</string>
+    <string name="Validation-NoMatchersTitle">Не выбраны функции детектирования</string>
+    <string name="Validation-NoMatchersMessage">Пожалуйста, выберите хотя бы одну функцию детектирования для сканирования.</string>
 </resources>

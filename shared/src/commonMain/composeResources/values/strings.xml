@@ -310,4 +310,9 @@
     <string name="Location-LineNumber">Line %1$d</string>
 
     <string name="Error-FileOpen">Error while opening file.</string>
+
+    <string name="Validation-NoExtensionsTitle">No file extensions selected</string>
+    <string name="Validation-NoExtensionsMessage">Please select at least one file extension to scan.</string>
+    <string name="Validation-NoMatchersTitle">No detection functions selected</string>
+    <string name="Validation-NoMatchersMessage">Please select at least one detection function to scan.</string>
 </resources>

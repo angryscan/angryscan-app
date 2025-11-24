@@ -35,6 +35,8 @@ import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
+import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
 import org.jetbrains.compose.resources.stringResource
@@ -57,6 +59,7 @@ fun FileShareScreen(
     val helperPath by ScanPathHelper.path.collectAsState()
     var path by remember { mutableStateOf(screenStateSettings.fileShareScreenState.path) }
 
+    val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
     val settingsButtonTransition = updateTransition(settingsExpanded)
 
@@ -390,37 +393,56 @@ fun FileShareScreen(
         Row {
                 Button(
                     onClick = {
-                        if (path
+                        // Validate path first
+                        if (!path
                                 .split(";").map {
                                     File(it).exists()
                                 }
                                 .all { it }
                         ) {
-                            val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
-                                val file = File(path)
-                                file.readLines().joinToString(separator = ";")
-                            } else {
-                                path
-                            }
-                            // Save state before scanning
-                            saveScreenState()
-                            coroutineScope.launch {
-                                val task = scanService.createTask(
-                                    name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
-                                    path = scanPath,
-                                    extensions = scanSettings.extensions,
-                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                    fastScan = scanSettings.fastScan.value,
-                                    connector = ConnectorFileShare()
-                                )
-                                scanService.startTask(task)
-                                task.id.value?.let { taskId ->
-                                    expandScanState(taskId)
-                                }
-
-                            }
-                        } else {
                             scanNotCorrectPath = true
+                            return@Button
+                        }
+                        
+                        // Validate scan settings
+                        if (!validateAndShowError()) {
+                            return@Button
+                        }
+                        
+                        val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
+                            val file = File(path)
+                            file.readLines().joinToString(separator = ";")
+                        } else {
+                            path
+                        }
+                        // Save state before scanning
+                        saveScreenState()
+                        // Ensure scanSettings is saved to get the latest state
+                        scanSettings.save()
+                        // Force sync current matchers from scanSettings to screenStateSettings
+                        // This ensures we have the latest UI state even if snapshotFlow hasn't updated yet
+                        screenStateSettings.fileShareScreenState.matchers.clear()
+                        screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+                        screenStateSettings.save()
+                        coroutineScope.launch {
+                            // Read current state directly from scanSettings to ensure we get the actual UI state
+                            // Create copies to avoid any potential issues with mutableStateListOf
+                            val currentMatchers = scanSettings.matchers.toList()
+                            val currentUserSignatures = scanSettings.userSignatures.toList()
+                            val currentExtensions = scanSettings.extensions.toList()
+                            val task = scanService.createTask(
+                                name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
+                                path = scanPath,
+                                extensions = currentExtensions,
+                                matchers = currentMatchers + currentUserSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorFileShare()
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { taskId ->
+                                expandScanState(taskId)
+                            }
+
                         }
                     },
                     modifier = Modifier
@@ -458,4 +480,10 @@ fun FileShareScreen(
             )
         }
     }
+    
+    // Validation error dialog
+    ScanValidationErrorDialog(
+        validationError = validationErrorDialog,
+        onDismiss = dismissValidationError
+    )
 }

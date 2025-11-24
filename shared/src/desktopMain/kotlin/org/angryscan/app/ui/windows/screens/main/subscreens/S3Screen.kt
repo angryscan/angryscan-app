@@ -46,6 +46,8 @@ import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.S3FileChooser
+import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
+import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
 import org.jetbrains.compose.resources.stringResource
@@ -149,6 +151,8 @@ fun S3Screen(
     var accessKeyError by remember { mutableStateOf(false) }
     var secretKeyError by remember { mutableStateOf(false) }
     var bucketError by remember { mutableStateOf(false) }
+    
+    val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
     LaunchedEffect(scanNotCorrectPath, incorrectConnection) {
         if (scanNotCorrectPath || incorrectConnection) {
@@ -584,29 +588,7 @@ fun S3Screen(
                             secretKey.isNotEmpty() &&
                             bucket.isNotEmpty()
                         
-                        if (areFieldsFilled) {
-                            // Save state before scanning
-                            saveScreenState()
-                            coroutineScope.launch {
-                                val task = scanService.createTask(
-                                    path = path,
-                                    extensions = scanSettings.extensions,
-                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                    fastScan = scanSettings.fastScan.value,
-                                    connector = ConnectorS3(
-                                        endpointStr = endpoint,
-                                        accessKey = accessKey,
-                                        secretKey = secretKey,
-                                        bucketStr = bucket
-                                    )
-                                )
-                                scanService.startTask(task)
-                                task.id.value?.let { taskId ->
-                                    expandScanState(taskId)
-                                }
-
-                            }
-                        } else {
+                        if (!areFieldsFilled) {
                             // Если поля не заполнены и блок не раскрыт, раскрыть его
                             if (!connectionSettingsExpanded) {
                                 connectionSettingsExpanded = true
@@ -615,6 +597,34 @@ fun S3Screen(
                             // Активировать моргающую красную обводку через LaunchedEffect
                             incorrectConnection = true
                             scanNotCorrectPath = true
+                            return@Button
+                        }
+                        
+                        // Validate scan settings
+                        if (!validateAndShowError()) {
+                            return@Button
+                        }
+                        
+                        // Save state before scanning
+                        saveScreenState()
+                        coroutineScope.launch {
+                            val task = scanService.createTask(
+                                path = path,
+                                extensions = scanSettings.extensions,
+                                matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorS3(
+                                    endpointStr = endpoint,
+                                    accessKey = accessKey,
+                                    secretKey = secretKey,
+                                    bucketStr = bucket
+                                )
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { taskId ->
+                                expandScanState(taskId)
+                            }
+
                         }
                     },
                     modifier = Modifier
@@ -652,4 +662,10 @@ fun S3Screen(
             )
         }
     }
+    
+    // Validation error dialog
+    ScanValidationErrorDialog(
+        validationError = validationErrorDialog,
+        onDismiss = dismissValidationError
+    )
 }
