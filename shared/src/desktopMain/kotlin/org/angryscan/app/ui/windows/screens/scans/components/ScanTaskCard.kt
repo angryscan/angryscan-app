@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
@@ -209,6 +211,7 @@ fun ScanTaskCard(
                     Box(
                         modifier = Modifier
                             .clickable(onClick = onClick)
+                            .pointerHoverIcon(PointerIcon.Hand)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
