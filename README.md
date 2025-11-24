@@ -9,9 +9,9 @@
 It helps organizations by identifying where sensitive data such as personally identifiable information (PII) and intellectual property is stored.   
 The tool provides visibility where your sensitive data is stored.  
 
-- Sensitive data (PII, payments cards etc) can be discover with 2 click
-- No administrator rights required to run Angry Data Scanner  
-- No additional software installation required  
+- Simple user interface
+- Sensitive data discovered with 2 clicks
+- No admin rights required to run Angry
 - Works on Linux, Mac, and Windows
 
 ## Sensitive data discovery
@@ -129,26 +129,26 @@ The scanner is intended to be a universal tool for scanning everything. Currentl
 | HTTP/HTTPS               | Scans web site content                                   |
 | Database                 | `Work in progress`                                       |
 
-## Use cases
-We share some practical use cases how Angry Data Scanner is used in real world.
-
-- Leak Hunting team need to scan a network folder and ensure that it does not contain a source code
-- An employee scans the network file resource and deletes files containing card numbers to ensure compliance with PCI DSS requirements
-- A banking employee scans network file resource to ensure that it does not contain personal data of VIP clients
-- A boss scans a file resource of the sales team so they don’t have client contacts on a shared folder
+## Real life use cases
+- A leak рunting team scans network folder and ensure that it does not contain source code
+- An employee finds and deletes files containing card numbers to comply with PCI DSS
+- A banking employee scans network folder to ensure that it does not contain PII of VIP clients
+- A boss scans a shared folder of the sales team so they don’t have client contacts there
 - Law enforcements need to discover a traces of cryptocurrency on a laptop
 - A cybersecurity officer need to validate that the database does not contain a personal data
 
 ## Key features
-- **Ranking**: scanner puts high-value files (with most PII etc) first in the list
+- **Ranking**: scanner shows high-value files first
 - View scanning history
-- Download results of a scan in a SCV files
-- You can right-clock on a folder and run a scanner to discovery sensitive dat in a floder
+- Download results in a SCV file
+- Right-click on a folder to scan it
 - Scanner can run via command line
 - You can schedule a scan
-- You can stop the scanning process if criteria is met
-- You can move files with sensitive data into specified folder
-- You can configure a number of CPU cores used for scanning
+- The scan can be stopped ic criteria is met
+- Move sensitive files into specified folder
+- Change a number of CPU cores used in scan
+- Configure matchers (PII, PCI DSS …)
+- Configure file formats (pdf, excel …)
 
 ### Console Mode
 
