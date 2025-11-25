@@ -104,7 +104,6 @@ The scanner detects the following types of data:
 It is possible to add custom data search signatures using plain text: `FBR`, `FSB`, `Central bank` or any other.
 
 ## Supported file types
-The scanner supports the following file formats:
 
 | File Type                 | File Format                                          |
 |---------------------------|------------------------------------------------------|
@@ -119,11 +118,10 @@ The scanner supports the following file formats:
 | Plain text                | `.txt` `.csv` `.xml` `.json` `.log`                  |
 
 ## Supported data sources
-The scanner is intended to be a universal tool for scanning everything. Currently, the scanner can connect to the following resources:
 
 | Connector                | Description                                              |
 |--------------------------|----------------------------------------------------------|
-| Network Folder/Directory | Scans files on remote directory like Windows environment |
+| Network Folder           | Scans files on remote directory like Windows environment |
 | HDD/SDD                  | Scan local hard drive                                    |
 | S3                       | Scan files  in S3                                        |
 | HTTP/HTTPS               | Scans web site content                                   |
