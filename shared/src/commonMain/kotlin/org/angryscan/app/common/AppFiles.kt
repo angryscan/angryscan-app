@@ -32,6 +32,7 @@ object AppFiles {
     val AppSettingsFile: String = WorkDirPath.resolve("AppSettings.json").absolutePathString()
     val ScanSettingsFile: String = WorkDirPath.resolve("ScanSettings.json").absolutePathString()
     val UserSignaturesFiles: String = WorkDirPath.resolve("UserSignatures.json").absolutePathString()
+    val ScreenStateSettingsFile: String = WorkDirPath.resolve("ScreenStateSettings.json").absolutePathString()
     val Icon: File = WorkDirPath
         .resolve(
             when (OS.currentOS()) {

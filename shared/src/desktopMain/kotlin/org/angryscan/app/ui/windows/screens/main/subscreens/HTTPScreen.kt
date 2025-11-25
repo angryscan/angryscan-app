@@ -11,11 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
 import org.angryscan.app.resources.Res
@@ -23,8 +24,13 @@ import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
+import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
+import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @Composable
 fun HTTPScreen(
@@ -37,9 +43,10 @@ fun HTTPScreen(
     val scanService = koinInject<ScanService>()
 
     val scanSettings = koinInject<ScanSettings>()
+    val screenStateSettings = koinInject<ScreenStateSettings>()
 
     val helperPath by ScanPathHelper.path.collectAsState()
-    var path by remember { mutableStateOf(helperPath) }
+    var path by remember { mutableStateOf(screenStateSettings.httpScreenState.path) }
 
     val settingsButtonTransition = updateTransition(settingsExpanded)
 
@@ -48,8 +55,95 @@ fun HTTPScreen(
     var scanNotCorrectPath by remember { mutableStateOf(false) }
 
     var selectPathError by remember { mutableStateOf(false) }
+    
+    val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
     val coroutineScope = rememberCoroutineScope()
+    
+    var saveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    
+    fun saveScreenState() {
+        saveJob?.cancel()
+        saveJob = coroutineScope.launch {
+            delay(500) // Debounce 500ms
+            screenStateSettings.httpScreenState.path = path
+            screenStateSettings.httpScreenState.extensions.clear()
+            screenStateSettings.httpScreenState.extensions.addAll(scanSettings.extensions)
+            screenStateSettings.httpScreenState.matchers.clear()
+            screenStateSettings.httpScreenState.matchers.addAll(scanSettings.matchers)
+            screenStateSettings.httpScreenState.userSignatures.clear()
+            screenStateSettings.httpScreenState.userSignatures.addAll(scanSettings.userSignatures)
+            screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
+            screenStateSettings.save()
+        }
+    }
+    
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val isOnHTTPScreen = backStackEntry?.destination?.hasRoute(MainScreenConnector.HTTP::class) == true
+    
+    var hasLoadedHTTPSettings by remember { mutableStateOf(false) }
+    
+    // Load detection settings when entering this screen
+    LaunchedEffect(isOnHTTPScreen) {
+        if (isOnHTTPScreen && !hasLoadedHTTPSettings) {
+            val hasSavedDetectionSettings = screenStateSettings.httpScreenState.extensions.isNotEmpty() || 
+                                           screenStateSettings.httpScreenState.matchers.isNotEmpty() || 
+                                           screenStateSettings.httpScreenState.userSignatures.isNotEmpty()
+            val hasOtherSavedState = screenStateSettings.httpScreenState.path.isNotEmpty()
+            val hasSavedState = hasSavedDetectionSettings || hasOtherSavedState
+            
+            if (hasSavedState) {
+                scanSettings.extensions.clear()
+                scanSettings.extensions.addAll(screenStateSettings.httpScreenState.extensions)
+                scanSettings.matchers.clear()
+                scanSettings.matchers.addAll(screenStateSettings.httpScreenState.matchers)
+                scanSettings.userSignatures.clear()
+                scanSettings.userSignatures.addAll(screenStateSettings.httpScreenState.userSignatures)
+                scanSettings.fastScan.value = screenStateSettings.httpScreenState.fastScan.value
+                scanSettings.save()
+            }
+            hasLoadedHTTPSettings = true
+        } else if (!isOnHTTPScreen) {
+            hasLoadedHTTPSettings = false
+        }
+    }
+    
+    // Save detection settings using snapshotFlow to detect changes in mutableStateListOf
+    LaunchedEffect(isOnHTTPScreen) {
+        if (!isOnHTTPScreen) return@LaunchedEffect
+        
+        var saveJob: kotlinx.coroutines.Job? = null
+        
+        snapshotFlow { 
+            Triple(
+                scanSettings.extensions.size to scanSettings.extensions.joinToString(",") { it.name },
+                scanSettings.matchers.size to scanSettings.matchers.joinToString(",") { it::class.simpleName ?: "" },
+                scanSettings.userSignatures.size to scanSettings.userSignatures.joinToString(",") { it.name }
+            )
+        }.collect { (_, _, _) ->
+            if (isOnHTTPScreen) {
+                saveJob?.cancel()
+                saveJob = coroutineScope.launch {
+                    delay(300)
+                    screenStateSettings.httpScreenState.extensions.clear()
+                    screenStateSettings.httpScreenState.extensions.addAll(scanSettings.extensions)
+                    screenStateSettings.httpScreenState.matchers.clear()
+                    screenStateSettings.httpScreenState.matchers.addAll(scanSettings.matchers)
+                    screenStateSettings.httpScreenState.userSignatures.clear()
+                    screenStateSettings.httpScreenState.userSignatures.addAll(scanSettings.userSignatures)
+                    screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
+                    screenStateSettings.save()
+                }
+            }
+        }
+    }
+    
+    LaunchedEffect(isOnHTTPScreen, scanSettings.fastScan.value) {
+        if (isOnHTTPScreen) {
+            screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
+            screenStateSettings.save()
+        }
+    }
 
     LaunchedEffect(scanNotCorrectPath) {
         if (scanNotCorrectPath) {
@@ -84,6 +178,7 @@ fun HTTPScreen(
                     .split("\\s".toRegex())
                     .filter { url -> url.trim().isNotEmpty() }
                     .joinToString(";")
+                saveScreenState()
             },
             placeholder = { Text(text = stringResource(Res.string.MainScreen_SelectPathPlaceholder)) },
             singleLine = true,
@@ -122,29 +217,36 @@ fun HTTPScreen(
         Row {
                 Button(
                     onClick = {
-
-                        if (
-                            path.split(";").all {
+                        // Validate path first
+                        if (!path.split(";").all {
                                 it.startsWith("http://") ||
                                         it.startsWith("https://")
                             }
                         ) {
-                            coroutineScope.launch {
-                                val task = scanService.createTask(
-                                    path = path,
-                                    extensions = scanSettings.extensions,
-                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                    fastScan = scanSettings.fastScan.value,
-                                    connector = ConnectorHTTP()
-                                )
-                                scanService.startTask(task)
-                                task.id.value?.let { taskId ->
-                                    expandScanState(taskId)
-                                }
-
-                            }
-                        } else {
                             scanNotCorrectPath = true
+                            return@Button
+                        }
+                        
+                        // Validate scan settings
+                        if (!validateAndShowError()) {
+                            return@Button
+                        }
+                        
+                        // Save state before scanning
+                        saveScreenState()
+                        coroutineScope.launch {
+                            val task = scanService.createTask(
+                                path = path,
+                                extensions = scanSettings.extensions,
+                                matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorHTTP()
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { taskId ->
+                                expandScanState(taskId)
+                            }
+
                         }
                     },
                     modifier = Modifier
@@ -182,4 +284,10 @@ fun HTTPScreen(
             )
         }
     }
+    
+    // Validation error dialog
+    ScanValidationErrorDialog(
+        validationError = validationErrorDialog,
+        onDismiss = dismissValidationError
+    )
 }

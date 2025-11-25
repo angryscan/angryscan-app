@@ -16,16 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.Task_FoundAttributes
@@ -37,6 +35,11 @@ import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.extensions.color
 import org.angryscan.app.ui.extensions.icon
+import org.angryscan.app.ui.extensions.text
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -105,9 +108,6 @@ fun ScanTaskCard(
                 color = state.color(),
                 shape = MaterialTheme.shapes.medium
             )
-            .clickable(
-                onClick = onClick
-            )
             .padding(14.dp),
 
         ) {
@@ -137,34 +137,47 @@ fun ScanTaskCard(
                         )
                     }
 
-                    Box(
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
-                        if (state == TaskState.SCANNING) {
-                            val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                            val rotationAngle by infiniteTransition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 360f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(2000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                ),
-                                label = "rotation"
-                            )
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (state == TaskState.SCANNING) {
+                                val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                                val rotationAngle by infiniteTransition.animateFloat(
+                                    initialValue = 0f,
+                                    targetValue = 360f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(2000, easing = LinearEasing),
+                                        repeatMode = RepeatMode.Restart
+                                    ),
+                                    label = "rotation"
+                                )
+                                
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .rotate(rotationAngle),
+                                    strokeWidth = 2.dp,
+                                    color = state.color()
+                                )
+                            }
                             
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .rotate(rotationAngle),
-                                strokeWidth = 2.dp,
-                                color = state.color()
+                            Icon(
+                                imageVector = state.icon(),
+                                contentDescription = null,
+                                tint = state.color(),
+                                modifier = Modifier.size(32.dp)
                             )
                         }
                         
-                        Icon(
-                            imageVector = state.icon(),
-                            contentDescription = null,
-                            tint = state.color()
+                        Text(
+                            text = state.text(),
+                            fontSize = 10.sp,
+                            color = state.color(),
+                            letterSpacing = 0.1.sp
                         )
                     }
 
@@ -195,16 +208,23 @@ fun ScanTaskCard(
                         }
                     }
 
-                    Text(
-                        text = name ?: path,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
-                        fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                        letterSpacing = 0.1.sp,
-                        style = TextStyle.Default.copy(
-                            lineBreak = LineBreak.Heading
+                    Box(
+                        modifier = Modifier
+                            .clickable(onClick = onClick)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = name ?: path,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
+                            fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
+                            letterSpacing = 0.1.sp,
+                            style = TextStyle.Default.copy(
+                                lineBreak = LineBreak.Heading
+                            )
                         )
-                    )
+                    }
                 }
 
             }
@@ -234,7 +254,8 @@ fun ScanTaskCard(
                     selectedFilesSize = selectedFilesSize,
                     foundFilesSize = foundFilesSize,
                     scanTime = scanTime,
-                    scoreSum = scoreSum
+                    scoreSum = scoreSum,
+                    onClick = onClick
                 )
             }
 

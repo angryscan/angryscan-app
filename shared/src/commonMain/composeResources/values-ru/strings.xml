@@ -76,6 +76,7 @@
     <string name="UpperMenu-Tooltip-FileShare">Сканирование файловых систем</string>
     <string name="UpperMenu-Tooltip-S3">Сканирование хранилища S3</string>
     <string name="UpperMenu-Tooltip-HTTP">Сканирование веб-сайтов</string>
+    <string name="S3Screen-Tooltip-ConnectionSettings">Параметры подключения</string>
 
     <string name="MainScreen-SelectPathPlaceholder">Укажите пути для сканирования через точку с запятой (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Укажите файл с путями</string>
@@ -261,6 +262,11 @@
     <string name="TaskStateChipFilter-Paused">На паузе</string>
     <string name="TaskStateChipFilter-Error">Ошибка</string>
     <string name="TaskStateChipFilter-Completed">Завершенные</string>
+    
+    <string name="TaskState-Active">Активен</string>
+    <string name="TaskState-Paused">На паузе</string>
+    <string name="TaskState-Error">Ошибка</string>
+    <string name="TaskState-Completed">Завершен</string>
 
     <string name="ScanResultScreen-ClipboardCopiedMessage">Скопировано в буфер обмена</string>
 
@@ -296,4 +302,9 @@
     <string name="Location-LongScanTitle">Глубокий поиск местонахождения атрибутов</string>
     <string name="Location-LongScanText">Поиск местонахождения атрибутов занимает много времени. Вы уверены, что хотите продолжить?</string>
     <string name="Location-LineNumber">Строка %1$d</string>
+
+    <string name="Validation-NoExtensionsTitle">Не выбраны расширения файлов</string>
+    <string name="Validation-NoExtensionsMessage">Пожалуйста, выберите хотя бы одно расширение файла для сканирования.</string>
+    <string name="Validation-NoMatchersTitle">Не выбраны функции детектирования</string>
+    <string name="Validation-NoMatchersMessage">Пожалуйста, выберите хотя бы одну функцию детектирования для сканирования.</string>
 </resources>

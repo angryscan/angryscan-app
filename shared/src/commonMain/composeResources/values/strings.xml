@@ -78,6 +78,7 @@
     <string name="UpperMenu-Tooltip-FileShare">File share scanning</string>
     <string name="UpperMenu-Tooltip-S3">S3 storage scanning</string>
     <string name="UpperMenu-Tooltip-HTTP">Web scanning</string>
+    <string name="S3Screen-Tooltip-ConnectionSettings">Connection parameters</string>
 
     <string name="MainScreen-SelectPathPlaceholder">Choose paths to scan separated by semicolon (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Choose file with paths</string>
@@ -267,6 +268,11 @@
     <string name="TaskStateChipFilter-Paused">Paused</string>
     <string name="TaskStateChipFilter-Error">Error</string>
     <string name="TaskStateChipFilter-Completed">Completed</string>
+    
+    <string name="TaskState-Active">Active</string>
+    <string name="TaskState-Paused">Paused</string>
+    <string name="TaskState-Error">Error</string>
+    <string name="TaskState-Completed">Completed</string>
 
     <string name="ScanResultScreen-ClipboardCopiedMessage">Copied to clipboard</string>
 
@@ -304,4 +310,9 @@
     <string name="Location-LineNumber">Line %1$d</string>
 
     <string name="Error-FileOpen">Error while opening file.</string>
+
+    <string name="Validation-NoExtensionsTitle">No file extensions selected</string>
+    <string name="Validation-NoExtensionsMessage">Please select at least one file extension to scan.</string>
+    <string name="Validation-NoMatchersTitle">No detection functions selected</string>
+    <string name="Validation-NoMatchersMessage">Please select at least one detection function to scan.</string>
 </resources>
