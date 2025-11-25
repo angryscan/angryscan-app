@@ -23,56 +23,56 @@ The scanner detects the following types of data:
 |-----------|---------------|---------|---------|
 | Phone number | - | RU | +7 926 3847291 |
 | Phone number | - | US | +1 212 5550198 |
-| Taxpayer number | INN | RU | 7707083893 |
+| Taxpayer number | ИНН | RU | 7707083893 |
 | Taxpayer number | SSN | US | 536-90-4399 |
 | Taxpayer number | RIN | CN | 110101199003078912 |
 | Passport | - | RU | 4505 857555 |
 | Passport | - | US | 847293641 |
-| Insurance number | SNILS | RU | 234-567-890 12 |
-| Insurance number | OMS | RU | 9876543210987654 |
-| Insurance number | Medicare | US | 1A2B3C4D5E |
-| Insurance number | OSAGO policy | RU | ААА3847291847 |
-| Driver license | - | RU | 77АВ987654 |
-| ID document | Military ID | RU | 3847291847 |
-| ID document | Temporary ID | RU | 2938475629 |
-| ID document | Residence permit | RU | 8472936418 |
-| ID document | Sberknizhka | RU | 2938475629 |
-| Date | Birthday | - | 15.03.1985 |
-| Date | Death date | RU | 22.11.2023 |
-| User identifier | Social user ID | - | 3847291847 |
-| Vehicle identifier | VIN | - | 1HGBH41JXMN109186 |
-| Vehicle identifier | Vehicle registration number | RU | A120AA23 |
-| Legal entity identifier | Legal entity ID | RU | 7707083893 |
-| Legal entity identifier | OGRNIP | RU | 315774600001234 |
-| Legal entity identifier | OKPO | RU | 38472918 |
-| Document number | State registration contract | RU | 293847 |
-| Document number | EP certificate number | RU | 84729364182938475629 |
-| Document number | Executive document number | RU | 384729 |
-| Document number | Cadastral number | RU | 77:01:0001001:1001 |
+| Pension insurance number | СНИЛС | RU | 234-567-890 12 |
+| Medical insurance number | ОМС | RU | 9876543210987654 |
+| Medical insurance number | Medicare | US | 1A2B3C4D5E |
+| Car insurance number | полис ОСАГО | RU | ААА3847291847 |
+| Driver license | Водительские права | RU | 77АВ987654 |
+| Military ID | Удостоверение личности военнослужащего | RU | 3847291847 |
+| Temporary identity document | ВУЛ | RU | 2938475629 |
+| Temporary residence permit | РВП | RU | 8472936418 |
+| Sberbank book number  | Сберкнижка | RU | 2938475629 |
+| Birthday | - | - | 15.03.1985 |
+| Death date | - | RU | 22.11.2023 |
+| User identifier | Social user ID | - | @3847291847 |
+| VIN | - | - | 1HGBH41JXMN109186 |
+| Vehicle registration number | Номер авто | RU | A120AA23 |
+| Legal entity ID | LEI, BIC/SWIFT | - | 7707083893 |
+| Individual entrepreneur identification number  | ОГРНИП | RU | 315774600001234 |
+| Tax classifier of enterprises and organizations  | ОКПО | RU | 38472918 |
+| State registration number of the contract | Номер записи государственной регистрации договора | RU | 293847 |
+| Digital signature certificate number | Сертификат ЭП | RU | 84729364182938475629 |
+| Enforcement document number | Номер исполнительного документа | RU | 384729 |
+| Cadastral number | Кадастровый номер | RU | 77:01:0001001:1001 |
 
 ### Personal Data (text)
 
 | Data type | Local name | Country | Example |
 |-----------|---------------|---------|---------|
-| Full name | - | RU | Иван Иванович Иванов |
-| Full name | - | US | John Smith |
-| Contact information | E-mail | - | captainbull@gmail.com |
-| Contact information | Address | RU | Москва, ул. Ленина, д. 1 |
-| Contact information | Address | US | Work in progress |
-| Account credentials | Login | - | username |
-| Account credentials | Password | - | 	password123 |
-| Certificate | Birth certificate | RU | I-АБ 384729 |
-| Certificate | Marriage certificate | RU | II-АБ 384729 |
-| Education document | - | RU | 847293 |
-| Education document | Education level | RU | Высшее образование |
-| Education document | Education license | RU | 384729 |
-| Document | Identity document type | RU | Паспорт |
-| Document | Inheritance document | RU | 847293 |
-| Personal status | Marital status | RU | Женат/Замужем |
-| Military information | Military rank | RU | Рядовой |
-| Security information | Security affiliation | RU | Допуск |
-| Location | Geographic coordinates | - | 55.7558 |
-| Legal entity | Legal entity name | RU | ООО "Компания" |
+| Full name | ФИО | RU | Иван Иванович Иванов |
+| Full name | Full name | US | John Smith |
+| E-mail | - | - | captainbull@gmail.com |
+| Address | Адрес | RU | Москва, ул. Ленина, д. 1 |
+| Address | - | US | Work in progress |
+| Login | - | - | username |
+| Password | - | - | password123 |
+| Birth certificate | Свидетельство о рождении | RU | I-АБ 384729 |
+| Marriage certificate | Свидетельство о браке | RU | II-АБ 384729 |
+| Education document | Номер диплома | RU | 847293 |
+| Education level | Степень образования | RU | Высшее образование |
+| Education license | Образовательная лицензия | RU | 384729 |
+| Identity document type | Тип ДУЛ | RU | Паспорт |
+| Inheritance certificate number | Cв-во о праве на наследство | RU | 847293 |
+| Marital status | Семейное положение | RU | Женат/Замужем |
+| Military rank | Воинское звание | RU | Рядовой |
+| Security service affiliation | Службы безопасности | RU | Допуск |
+| Geographic coordinates | Geo | - | 55.7558 |
+| Legal entity name | Наименование юридического лица | RU | ООО "Компания" |
 
 ### Banking Secrecy
 

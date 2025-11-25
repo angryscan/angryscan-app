@@ -62,7 +62,6 @@ object MatcherCountryMapping {
         MilitaryRank::class to MatcherCountry.RUSSIA,
         SecurityAffiliation::class to MatcherCountry.RUSSIA,
         VehicleRegNumber::class to MatcherCountry.RUSSIA,
-        LegalEntityId::class to MatcherCountry.RUSSIA,
         LegalEntityName::class to MatcherCountry.RUSSIA,
         StateRegContract::class to MatcherCountry.RUSSIA,
         EpCertificateNumber::class to MatcherCountry.RUSSIA,
@@ -98,7 +97,8 @@ object MatcherCountryMapping {
         IPv6::class to MatcherCountry.INTERNATIONAL,
         CodeDetectFun::class to MatcherCountry.INTERNATIONAL,
         CertDetectFun::class to MatcherCountry.INTERNATIONAL,
-        HashData::class to MatcherCountry.INTERNATIONAL
+        HashData::class to MatcherCountry.INTERNATIONAL,
+        LegalEntityId::class to MatcherCountry.INTERNATIONAL,
     )
 
     fun getCountry(matcher: IMatcher): MatcherCountry {

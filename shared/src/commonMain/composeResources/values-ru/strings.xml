@@ -133,7 +133,7 @@
     <string name="Matcher-HashData">Хеш-данные</string>
     <string name="Matcher-IdentityDocType">Тип удост. документа</string>
     <string name="Matcher-InheritanceDoc">Док. о наследовании</string>
-    <string name="Matcher-LegalEntityId">ID юр. лица</string>
+    <string name="Matcher-LegalEntityId">LEI, BIC/SWIFT</string>
     <string name="Matcher-LegalEntityName">Название юр. лица</string>
     <string name="Matcher-MaritalStatus">Семейное положение</string>
     <string name="Matcher-MarriageCert">Св-во о браке</string>
@@ -179,7 +179,7 @@
     <string name="Matcher-Description-IPv6">IP адрес v6</string>
     <string name="Matcher-Description-Code">Поиск программный кода</string>
     <string name="Matcher-Description-Cert">Поиск сертификатов</string>
-    <string name="Matcher-Description-DetectBlockedDomains">Поиск доменлв из реестра заблокированных РосКомНадзором</string>
+    <string name="Matcher-Description-DetectBlockedDomains">Поиск доменов из реестра заблокированных РосКомНадзором</string>
     <string name="Matcher-Description-BankAccount">Номер банковского счета</string>
     <string name="Matcher-Description-BankAccountLE">Номер банковского счета (юридическое лицо)</string>
     <string name="Matcher-Description-BirthCert">Номер свидетельства о рождении</string>
@@ -197,7 +197,7 @@
     <string name="Matcher-Description-HashData">Хеш-данные (MD5, SHA1, SHA256 и т.д.)</string>
     <string name="Matcher-Description-IdentityDocType">Тип документа, удостоверяющего личность</string>
     <string name="Matcher-Description-InheritanceDoc">Номер документа о наследовании</string>
-    <string name="Matcher-Description-LegalEntityId">Идентификатор юридического лица</string>
+    <string name="Matcher-Description-LegalEntityId">Идентификатор юридического лица (LEI, BIC/SWIFT)</string>
     <string name="Matcher-Description-LegalEntityName">Наименование юридического лица</string>
     <string name="Matcher-Description-MaritalStatus">Семейное положение</string>
     <string name="Matcher-Description-MarriageCert">Номер свидетельства о браке</string>
