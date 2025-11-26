@@ -74,17 +74,19 @@ The scanner detects the following types of data:
 | Geographic coordinates | Geo | - | 55.7558 |
 | Legal entity name | Наименование юридического лица | RU | ООО "Компания" |
 
+### PCI DSS
+| Data type     | Local name           | Example              |
+|---------------|----------------------|----------------------|
+| Payment card  | Payment card number  | 4400 5678 9012 3456  |
+| Payment card  | CVV                  | 456                  |
+
 ### Banking Secrecy
 
-| Data type | Local name | Country | Example |
-|-----------|---------------|---------|---------|
-| Payment card | Payment card number | - | 4400 5678 9012 3456 |
-| Payment card | CVV | - | 456 |
-| Bank account | Bank account (Individual) | RU | 408 028 103 3 5300 5405 83 |
-| Bank account | Bank account (Legal entity) | RU | 407 028 103 3 5300 5405 83 |
-| Bank account | UID contract bank BKI | RU | 3847291847 |
-| Cryptocurrency | Cryptocurrency wallet number | - | Work in progress |
-| Cryptocurrency | Cryptocurrency recovery-codes | - | Work in progress |
+| Data type    | Local name                   | Country | Example                     |
+|--------------|------------------------------|---------|-----------------------------|
+| Bank account | Bank account (Individual)    | RU      | 408 028 103 3 5300 5405 83  |
+| Bank account | Bank account (Legal entity)  | RU      | 407 028 103 3 5300 5405 83  |
+| Bank account | UID contract bank BKI        | RU      | 3847291847                  |
 
 ### IT Assets
 
