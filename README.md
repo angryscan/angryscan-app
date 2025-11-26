@@ -58,7 +58,6 @@ The scanner detects the following types of data:
 | Full name | Full name | US | John Smith |
 | E-mail | - | - | captainbull@gmail.com |
 | Address | Адрес | RU | Москва, ул. Ленина, д. 1 |
-| Address | - | US | Work in progress |
 | Login | - | - | username |
 | Password | - | - | password123 |
 | Birth certificate | Свидетельство о рождении | RU | I-АБ 384729 |
@@ -98,12 +97,10 @@ The scanner detects the following types of data:
 | Certificate | TLS certificates | Finds folders with the most amount of TLS certificates |
 | Domain | Blocked domains (RKN) | example.ru |
 | Hash | Hash data | SHA256 |
-| Synthetic data | - | Work in progress. General idea if to identity that the data is synthetic. For examples, an excel is generated via Faker. |
-| AI-models | - | Work in progress. Finds AI-models embedded in files. Goal is to identify hidden AI in your infrastructure. |
 
 ### Custom Signatures
 
-It is possible to add custom data search signatures using plain text: `FBR`, `FSB`, `Central bank` or any other.
+It is possible to add custom data search signatures using plain text: `Secret`, `Password`, `Central bank` or any other.
 
 ## Supported file types
 
@@ -127,7 +124,6 @@ It is possible to add custom data search signatures using plain text: `FBR`, `FS
 | HDD/SDD                  | Scan local hard drive                                    |
 | S3                       | Scan files  in S3                                        |
 | HTTP/HTTPS               | Scans web site content                                   |
-| Database                 | `Work in progress`                                       |
 
 ## Real life use cases
 - A leak рunting team scans network folder and ensure that it does not contain source code
