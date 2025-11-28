@@ -15,7 +15,6 @@ The tool provides visibility where your sensitive data is stored.
 - Works on Linux, Mac, and Windows
 
 ## Sensitive data discovery
-The scanner detects the following types of data: 
 
 ### Personal Data (numbers)
 
@@ -69,34 +68,32 @@ The scanner detects the following types of data:
 | Inheritance certificate number | Cв-во о праве на наследство | RU | 847293 |
 | Marital status | Семейное положение | RU | Женат/Замужем |
 | Military rank | Воинское звание | RU | Рядовой |
-| Security service affiliation | Службы безопасности | RU | Допуск |
 | Geographic coordinates | Geo | - | 55.7558 |
 | Legal entity name | Наименование юридического лица | RU | ООО "Компания" |
 
 ### PCI DSS
-| Data type     | Local name           | Example              |
-|---------------|----------------------|----------------------|
-| Payment card  | Payment card number  | 4400 5678 9012 3456  |
-| Payment card  | CVV                  | 456                  |
+|Data type             | Example              |
+|----------------------|----------------------|
+| Payment card number  | 4400 5678 9012 3456  |
+| CVV                  | 456                  |
 
 ### Banking Secrecy
 
-| Data type    | Local name                   | Country | Example                     |
-|--------------|------------------------------|---------|-----------------------------|
-| Bank account | Bank account (Individual)    | RU      | 408 028 103 3 5300 5405 83  |
-| Bank account | Bank account (Legal entity)  | RU      | 407 028 103 3 5300 5405 83  |
-| Bank account | UID contract bank BKI        | RU      | 3847291847                  |
+| Data type                   | Country | Example                     |
+|------------------------------|---------|-----------------------------|
+| Bank account (Individual)    | RU      | 408 028 103 3 5300 5405 83  |
+| Bank account (Legal entity)  | RU      | 407 028 103 3 5300 5405 83  |
+| UID contract bank BKI        | RU      | 3847291847                  |
 
 ### IT Assets
 
-| Data type | Local name | Example |
-|-----------|---------------|---------|
-| IP address | IPv4 | 192.168.1.1 |
-| IP address | IPv6 | 2001:db8::1 |
-| Source code | Source code files | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
-| Certificate | TLS certificates | Finds folders with the most amount of TLS certificates |
-| Domain | Blocked domains (RKN) | example.ru |
-| Hash | Hash data | SHA256 |
+| Data type | Example |
+|---------------|---------|
+| IPv4 | 192.168.1.1 |
+| IPv6 | 2001:db8::1 |
+| Source code files | Finds files with source-code. Source code should be placed in git repository. If source code just lies somewhere is files, this could be a security issue. |
+| TLS certificates | Finds folders with the most amount of TLS certificates |
+| Hash data | SHA-256, MD5, NTLM (NT hash), SHA-1, SHA-512 |
 
 ### Custom Signatures
 
