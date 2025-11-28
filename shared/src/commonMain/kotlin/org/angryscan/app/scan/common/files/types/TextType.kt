@@ -3,7 +3,10 @@ package org.angryscan.app.scan.common.files.types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.angryscan.app.scan.common.Document
+import org.angryscan.app.scan.common.files.IExportLocations
+import org.angryscan.app.scan.common.files.IFileLocation
 import org.angryscan.app.scan.common.files.IMaskFile
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
@@ -17,7 +20,12 @@ import java.io.FileInputStream
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
-object TextType : IFileType, IMaskFile {
+@Serializable
+object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
+    override val name = "Text"
+    override val extensions =
+        (1..999).map { it.toString().padStart(3, '0') } +
+                listOf("txt", "csv", "xml", "json", "log")
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,
@@ -170,5 +178,47 @@ object TextType : IFileType, IMaskFile {
                 }
         }
         return locationsMasked
+    }
+
+    override suspend fun exportRows(
+        inputFile: String,
+        locations: List<Location>,
+        outputFile: String
+    ): Int {
+        val rows = locations
+            .groupBy { it.location.substring(2).toInt() }
+            .map { it.key }
+            .sorted()
+        var lineNumber = 1
+        var rowIndex = 0
+        var rowsExported = 0
+
+        withContext(Dispatchers.IO) {
+            val file = File(inputFile)
+            val encoding = UniversalDetector.detectCharset(file) ?: "UTF-8"
+            val charset = runCatching { Charset.forName(encoding) }.getOrDefault(Charsets.UTF_8)
+
+            File(outputFile)
+                .bufferedWriter(charset = charset)
+                .use { writer ->
+                    file
+                        .bufferedReader(charset = Charset.forName(encoding))
+                        .use { reader ->
+                            var line = reader.readLine()
+                            while (line != null && rowIndex < rows.size) {
+                                if(lineNumber == rows[rowIndex]) {
+                                    writer.write(line)
+                                    writer.newLine()
+                                    rowIndex++
+                                    rowsExported++
+                                }
+
+                                lineNumber++
+                                line = reader.readLine()
+                            }
+                        }
+                }
+        }
+        return rowsExported
     }
 }

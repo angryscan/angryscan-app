@@ -16,7 +16,9 @@ import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFileResult
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.CertFileType
+import org.angryscan.app.scan.common.files.types.CodeFileType
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.ui.strings.readableName
 import org.angryscan.app.ui.windows.screens.scans.components.SortColumn
 import org.angryscan.app.ui.windows.screens.scans.components.comparator
@@ -289,7 +291,7 @@ object Console : KoinComponent {
         if (fileExtensions != null) {
             scanSettings.extensions.clear()
             fileExtensions.split(",").forEach { ext ->
-                val extension = FileType.entries.find { it.name == ext }
+                val extension = IFileType.getAll().find { it.name == ext }
                 if (extension != null)
                     scanSettings.extensions.add(extension)
                 else
@@ -367,7 +369,7 @@ Allowed parameters:
 
 Allowed extensions: 
         ${
-                FileType.entries.filter { ft -> ft != FileType.CERT && ft != FileType.CODE }
+                IFileType.getAll().filter { ft -> ft !in CertFileType.entries && ft !in CodeFileType.entries }
                     .joinToString("\n        ") {
                         "${it.name} (${
                             it.extensions.filter { ext ->

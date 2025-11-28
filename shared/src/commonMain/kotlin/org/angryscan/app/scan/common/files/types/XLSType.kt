@@ -3,12 +3,14 @@ package org.angryscan.app.scan.common.files.types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.DataFormatter
 import org.angryscan.app.scan.common.Document
+import org.angryscan.app.scan.common.files.IFileLocation
 import org.angryscan.app.scan.common.files.IMaskFile
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
@@ -19,7 +21,10 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
 
-object XLSType : IFileType, IMaskFile {
+@Serializable
+object XLSType : FileType(), IMaskFile, IFileLocation {
+    override val name = "XLS"
+    override val extensions = listOf("xls")
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,

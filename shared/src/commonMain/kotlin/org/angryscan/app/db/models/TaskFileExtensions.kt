@@ -1,14 +1,16 @@
 package org.angryscan.app.db.models
 
+import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.serializers.PolymorphicFormatter
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.angryscan.app.scan.common.files.FileType
+import org.jetbrains.exposed.sql.json.json
 
 object TaskFileExtensions : IntIdTable() {
     val task = reference("task", Tasks)
-    val extension = enumeration("extension", FileType::class)
+    val extension = json<IFileType>("extension", PolymorphicFormatter)
 }
 
 class TaskFileExtension(id: EntityID<Int>): IntEntity(id) {

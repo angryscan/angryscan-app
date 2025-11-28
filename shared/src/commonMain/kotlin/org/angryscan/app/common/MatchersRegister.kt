@@ -2,15 +2,14 @@
 
 package org.angryscan.app.common
 
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.extensions.Matchers
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
-import org.angryscan.app.scan.functions.RKNDomainDetectFun
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.extensions.Matchers
 import java.util.function.IntFunction
 
 object MatchersRegister: List<IMatcher> by Matchers.toList() + listOf(
-    RKNDomainDetectFun,
+//    RKNDomainDetectFun,
     CodeDetectFun,
     CertDetectFun
 ) {

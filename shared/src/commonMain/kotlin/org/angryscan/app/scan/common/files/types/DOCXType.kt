@@ -3,19 +3,25 @@ package org.angryscan.app.scan.common.files.types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hwpf.HWPFDocument
 import org.apache.poi.hwpf.extractor.WordExtractor
 import org.apache.poi.xwpf.usermodel.*
 import org.angryscan.app.scan.common.Document
+import org.angryscan.app.scan.common.files.IFileLocation
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import java.io.File
 import java.io.FileInputStream
 import kotlin.coroutines.CoroutineContext
 
-object DOCXType : IFileType {
+@Serializable
+object DOCXType : FileType(), IFileLocation {
+    override val name = "DOCX"
+    override val extensions = listOf("docx")
+
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,

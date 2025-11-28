@@ -17,12 +17,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberDialogState
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
+import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.ui.strings.composableName
@@ -56,8 +61,9 @@ fun AttributeLocationWindow(
 
     val selectedLocations = remember { mutableStateListOf<Location>() }
 
-    val fileType = FileType.getFileType(filePath)
+    val fileType = IFileType.getFileType(filePath)
     val maskingSupported = fileType?.let { LocationFinder.isMaskSupported(it) && attribute is IMask } ?: false
+    val exportSupported = fileType?.let { LocationFinder.isExportSupported(it) } ?: false
 
     coroutineScope.launch {
         searching = true
@@ -83,7 +89,10 @@ fun AttributeLocationWindow(
             )
             selectedLocations.addAll(
                 locations
-                    .filter { it.entry.matcher is IMask }
+                    .filter {
+                        it.entry.matcher is IMask ||
+                                exportSupported
+                    }
             )
             if (locations.isEmpty())
                 failedToFind = true
@@ -103,7 +112,32 @@ fun AttributeLocationWindow(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var masking by remember { mutableStateOf(false) }
+    var working by remember { mutableStateOf(false) }
+
+    val dialogSettings = createDialogSettings()
+
+    val saveLauncher = rememberFileSaverLauncher(
+        dialogSettings = dialogSettings
+    ) { file ->
+        if (file != null) {
+            coroutineScope.launch {
+                try {
+                    val rows = LocationFinder.exportRows(filePath, selectedLocations, file.path)
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            getString(
+                                Res.string.LocationWindow_ExportRowsCount,
+                                rows
+                            )
+                        )
+                    }
+                } finally {
+                    working = false
+                }
+            }
+        }
+
+    }
 
     DialogWindow(
         onCloseRequest = { onClose(!searching && !errorSearching && !failedToFind && locations.isEmpty()) },
@@ -211,61 +245,6 @@ fun AttributeLocationWindow(
                                     .fillMaxSize()
                                     .background(MaterialTheme.colorScheme.surface),
                                 snackbarHost = { SnackbarHost(snackbarHostState) },
-                                floatingActionButton = {
-                                    if (selectedLocations.isNotEmpty() && !masking) {
-                                        FloatingActionButton(
-                                            onClick = {
-                                                if (!masking) {
-                                                    masking = true
-                                                    coroutineScope.launch {
-                                                        val maskedCount =
-                                                            LocationFinder.maskLocations(filePath, selectedLocations)
-                                                        if (maskedCount == selectedLocations.size) {
-                                                            locations.removeAll(selectedLocations)
-                                                            selectedLocations.clear()
-                                                            coroutineScope.launch {
-                                                                snackbarHostState.showSnackbar(
-                                                                    getString(
-                                                                        Res.string.LocationWindow_MaskedCount,
-                                                                        maskedCount
-                                                                    )
-                                                                )
-                                                            }
-                                                        } else {
-                                                            coroutineScope.launch {
-                                                                snackbarHostState.showSnackbar(
-                                                                    getString(
-                                                                        Res.string.LocationWindow_MaskError
-                                                                    )
-                                                                )
-                                                            }
-                                                        }
-                                                        masking = false
-                                                    }
-                                                }
-                                            },
-                                            containerColor = MaterialTheme.colorScheme.primary
-                                        ) {
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier
-                                                    .padding(horizontal = 10.dp)
-                                            ) {
-                                                Text(
-                                                    text = stringResource(
-                                                        Res.string.LocationWindow_MaskButton,
-                                                        selectedLocations.size
-                                                    )
-                                                )
-                                                Icon(
-                                                    imageVector = Icons.Outlined.VisibilityOff,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -274,45 +253,153 @@ fun AttributeLocationWindow(
                                     Row(
                                         modifier = Modifier
                                             .padding(8.dp)
+                                            .fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        AnimatedVisibility(locations.any { it.entry.matcher is IMask }) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(MaterialTheme.shapes.small)
-                                                    .background(MaterialTheme.colorScheme.secondary)
-                                                    .clickable {
-                                                        if (
-                                                            selectedLocations.containsAll(
-                                                                locations.filter { it.entry.matcher is IMask }
-                                                            )
-                                                        ) {
-                                                            selectedLocations.clear()
-                                                        } else {
-                                                            selectedLocations.addAll(
-                                                                locations
-                                                                    .filter { it.entry.matcher is IMask }
-                                                                    .filter { !selectedLocations.contains(it) }
-                                                            )
-                                                        }
-                                                    }
-                                                    .padding(6.dp),
+                                        Row {
+                                            AnimatedVisibility(
+                                                locations.any {
+                                                    it.entry.matcher is IMask
+                                                } || exportSupported
                                             ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(MaterialTheme.shapes.small)
+                                                        .background(MaterialTheme.colorScheme.secondary)
+                                                        .clickable {
+                                                            if (
+                                                                selectedLocations.containsAll(locations)
+                                                            ) {
+                                                                selectedLocations.clear()
+                                                            } else {
+                                                                selectedLocations.addAll(
+                                                                    locations
+                                                                        .filter { !selectedLocations.contains(it) }
+                                                                )
+                                                            }
+                                                        }
+                                                        .padding(6.dp),
                                                 ) {
-                                                    Icon(
-                                                        imageVector = if (selectedLocations.containsAll(locations))
-                                                            Icons.Outlined.CheckBox
-                                                        else
-                                                            Icons.Outlined.CheckBoxOutlineBlank,
-                                                        contentDescription = null,
-                                                    )
-                                                    Text(
-                                                        text = stringResource(
-                                                            Res.string.LocationWindow_SelectAllButton
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (selectedLocations.containsAll(locations))
+                                                                Icons.Outlined.CheckBox
+                                                            else
+                                                                Icons.Outlined.CheckBoxOutlineBlank,
+                                                            contentDescription = null,
                                                         )
-                                                    )
+                                                        Text(
+                                                            text = stringResource(
+                                                                Res.string.LocationWindow_SelectAllButton
+                                                            )
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            AnimatedVisibility(
+                                                selectedLocations.isNotEmpty() &&
+                                                        exportSupported &&
+                                                        !working
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(MaterialTheme.shapes.small)
+                                                        .background(MaterialTheme.colorScheme.secondary)
+                                                        .clickable {
+                                                            if (!working) {
+                                                                working = true
+                                                                saveLauncher.launch(
+                                                                    suggestedName = "${File(filePath).name}_Rows",
+                                                                    extension = "csv",
+                                                                    directory = PlatformFile(AppFiles.UserDirPath)
+                                                                )
+                                                            }
+                                                        }
+                                                        .padding(6.dp),
+                                                ) {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier
+                                                            .padding(horizontal = 10.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = stringResource(Res.string.LocationWindow_ExportRows)
+                                                        )
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.Download,
+                                                            contentDescription = null
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            AnimatedVisibility(
+                                                selectedLocations.any {
+                                                    it.entry.matcher is IMask
+                                                } &&
+                                                        maskingSupported &&
+                                                        !working
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(MaterialTheme.shapes.small)
+                                                        .background(MaterialTheme.colorScheme.secondary)
+                                                        .clickable {
+                                                            if (!working) {
+                                                                working = true
+                                                                coroutineScope.launch {
+                                                                    val maskedCount =
+                                                                        LocationFinder.maskLocations(
+                                                                            filePath,
+                                                                            selectedLocations
+                                                                        )
+                                                                    if (maskedCount == selectedLocations.size) {
+                                                                        locations.removeAll(selectedLocations)
+                                                                        selectedLocations.clear()
+                                                                        coroutineScope.launch {
+                                                                            snackbarHostState.showSnackbar(
+                                                                                getString(
+                                                                                    Res.string.LocationWindow_MaskedCount,
+                                                                                    maskedCount
+                                                                                )
+                                                                            )
+                                                                        }
+                                                                    } else {
+                                                                        coroutineScope.launch {
+                                                                            snackbarHostState.showSnackbar(
+                                                                                getString(
+                                                                                    Res.string.LocationWindow_MaskError
+                                                                                )
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                    working = false
+                                                                }
+                                                            }
+                                                        }
+                                                        .padding(6.dp),
+                                                ) {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier
+                                                            .padding(horizontal = 10.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = stringResource(Res.string.LocationWindow_MaskButton)
+                                                        )
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.VisibilityOff,
+                                                            contentDescription = null
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -334,7 +421,7 @@ fun AttributeLocationWindow(
                                                 items(locations) { location ->
                                                     AttributeLocationItem(
                                                         location = location,
-                                                        selectable = maskingSupported,
+                                                        selectable = maskingSupported || exportSupported,
                                                         checked = selectedLocations.contains(location),
                                                         onCheckedChanged = { state ->
                                                             if (state) {

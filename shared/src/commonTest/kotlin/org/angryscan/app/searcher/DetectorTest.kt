@@ -4,7 +4,7 @@ import IKoinTestRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.angryscan.app.scan.common.Document
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
@@ -186,7 +186,7 @@ internal class DetectorTest : IKoinTestRule {
         val engines = listOf(HyperScanEngine(listOf(matcher).toHyperScanMatchers()))
 
         val document = runBlocking(coroutineContext) {
-            FileType
+            IFileType
                 .getFileType(file)?.scanFile(file, coroutineContext, engines, false).let {
                 assertNotNull(it)
             }
