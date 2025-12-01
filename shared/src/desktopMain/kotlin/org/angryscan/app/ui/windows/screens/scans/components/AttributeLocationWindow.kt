@@ -253,6 +253,7 @@ fun AttributeLocationWindow(
                                     Row(
                                         modifier = Modifier
                                             .padding(8.dp)
+                                            .padding(end = 12.dp)
                                             .fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
