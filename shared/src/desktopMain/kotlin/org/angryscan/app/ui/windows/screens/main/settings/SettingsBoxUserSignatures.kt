@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.resources.*
-import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.common.matchers.UserSignature
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -114,7 +113,7 @@ fun SettingsBoxUserSignature(scanSettings: ScanSettings) {
             }
         }
     ) {
-        val rows = FileType.entries.size / 3 + if (FileType.entries.size % 3 > 0) 1 else 0
+        val rows = userSignatures.size / 3 + if (userSignatures.size % 3 > 0) 1 else 0
 
         val height = (24 * rows + (6 * (rows - 1))).dp + 52.dp
 

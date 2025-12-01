@@ -6,7 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.CertFileType
+import org.angryscan.app.scan.common.files.types.CodeFileType
+import org.angryscan.app.scan.common.files.types.FileType
+import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.common.files.types.RARType
+import org.angryscan.app.scan.common.files.types.ZIPType
 import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.app.serializers.MutableStateKClassSerializer
 import org.angryscan.app.serializers.MutableStateSerializer
@@ -33,7 +38,7 @@ class ScanSettings : KoinComponent {
     private val settingsFile: SettingsFile by inject()
 
     @Serializable
-    val extensions: MutableList<FileType> = mutableStateListOf()
+    val extensions: MutableList<IFileType> = mutableStateListOf()
 
     @Serializable(with = MutableStateSerializer::class)
     var extensionsSettingsExpanded: MutableState<Boolean>
@@ -86,11 +91,13 @@ class ScanSettings : KoinComponent {
                 "Failed to load ScanSettings. Loading default."
             }
             this.extensions.clear()
-            this.extensions.addAll(FileType.entries.filter {
-                it != FileType.ZIP &&
-                        it != FileType.RAR &&
-                        it != FileType.CERT &&
-                        it != FileType.CODE
+            this.extensions.addAll(FileType.values.filter {
+                it !in listOf(
+                    ZIPType,
+                    RARType,
+                    CertFileType.entries,
+                    CodeFileType.entries
+                )
             })
             this.extensionsSettingsExpanded = mutableStateOf(false)
             this.matchers.clear()

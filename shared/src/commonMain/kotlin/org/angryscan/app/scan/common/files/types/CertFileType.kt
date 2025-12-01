@@ -1,24 +1,32 @@
-package org.angryscan.app.scan.functions
+package org.angryscan.app.scan.common.files.types
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.angryscan.common.engine.IScanEngine
 import org.bouncycastle.asn1.pkcs.ContentInfo
 import org.bouncycastle.asn1.pkcs.SignedData
 import org.angryscan.app.scan.common.Document
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.functions.CertDetectFun
 import java.io.File
 import java.io.FileInputStream
 import java.security.cert.CertificateFactory
 import kotlin.coroutines.CoroutineContext
 
-enum class CertFileType(val extensions: List<String>) {
-    ASCII(listOf("ovpn", "pem", "crt", "cer", "key", "ca-bundle")),
-    PKCS(listOf("p7b", "p7s", "der")),
-    KEYSTORE(listOf("pfx", "p12", "keystore", "jks"))
+@Serializable
+enum class CertFileType: IFileType {
+    ASCII {
+        override val extensions = listOf("ovpn", "pem", "crt", "cer", "key", "ca-bundle")
+    },
+    PKCS {
+        override val extensions = listOf("p7b", "p7s", "der")
+    },
+    KEYSTORE {
+        override val extensions = listOf("pfx", "p12", "keystore", "jks")
+    }
     ;
 
-    suspend fun scanFile(
+    override suspend fun scanFile(
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
@@ -35,7 +43,7 @@ enum class CertFileType(val extensions: List<String>) {
         engines: List<IScanEngine>,
         fastScan: Boolean
     ): Document {
-        return FileType.Text.scanFile(
+        return TextType.scanFile(
             file,
             context,
             engines,

@@ -24,7 +24,9 @@ import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.ScanSettings_FileExtensions
 import org.angryscan.app.resources.ScanSettings_SelectAll
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.CertFileType
+import org.angryscan.app.scan.common.files.types.CodeFileType
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +44,11 @@ fun SettingsBoxExtensionsSelection(scanSettings: ScanSettings) {
             scanSettings.save()
         }
     ) {
-        val fileTypeEntries = FileType.entries.filter { it != FileType.CODE && it != FileType.CERT }
+        val fileTypeEntries = IFileType
+            .getAll()
+            .filter {
+                it !in CodeFileType.entries && it !in CertFileType.entries
+            }
         val rows = fileTypeEntries.size / 5 + if (fileTypeEntries.size % 5 > 0) 1 else 0
 
         val height = (24 * rows + (6 * (rows - 1))).dp + 52.dp
