@@ -400,7 +400,6 @@ fun ScanResultScreen(
                                 .clip(MaterialTheme.shapes.medium)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                                 .clickable {
-                                    onCloseClick()
                                     coroutineScope.launch {
                                         scanService.deleteTask(task)
                                     }

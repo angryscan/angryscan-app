@@ -13,13 +13,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import kotlinx.coroutines.delay
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.navigation.AppScreen
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @Composable
 fun NavigationTabs(
@@ -85,23 +85,16 @@ fun NavigationTabs(
                 item = item,
                 onClick = { 
                     try {
-                        println("Navigating to: ${item.route}")
                         if (item.route == AppScreen.Scans) {
                             val isOnScansScreen = currentDestination?.hasRoute(AppScreen.Scans::class) ?: false
                             if (!isOnScansScreen) {
                                 navController.navigate(item.route)
-                                println("Navigation to Scans successful")
-                            } else {
-                                println("Already on Scans screen - no navigation needed")
                             }
                         } else if (!item.isSelected) {
                             navController.navigate(item.route)
-                            println("Navigation successful")
-                        } else {
-                            println("Already on this screen")
                         }
                     } catch (e: Exception) {
-                        println("Navigation error: ${e.message}")
+                        logger.error(e) { "Navigation error" }
                     }
                 }
             )
