@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
-import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.*
 import org.jetbrains.compose.resources.StringResource
@@ -70,7 +69,7 @@ object MatcherCountryMapping {
         BankAccount::class to MatcherCountry.RUSSIA,
         BankAccountLE::class to MatcherCountry.RUSSIA,
         UidContractBankBki::class to MatcherCountry.RUSSIA,
-        RKNDomainDetectFun::class to MatcherCountry.RUSSIA,
+//        RKNDomainDetectFun::class to MatcherCountry.RUSSIA,
         DeathDate::class to MatcherCountry.RUSSIA,
 
         // USA
@@ -123,11 +122,3 @@ object MatcherCountryMapping {
         }
     }
 }
-
-fun MatchersGroup.copy(
-    name: String = this.name,
-    matchers: List<IMatcher> = this.matchers
-): MatchersGroup {
-    return MatchersGroup(name, matchers)
-}
-

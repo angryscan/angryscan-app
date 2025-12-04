@@ -13,7 +13,6 @@ import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
-import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.app.ui.windows.screens.main.settings.items.*
 import org.angryscan.common.matchers.*
 import org.jetbrains.compose.resources.stringResource
@@ -118,7 +117,7 @@ fun SettingsBoxDetectFunctionsGrouped(
                     IPv6,
                     CodeDetectFun,
                     CertDetectFun,
-                    RKNDomainDetectFun,
+//                    RKNDomainDetectFun,
                     HashData
                 )
             )

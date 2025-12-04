@@ -27,4 +27,8 @@ object RKNDomainDetectFun: IHyperMatcher, IKotlinMatcher, KoinComponent {
     override val regexOptions = setOf(
         RegexOption.MULTILINE
     )
+
+    override fun toString(): String {
+        return name
+    }
 }

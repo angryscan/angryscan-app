@@ -43,4 +43,8 @@ sealed class FileType : IFileType, KoinComponent {
         var values = listOf<FileType>()
             private set
     }
+
+    override fun toString(): String {
+        return name
+    }
 }

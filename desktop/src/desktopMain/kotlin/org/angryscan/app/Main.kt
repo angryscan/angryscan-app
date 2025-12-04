@@ -126,10 +126,12 @@ suspend fun main(args: Array<String>) {
     }
 
     if (args.isNotEmpty() &&
-        arrayOf("-c", "-console", "-h", "-help").any { args.contains(it) }
+        arrayOf("-c", "-console", "-h", "-help", "-v", "-version").any { args.contains(it) }
     ) {
         if (arrayOf("-h", "-help").any { args.contains(it) }) {
             Console.help()
+        } else if (arrayOf("-v", "-version").any { args.contains(it) }) {
+            Console.version()
         } else if (arrayOf("-c", "-console").any { args.contains(it) }) {
             if (AppFiles.ResultDBFile.exists()) {
                 if (!AppFiles.ResultDBFile.delete()) {
@@ -165,13 +167,13 @@ suspend fun main(args: Array<String>) {
                 }
             ) {
                 var mainIsVisible by remember { mutableStateOf(true) }
-                
+
                 LaunchedEffect(Unit) {
                     if (OS.currentOS() == OS.MAC) {
                         try {
                             val appClass = Class.forName("com.apple.eawt.Application")
                             val app = appClass.getMethod("getApplication").invoke(null)
-                            
+
                             val listenerClass = Class.forName("com.apple.eawt.AppReOpenedListener")
                             val proxy = java.lang.reflect.Proxy.newProxyInstance(
                                 listenerClass.classLoader,
@@ -181,7 +183,7 @@ suspend fun main(args: Array<String>) {
                                 mainIsVisible = true
                                 null
                             }
-                            
+
                             appClass.getMethod("addAppEventListener", Class.forName("com.apple.eawt.AppEventListener"))
                                 .invoke(app, proxy)
                             logger.info { "macOS dock click handler registered successfully" }
