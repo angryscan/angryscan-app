@@ -1,6 +1,7 @@
 package org.angryscan.app
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.context.startKoin
 import org.angryscan.app.common.AppFiles
+import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.AppVersion
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.OS
@@ -27,9 +29,11 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.ui.MainWindow
 import org.angryscan.app.ui.tray.DorkTray
 import org.angryscan.app.ui.windows.ApplicationErrorWindow
+import org.koin.compose.koinInject
 import java.awt.event.WindowEvent
 import java.io.File
 import java.net.BindException
+import java.util.Locale
 import javax.swing.UIManager
 import kotlin.system.exitProcess
 
@@ -164,7 +168,10 @@ suspend fun main(args: Array<String>) {
                     }
                 }
             ) {
+                val appSettings = koinInject<AppSettings>()
+                val appLocale by remember { appSettings.language }
                 var mainIsVisible by remember { mutableStateOf(true) }
+                Locale.setDefault(Locale.forLanguageTag(appLocale.locale))
                 
                 LaunchedEffect(Unit) {
                     if (OS.currentOS() == OS.MAC) {
