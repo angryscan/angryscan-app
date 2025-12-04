@@ -5,12 +5,7 @@ import kotlinx.coroutines.*
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
-import org.angryscan.app.common.AppFiles
-import org.angryscan.app.common.AppSettings
-import org.angryscan.app.common.LogMarkers
-import org.angryscan.app.common.OS
-import org.angryscan.app.common.ScanSettings
-import org.angryscan.app.common.UserSignatureSettings
+import org.angryscan.app.common.*
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFileResult
@@ -24,7 +19,6 @@ import org.angryscan.app.ui.windows.screens.scans.components.SortColumn
 import org.angryscan.app.ui.windows.screens.scans.components.comparator
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.kotlin.KotlinEngine
-import org.angryscan.common.extensions.Matchers
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.parameter.parametersOf
@@ -58,10 +52,18 @@ object Console : KoinComponent {
         val scanService by inject<ScanService>()
 
         if (path != null) {
+            if(scanSettings.matchers.isEmpty()) {
+                println("No matchers selected")
+                exitProcess(1)
+            }
+            if(scanSettings.extensions.isEmpty()) {
+                println("No extensions selected")
+                exitProcess(1)
+            }
             logger.info(throwable = null, LogMarkers.UserAction) {
                 "Starting scanning with path: $path " +
                         "extensions: ${scanSettings.extensions.joinToString(", ")} " +
-                        "detect matchers: ${scanSettings.matchers.joinToString(", ")} " +
+                        "matchers: ${scanSettings.matchers.joinToString(", ")} " +
                         "user signatures: ${scanSettings.userSignatures.joinToString(", ")} " +
                         "fast scan: ${scanSettings.fastScan} "
             }
@@ -194,8 +196,8 @@ object Console : KoinComponent {
         fun getArg(map: Map<String, List<String>>, tag: String, default: Boolean): Boolean =
             if (map.containsKey(tag)) !default else default
 
-        fun getArg(map: Map<String, List<String>>, tag: String, shortTag: String, default: String?): String? =
-            map[tag]?.first() ?: map[shortTag]?.first() ?: default
+        fun getArg(map: Map<String, List<String>>, tag: String, shortTag: String): String? =
+            map[tag]?.first() ?: map[shortTag]?.first()
 
         fun getArg(map: Map<String, List<String>>, tag: String, shortTag: String, default: Int): Int =
             map[tag]?.first()?.toIntOrNull() ?: map[shortTag]?.first()?.toIntOrNull() ?: default
@@ -214,18 +216,21 @@ object Console : KoinComponent {
         val appSettings: AppSettings by inject()
         val userSignaturesSettings: UserSignatureSettings by inject()
 
-        val filePath = getArg(map, "-file", "-f", null)
-
-        path = getArg(map, "-path", "-p", filePath)
-        val fileExtensions = getArg(map, "-extensions", "-e", scanSettings.extensions.joinToString(","))
-        val matchers = getArg(map, "-detect_functions", "-df", scanSettings.matchers.joinToString(","))
-        val userSignatures = getArg(map, "-user_signatures", "-us", scanSettings.userSignatures.joinToString(","))
+        val filePath = getArg(map, "-file", "-f")
+        if(filePath != null) {
+            path = filePath
+        } else {
+            path = getArg(map, "-path", "-p")
+        }
+        val fileExtensions = getArg(map, "-extensions", "-e")
+        val matchers = getArg(map, "-matchers", "-m")
+        val userSignatures = getArg(map, "-user_signatures", "-us")
         val fastScan = getArg(map, "-fast", scanSettings.fastScan.value)
         val fullScan = getArg(map, "-full", !fastScan)
         val threadCount = getArg(map, "threads", "-t", appSettings.threadCount.value)
-        val reportPath = getArg(map, "-report", "-r", null)
-        val encoding = getArg(map, "-report_encoding", "-re", null)
-        val engine = getArg(map, "-engine", "-e", "hyperscan")
+        val reportPath = getArg(map, "-report", "-r")
+        val encoding = getArg(map, "-report_encoding", "-re")
+        val engine = getArg(map, "-engine", "-en")
 
         if (encoding != null) {
             reportEncoding = encoding
@@ -291,7 +296,7 @@ object Console : KoinComponent {
         if (fileExtensions != null) {
             scanSettings.extensions.clear()
             fileExtensions.split(",").forEach { ext ->
-                val extension = IFileType.getAll().find { it.name == ext }
+                val extension = IFileType.getAll().find { it.name.lowercase() == ext.lowercase() }
                 if (extension != null)
                     scanSettings.extensions.add(extension)
                 else
@@ -304,26 +309,26 @@ object Console : KoinComponent {
             scanSettings.matchers.clear()
             if (matchers.isNotEmpty()) {
                 matchers.split(",").forEach { matcher ->
-                    val dfo = Matchers.find { it.name.lowercase().replace(' ', '_') == matcher }
+                    val dfo = MatchersRegister.find { it.name.lowercase().replace(' ', '_') == matcher.lowercase() }
                     if (dfo != null)
                         scanSettings.matchers.add(dfo)
                     else
-                        println("Unknown detect matcher: $matcher, skipping...")
+                        println("Unknown matcher: $matcher, skipping...")
                 }
             }
         }
-        println("Detect matchers: ${scanSettings.matchers.joinToString(", ")}")
+        println("Matchers: ${scanSettings.matchers.joinToString(", ")}")
 
         if (userSignatures != null) {
             scanSettings.userSignatures.clear()
             if (userSignatures.isNotEmpty()) {
                 userSignatures.split(",").forEach { sig ->
                     val sigo =
-                        userSignaturesSettings.userSignatures.find { it.name.lowercase().replace(' ', '_') == sig }
+                        userSignaturesSettings.userSignatures.find { it.name.lowercase().replace(' ', '_') == sig.lowercase() }
                     if (sigo != null)
                         scanSettings.userSignatures.add(sigo)
                     else
-                        println("Unknown user detect signature: $sig, skipping...")
+                        println("Unknown user signature: $sig, skipping...")
                 }
             }
         }
@@ -357,15 +362,15 @@ Allowed parameters:
 -path(-p) [path] - path to scan
 -file(-f) [path] - file with paths to scan
 -extensions(-e) [extensions] - comma-separated list of file extensions
--detect_functions(-df) [detect matchers] - comma-separated list of detect matchers
--user_signatures(-us) [user signatures] - comma-separated list of user detect signatures
+-matchers(-m) [matchers] - comma-separated list of matchers
+-user_signatures(-us) [user signatures] - comma-separated list of user signatures
 -fast - fast scan
 -full - full scan
 -console(-c) - console mode
 -report(-r) [path] - path to dir to save report
 -report_encoding(-re) [encoding] - report encoding (UTF-8, Windows-1251) (default: UTF-8)
 -threads(-t) [count] - count of threads
--engine(-e) [engine] - scan engine (hyperscan, kotlin) (default: ${runBlocking { scanSettings.engine.value.readableName() }})
+-engine(-en) [engine] - scan engine (hyperscan, kotlin) (default: ${runBlocking { scanSettings.engine.value.readableName() }})
 
 Allowed extensions: 
         ${
@@ -379,11 +384,15 @@ Allowed extensions:
                     }
             }
 
-Allowed detect matchers: 
-        ${Matchers.joinToString("\n        ") { it.name.lowercase().replace(' ', '_') }}
-Allowed user detect signatures:
+Allowed matchers: 
+        ${MatchersRegister.joinToString("\n        ") { it.name.lowercase().replace(' ', '_') }}
+Allowed user signatures:
         ${userSignatureSettings.userSignatures.joinToString("\n        ") { it.name.lowercase().replace(' ', '_') }} 
             """.trimIndent()
         )
+    }
+
+    fun version() {
+        println("Angry Data Scanner version: $AppVersion")
     }
 }

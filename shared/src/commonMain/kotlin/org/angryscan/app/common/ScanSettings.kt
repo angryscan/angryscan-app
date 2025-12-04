@@ -12,7 +12,6 @@ import org.angryscan.app.scan.common.files.types.FileType
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.common.files.types.RARType
 import org.angryscan.app.scan.common.files.types.ZIPType
-import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.app.serializers.MutableStateKClassSerializer
 import org.angryscan.app.serializers.MutableStateSerializer
 import org.angryscan.app.serializers.PolymorphicFormatter
@@ -102,7 +101,6 @@ class ScanSettings : KoinComponent {
             this.extensionsSettingsExpanded = mutableStateOf(false)
             this.matchers.clear()
             this.matchers.addAll(Matchers)
-            this.matchers.add(RKNDomainDetectFun)
             this.matchersSettingsExpanded = mutableStateOf(false)
             this.fastScan = mutableStateOf(false)
             this.userSignatureSettingsExpanded = mutableStateOf(false)
