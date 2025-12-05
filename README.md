@@ -35,7 +35,7 @@ The tool provides visibility where your sensitive data is stored.
 | Military ID | Удостоверение личности военнослужащего | RU | 3847291847 |
 | Temporary identity document | ВУЛ | RU | 2938475629 |
 | Temporary residence permit | РВП | RU | 8472936418 |
-| Sberbank book number  | Сберкнижка | RU | 2938475629 |
+| Номер Сберкнижки  | Сберкнижка | RU | 2938475629 |
 | Birthday | - | - | 15.03.1985 |
 | Death date | - | RU | 22.11.2023 |
 | User identifier | Social user ID | - | @3847291847 |
