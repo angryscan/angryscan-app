@@ -270,7 +270,8 @@ fun ScanTaskCard(
                         color = MaterialTheme.colorScheme.primary
                     )
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         foundAttributes.forEach { attr ->
                             AttributeCard(attr)

@@ -1,5 +1,6 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -11,9 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.angryscan.common.engine.IMatcher
+import org.angryscan.app.di.PreviewModule
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.matchers.FullName
 
 @Composable
 fun AttributeCard(attribute: IMatcher) {
@@ -26,7 +29,7 @@ fun AttributeCard(attribute: IMatcher) {
                     MaterialTheme.shapes.small
                 )
                 .background(color = MaterialTheme.colorScheme.secondary)
-                .padding(4.dp)
+                .padding(vertical = 2.dp, horizontal = 4.dp)
         ) {
             Text(
                 text = attribute.composableName(),
@@ -59,7 +62,7 @@ fun AttributeCard(attribute: IMatcher, onClick: () -> Unit, enabled: Boolean) {
                     onClick = onClick,
                     enabled = enabled
                 )
-                .padding(4.dp)
+                .padding(vertical = 2.dp, horizontal = 4.dp)
         ) {
             Text(
                 text = attribute.composableName(),
@@ -69,5 +72,15 @@ fun AttributeCard(attribute: IMatcher, onClick: () -> Unit, enabled: Boolean) {
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }
+    }
+}
+
+@Preview
+@Composable
+fun AttributeCardPreview() {
+    PreviewModule {
+        AttributeCard(
+            FullName
+        )
     }
 }
