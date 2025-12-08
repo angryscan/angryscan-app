@@ -29,23 +29,23 @@ class AppSettings : KoinComponent {
     enum class LanguageType(val text: String, val locale: String) {
         Default(
             text = when (Locale.getDefault().language) {
-                "ru" -> "По умолчанию (RU)"
                 "en" -> "Default (EN)"
-                else -> "По умолчанию (RU)"
+                "ru" -> "По умолчанию (RU)"
+                else -> "По умолчанию (EN)"
             },
             locale = when (Locale.getDefault().language) {
                 "ru" -> "ru"
                 "en" -> "en"
-                else -> "ru"
+                else -> "en"
             }
-        ),
-        RU(
-            text = "Русский",
-            locale = "ru"
         ),
         EN(
             text = "English",
             locale = "en"
+        ),
+        RU(
+            text = "Русский",
+            locale = "ru"
         ),
     }
 

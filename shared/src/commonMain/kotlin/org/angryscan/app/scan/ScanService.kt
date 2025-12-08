@@ -19,7 +19,9 @@ import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.scan.common.connectors.IConnector
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.CertFileType
+import org.angryscan.app.scan.common.files.types.CodeFileType
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import java.io.File
@@ -234,7 +236,7 @@ class ScanService : KoinComponent {
     suspend fun createTask(
         name: String? = null,
         path: String,
-        extensions: List<FileType>,
+        extensions: List<IFileType>,
         matchers: List<IMatcher>,
         fastScan: Boolean? = null,
         connector: IConnector
@@ -275,8 +277,19 @@ class ScanService : KoinComponent {
             }
 
             val taskExtensions = extensions.toMutableList()
-            if(matchers.contains(CodeDetectFun) && !taskExtensions.contains(FileType.CODE)) taskExtensions.add(FileType.CODE)
-            if(matchers.contains(CertDetectFun) && !taskExtensions.contains(FileType.CERT)) taskExtensions.add(FileType.CERT)
+            if (matchers.contains(CodeDetectFun)) {
+                CodeFileType.entries.forEach {
+                    if (!taskExtensions.contains(it))
+                        taskExtensions.add(it)
+                }
+            }
+
+            if (matchers.contains(CertDetectFun)) {
+                CertFileType.entries.forEach {
+                    if (!taskExtensions.contains(it))
+                        taskExtensions.add(it)
+                }
+            }
 
             taskExtensions.forEach { ext ->
                 TaskFileExtension.new {

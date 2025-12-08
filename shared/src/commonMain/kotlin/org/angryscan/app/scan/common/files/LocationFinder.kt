@@ -1,11 +1,8 @@
 package org.angryscan.app.scan.common.files
 
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
-import org.angryscan.app.scan.common.files.types.DOCXType
-import org.angryscan.app.scan.common.files.types.TextType
-import org.angryscan.app.scan.common.files.types.XLSType
-import org.angryscan.app.scan.common.files.types.XLSXType
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
@@ -13,58 +10,35 @@ import java.nio.file.StandardCopyOption
 import kotlin.io.path.Path
 
 object LocationFinder {
-    fun isSupported(type: FileType): Boolean = when (type) {
-        FileType.XLSX,
-        FileType.XLS,
-        FileType.Text,
-        FileType.DOCX,
-        FileType.DOC -> true
+    fun isSupported(type: IFileType): Boolean = type is IFileLocation
 
-        else -> false
-    }
+    fun isMaskSupported(type: IFileType): Boolean = type is IMaskFile
 
-    fun isMaskSupported(type: FileType): Boolean = when (type) {
-        FileType.Text,
-        FileType.XLSX -> true
-
-        else -> false
-    }
+    fun isExportSupported(type: IFileType): Boolean = type is IExportLocations
 
     suspend fun findLocations(filePath: String, engine: IScanEngine, matcher: IMatcher): List<Location> {
         val file = File(filePath)
-        val type = FileType.getFileType(file = file)
-        if (type == null || !isSupported(type))
-            throw NotSupportedTypeException
+        val type = IFileType.getFileType(file = file)
 
-        return when (type) {
-            FileType.XLSX -> XLSXType.findLocation(filePath, engine, matcher)
-            FileType.XLS -> XLSType.findLocation(filePath, engine, matcher)
-            FileType.Text -> TextType.findLocation(filePath, engine, matcher)
-            FileType.DOCX -> DOCXType.findLocation(filePath, engine, matcher)
-            FileType.DOC -> DOCXType.findLocation(filePath, engine, matcher)
-            else -> throw NotSupportedTypeException
+        if (type is IFileLocation) {
+            return type.findLocation(filePath, engine, matcher)
+        } else {
+            throw NotSupportedTypeException
         }
     }
 
     suspend fun maskLocations(filePath: String, locations: List<Location>): Int {
         val file = File(filePath)
-        val type = FileType.getFileType(file = file) ?: throw NotSupportedTypeException
+        val type = IFileType.getFileType(file = file) ?: throw NotSupportedTypeException
 
         val tmpFile = File.createTempFile("ADS_mask", ".${file.extension}")
 
-        val maskedCount = when (type) {
-            FileType.Text -> TextType.maskLocations(
-                filePath,
-                tmpFile.absolutePath,
-                locations
-            )
-            FileType.XLSX -> XLSXType.maskLocations(
-                filePath,
-                tmpFile.absolutePath,
-                locations
-            )
-            else -> throw NotSupportedTypeException
+        val maskedCount = if (type is IMaskFile) {
+            type.maskLocations(filePath, tmpFile.absolutePath, locations)
+        } else {
+            throw NotSupportedTypeException
         }
+
         if (maskedCount == locations.size) {
             try {
                 Files.move(
@@ -80,6 +54,16 @@ object LocationFinder {
         } else {
             tmpFile.delete()
             return 0
+        }
+    }
+
+    suspend fun exportRows(inputFile: String, locations: List<Location>, outputFile: String): Int {
+        val type = IFileType.getFileType(inputFile) ?: throw NotSupportedTypeException
+
+        if (type is IExportLocations) {
+            return type.exportRows(inputFile, locations, outputFile)
+        } else {
+            throw NotSupportedTypeException
         }
     }
 

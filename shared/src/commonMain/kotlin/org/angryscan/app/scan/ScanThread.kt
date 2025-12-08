@@ -4,6 +4,16 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.db.DatabaseConnector
+import org.angryscan.app.db.models.TaskFileScanResults
+import org.angryscan.app.db.models.TaskFiles
+import org.angryscan.app.db.models.TaskMatchers
+import org.angryscan.app.db.models.TaskState
+import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.engine.fallback
+import org.angryscan.app.scan.engine.getEngine
+import org.angryscan.app.scan.engine.inappropriateMatchers
 import org.angryscan.common.engine.IScanEngine
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
@@ -11,16 +21,6 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import org.angryscan.app.common.ScanSettings
-import org.angryscan.app.db.DatabaseConnector
-import org.angryscan.app.db.models.TaskMatchers
-import org.angryscan.app.db.models.TaskFileScanResults
-import org.angryscan.app.db.models.TaskFiles
-import org.angryscan.app.db.models.TaskState
-import org.angryscan.app.scan.common.files.FileType
-import org.angryscan.app.scan.engine.fallback
-import org.angryscan.app.scan.engine.getEngine
-import org.angryscan.app.scan.engine.inappropriateMatchers
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
@@ -141,7 +141,7 @@ class ScanThread : KoinComponent {
 
                 val timer = measureTimeMillis {
 
-                    val scanRes = FileType
+                    val scanRes = IFileType
                         .getFileType(fileObject)
                         ?.scanFile(
                             file = fileObject,

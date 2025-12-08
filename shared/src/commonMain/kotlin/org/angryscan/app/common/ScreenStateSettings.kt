@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.serializers.MutableStateSerializer
 import org.angryscan.app.serializers.PolymorphicFormatter
 import org.angryscan.app.ui.components.SelectionTypes
@@ -31,7 +31,7 @@ class ScreenStateSettings : KoinComponent {
         @Serializable(with = MutableStateSerializer::class)
         var selectionType: MutableState<SelectionTypes> = mutableStateOf(SelectionTypes.Folder),
         @Serializable
-        val extensions: MutableList<FileType> = mutableStateListOf(),
+        val extensions: MutableList<IFileType> = mutableStateListOf(),
         @Serializable
         val matchers: MutableList<IMatcher> = mutableStateListOf(),
         @Serializable
@@ -49,7 +49,7 @@ class ScreenStateSettings : KoinComponent {
         var bucket: String = "",
         var connectionSettingsExpanded: Boolean = false,
         @Serializable
-        val extensions: MutableList<FileType> = mutableStateListOf(),
+        val extensions: MutableList<IFileType> = mutableStateListOf(),
         @Serializable
         val matchers: MutableList<IMatcher> = mutableStateListOf(),
         @Serializable
@@ -62,7 +62,7 @@ class ScreenStateSettings : KoinComponent {
     data class HTTPScreenState(
         var path: String = "",
         @Serializable
-        val extensions: MutableList<FileType> = mutableStateListOf(),
+        val extensions: MutableList<IFileType> = mutableStateListOf(),
         @Serializable
         val matchers: MutableList<IMatcher> = mutableStateListOf(),
         @Serializable

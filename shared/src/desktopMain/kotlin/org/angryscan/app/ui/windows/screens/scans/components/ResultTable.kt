@@ -33,8 +33,8 @@ import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFileResult
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
-import org.angryscan.app.scan.common.files.FileType
 import org.angryscan.app.scan.common.files.LocationFinder
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.ui.windows.components.MessageBox
 import java.awt.Desktop
 import java.io.File
@@ -409,7 +409,7 @@ fun ResultTable(
                             f.foundAttributes.any { attr -> attr in selectedAttributes }
                         }
                     ) { file ->
-                        val fileType = FileType.getFileType(file.path)
+                        val fileType = IFileType.getFileType(file.path)
                         val locationSupported = fileType != null &&
                                 LocationFinder.isSupported(fileType) &&
                                 task.dbTask.connector is ConnectorFileShare

@@ -7,7 +7,8 @@ import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.db.DatabaseSettings
 import org.angryscan.app.di.scanModule
-import org.angryscan.app.scan.common.files.FileType
+import org.angryscan.app.scan.common.files.types.DOCType
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.app.scan.engine.toKotlinMatchers
 import org.angryscan.common.engine.IMatcher
@@ -118,7 +119,7 @@ internal class FileTypeTest() {
                         val path = javaClass.getResource("/files/$filename")
                         assertNotNull(path)
                         val f = File(path.file)
-                        val enumType: FileType? = f.let { FileType.getFileType(it) }
+                        val enumType: IFileType? = f.let { IFileType.getFileType(it) }
                         enumType?.scanFile(
                             f,
                             currentCoroutineContext(),
@@ -159,7 +160,7 @@ internal class FileTypeTest() {
             val path = javaClass.getResource("/files/$filename")
             assertNotNull(path)
             val f = File(path.file)
-            val enumType: FileType? = f.let { FileType.getFileType(it) }
+            val enumType: IFileType? = f.let { IFileType.getFileType(it) }
 
             val engines = listOf(
                 KotlinEngine(Matchers.toKotlinMatchers())
@@ -196,7 +197,7 @@ internal class FileTypeTest() {
         )
         runBlocking {
             try {
-                val enumType: FileType? = FileType.getFileType(f)
+                val enumType: IFileType? = IFileType.getFileType(f)
                 enumType?.scanFile(f, currentCoroutineContext(), engines, false).let {
                     assertEquals(mapOf(), it?.getDocumentFields())
                     assertTrue(it?.skipped() == true)
@@ -224,7 +225,7 @@ internal class FileTypeTest() {
 
         runBlocking {
             try {
-                FileType.DOC.scanFile(f, currentCoroutineContext(), engines, false).let {
+                DOCType.scanFile(f, currentCoroutineContext(), engines, false).let {
                     assertEquals(0, it.length())
                     assertEquals(mapOf(), it.getDocumentFields())
                 }

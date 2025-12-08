@@ -3,19 +3,24 @@ package org.angryscan.app.scan.common.files.types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.xslf.usermodel.XMLSlideShow
 import org.apache.poi.xslf.usermodel.XSLFTable
 import org.apache.poi.xslf.usermodel.XSLFTextBox
 import org.angryscan.app.scan.common.Document
+import org.angryscan.app.scan.common.files.IFileLocation
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import java.io.File
 import java.io.FileInputStream
 import kotlin.coroutines.CoroutineContext
 
-object PPTXType : IFileType {
+@Serializable
+object PPTXType : FileType(), IFileLocation {
+    override val name = "PPTX"
+    override val extensions = listOf("pptx", "potx", "ppsx", "pptm")
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,

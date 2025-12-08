@@ -11,6 +11,7 @@ import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.db.DatabaseSettings
 import org.angryscan.app.di.scanModule
+import org.angryscan.app.scan.common.files.types.CertFileType
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,6 +1,7 @@
 package org.angryscan.app
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.context.startKoin
 import org.angryscan.app.common.AppFiles
+import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.AppVersion
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.OS
@@ -27,9 +29,11 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.ui.MainWindow
 import org.angryscan.app.ui.tray.DorkTray
 import org.angryscan.app.ui.windows.ApplicationErrorWindow
+import org.koin.compose.koinInject
 import java.awt.event.WindowEvent
 import java.io.File
 import java.net.BindException
+import java.util.Locale
 import javax.swing.UIManager
 import kotlin.system.exitProcess
 
@@ -126,10 +130,12 @@ suspend fun main(args: Array<String>) {
     }
 
     if (args.isNotEmpty() &&
-        arrayOf("-c", "-console", "-h", "-help").any { args.contains(it) }
+        arrayOf("-c", "-console", "-h", "-help", "-v", "-version").any { args.contains(it) }
     ) {
         if (arrayOf("-h", "-help").any { args.contains(it) }) {
             Console.help()
+        } else if (arrayOf("-v", "-version").any { args.contains(it) }) {
+            Console.version()
         } else if (arrayOf("-c", "-console").any { args.contains(it) }) {
             if (AppFiles.ResultDBFile.exists()) {
                 if (!AppFiles.ResultDBFile.delete()) {
@@ -164,14 +170,18 @@ suspend fun main(args: Array<String>) {
                     }
                 }
             ) {
+                val appSettings = koinInject<AppSettings>()
+                val appLocale by remember { appSettings.language }
                 var mainIsVisible by remember { mutableStateOf(true) }
+
+                Locale.setDefault(Locale.forLanguageTag(appLocale.locale))
                 
                 LaunchedEffect(Unit) {
                     if (OS.currentOS() == OS.MAC) {
                         try {
                             val appClass = Class.forName("com.apple.eawt.Application")
                             val app = appClass.getMethod("getApplication").invoke(null)
-                            
+
                             val listenerClass = Class.forName("com.apple.eawt.AppReOpenedListener")
                             val proxy = java.lang.reflect.Proxy.newProxyInstance(
                                 listenerClass.classLoader,
@@ -181,7 +191,7 @@ suspend fun main(args: Array<String>) {
                                 mainIsVisible = true
                                 null
                             }
-                            
+
                             appClass.getMethod("addAppEventListener", Class.forName("com.apple.eawt.AppEventListener"))
                                 .invoke(app, proxy)
                             logger.info { "macOS dock click handler registered successfully" }
