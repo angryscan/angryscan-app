@@ -99,7 +99,7 @@ The tool provides visibility where your sensitive data is stored.
 
 It is possible to add custom data search signatures using plain text: `Secret`, `Password`, `Central bank` or any other.
 
-## Supported file types
+### Supported file types
 
 | File Type                 | File Format                                          |
 |---------------------------|------------------------------------------------------|
@@ -113,7 +113,7 @@ It is possible to add custom data search signatures using plain text: `Secret`, 
 | Archives                  | `.zip` `.rar`                                        |
 | Plain text                | `.txt` `.csv` `.xml` `.json` `.log`                  |
 
-## Supported data sources
+### Supported data sources
 
 | Connector                | Description                                              |
 |--------------------------|----------------------------------------------------------|
@@ -122,7 +122,7 @@ It is possible to add custom data search signatures using plain text: `Secret`, 
 | S3                       | Scan files  in S3                                        |
 | HTTP/HTTPS               | Scans web site content                                   |
 
-## Real life use cases
+### Real life use cases
 - A leak рunting team scans network folder and ensure that it does not contain source code
 - An employee finds and deletes files containing card numbers to comply with PCI DSS
 - A banking employee scans network folder to ensure that it does not contain PII of VIP clients
@@ -130,7 +130,7 @@ It is possible to add custom data search signatures using plain text: `Secret`, 
 - Law enforcements need to discover a traces of cryptocurrency on a laptop
 - A cybersecurity officer need to validate that the database does not contain a personal data
 
-## Key features
+### Key features
 - **Ranking**: scanner shows high-value files first
 - View scanning history
 - Download results in a SCV file
@@ -147,7 +147,7 @@ It is possible to add custom data search signatures using plain text: `Secret`, 
 
 AngryData can also be launched in [console mode](https://github.com/angryscan/angrydata-app/blob/main/doc/CONSOLE.md), which is convenient for automation and running tasks without a graphical interface.
 
-## System Requirements
+### System Requirements
 `Windows`, `Linux `
 `400MB HDD` `4GB RAM` `1.3Ghz CPU`
 
