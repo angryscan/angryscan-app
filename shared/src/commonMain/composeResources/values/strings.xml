@@ -253,9 +253,9 @@
     <string name="ThemeType-Dark">Dark</string>
     <string name="ThemeType-System">System</string>
 
-    <string name="Task-StartedAt">Started: %1$s</string>
-    <string name="Task-FinishedAt">Finished: %1$s</string>
-    <string name="Task-PausedAt">Paused: %1$s</string>
+    <string name="Task-StartedAt">Started:</string>
+    <string name="Task-FinishedAt">Finished:</string>
+    <string name="Task-PausedAt">Paused:</string>
     <string name="Task-Progress">Progress: %1$s%</string>
     <string name="Task-TotalFiles">Total files</string>
     <string name="Task-SelectedFiles">Selected files</string>

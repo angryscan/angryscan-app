@@ -296,7 +296,7 @@ object Console : KoinComponent {
         if (fileExtensions != null) {
             scanSettings.extensions.clear()
             fileExtensions.split(",").forEach { ext ->
-                val extension = IFileType.getAll().find { it.name.lowercase() == ext.lowercase() }
+                val extension = IFileType.getAll().find { it.name.equals(ext, ignoreCase = true) }
                 if (extension != null)
                     scanSettings.extensions.add(extension)
                 else
@@ -309,7 +309,7 @@ object Console : KoinComponent {
             scanSettings.matchers.clear()
             if (matchers.isNotEmpty()) {
                 matchers.split(",").forEach { matcher ->
-                    val dfo = MatchersRegister.find { it.name.lowercase().replace(' ', '_') == matcher.lowercase() }
+                    val dfo = MatchersRegister.find { it.name.replace(' ', '_').equals(matcher, ignoreCase = true) }
                     if (dfo != null)
                         scanSettings.matchers.add(dfo)
                     else
@@ -324,7 +324,7 @@ object Console : KoinComponent {
             if (userSignatures.isNotEmpty()) {
                 userSignatures.split(",").forEach { sig ->
                     val sigo =
-                        userSignaturesSettings.userSignatures.find { it.name.lowercase().replace(' ', '_') == sig.lowercase() }
+                        userSignaturesSettings.userSignatures.find { it.name.replace(' ', '_').equals(sig, ignoreCase = true) }
                     if (sigo != null)
                         scanSettings.userSignatures.add(sigo)
                     else

@@ -247,9 +247,9 @@
     <string name="ThemeType-Dark">Тёмная</string>
     <string name="ThemeType-System">Системная</string>
 
-    <string name="Task-StartedAt">Начало: %1$s</string>
-    <string name="Task-FinishedAt">Конец: %1$s</string>
-    <string name="Task-PausedAt">Пауза: %1$s</string>
+    <string name="Task-StartedAt">Начало:</string>
+    <string name="Task-FinishedAt">Конец:</string>
+    <string name="Task-PausedAt">Пауза:</string>
     <string name="Task-Progress">Прогресс: %1$s%</string>
     <string name="Task-TotalFiles">Всего файлов</string>
     <string name="Task-SelectedFiles">Выбрано файлов</string>
