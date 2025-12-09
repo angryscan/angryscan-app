@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kover)
     alias(libs.plugins.conveyor)
+    id("io.github.kdroidfilter.compose.linux.packagedeps").version("0.2.5")
 }
 
 kotlin {
@@ -181,4 +182,23 @@ configurations.all {
         // https://github.com/JetBrains/compose-jb/issues/1404#issuecomment-1146894731
         attribute(Attribute.of("ui", String::class.java), "awt")
     }
+}
+
+linuxDebConfig {
+    // add dependencies to DEBIAN/control
+    debDepends.set(listOf("libqt5widgets5t64", "libx11-6"))
+
+    // if you want to add dependencies with alternatives for compatibility with older OSes, add them like this:
+    debDepends.set(
+        listOf(
+            "libqt5core5t64 | libqt5core5a",
+            "libqt5gui5t64 | libqt5gui5",
+            "libqt5widgets5t64 | libqt5widgets5",
+        )
+    )
+    // set StartupWMClass to fix dock/taskbar icon
+    startupWMClass.set("org-angryscan-app-MainKt")
+
+    //for Ubuntu 24 t64 dependencies compatibility with older OSes, see below Under Known jpackage issue: Ubuntu t64 transition
+    enableT64AlternativeDeps.set(true)
 }
