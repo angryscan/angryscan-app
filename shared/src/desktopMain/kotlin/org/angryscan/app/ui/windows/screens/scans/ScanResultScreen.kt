@@ -102,7 +102,7 @@ fun ScanResultScreen(
 
     val busy by task.busy.collectAsState()
 
-    val attributesOnOpen = remember { mutableStateListOf<IMatcher>() }
+    val attributesOnOpen = remember { mutableStateMapOf<IMatcher, Int>() }
 
     val selectedAttributes = remember { mutableStateListOf<IMatcher>() }
 
@@ -148,7 +148,9 @@ fun ScanResultScreen(
         foundAttributes.filter { it.key !in attributesOnOpen }
             .let { attributes ->
                 selectedAttributes.addAll(attributes.keys)
-                attributesOnOpen.addAll(attributes.keys)
+                attributes.forEach { matcher, i ->
+                    attributesOnOpen[matcher] = i
+                }
             }
 
         taskFilesViewModel.update()
@@ -572,22 +574,23 @@ fun ScanResultScreen(
                                 if (attributesOnOpen.size == selectedAttributes.size) {
                                     selectedAttributes.clear()
                                 } else {
-                                    selectedAttributes.addAll(attributesOnOpen.filter { it !in selectedAttributes })
+                                    selectedAttributes.addAll(attributesOnOpen.keys.filter { it !in selectedAttributes })
                                 }
                             }
                         )
-                        attributesOnOpen.forEach { attr ->
+                        attributesOnOpen.toList().sortedByDescending { it.second }.forEach { attr ->
                             MatcherTooltip(
-                                matcher = attr
+                                matcher = attr.first,
+                                count = attr.second
                             ) {
                                 AttributeFilterChip(
-                                    text = attr.composableName(),
-                                    selected = attr in selectedAttributes,
+                                    text = attr.first.composableName(),
+                                    selected = attr.first in selectedAttributes,
                                     onClick = {
-                                        if (attr in selectedAttributes) {
-                                            selectedAttributes -= attr
+                                        if (attr.first in selectedAttributes) {
+                                            selectedAttributes -= attr.first
                                         } else {
-                                            selectedAttributes += attr
+                                            selectedAttributes += attr.first
                                         }
                                     }
                                 )

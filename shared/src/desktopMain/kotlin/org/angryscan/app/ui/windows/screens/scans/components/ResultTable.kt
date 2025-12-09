@@ -523,12 +523,12 @@ fun ResultTable(
                                 modifier = Modifier
                                     .weight(0.5f)
                             ) {
-                                file.foundAttributes.forEach { attr ->
+                                file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
                                     AttributeCard(
-                                        attribute = attr.key,
-                                        count = attr.value,
+                                        attribute = attr.first,
+                                        count = attr.second,
                                         onClick = {
-                                            attributeSelected = attr.key
+                                            attributeSelected = attr.first
                                             fileSelected = file
                                             longScanMessageBoxVisible = true
                                         },

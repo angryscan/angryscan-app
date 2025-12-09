@@ -273,8 +273,8 @@ fun ScanTaskCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        foundAttributes.forEach { attr ->
-                            AttributeCard(attr.key, attr.value)
+                        foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
+                            AttributeCard(attr.first, attr.second)
                         }
                     }
                 }
