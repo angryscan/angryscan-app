@@ -274,7 +274,7 @@ fun ScanTaskCard(
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         foundAttributes.forEach { attr ->
-                            AttributeCard(attr)
+                            AttributeCard(attr.key, attr.value)
                         }
                     }
                 }

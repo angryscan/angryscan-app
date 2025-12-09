@@ -181,7 +181,7 @@ object Console : KoinComponent {
                 writer.append(
                     listOf(
                         fileRow.path,
-                        fileRow.foundAttributes.joinToString(", ") { attr -> attr.name },
+                        fileRow.foundAttributes.keys.joinToString(", ") { attr -> attr.name },
                         fileRow.score.toString(),
                         fileRow.count.toString(),
                         fileRow.size.toString()

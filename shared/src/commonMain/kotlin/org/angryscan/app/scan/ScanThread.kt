@@ -163,7 +163,7 @@ class ScanThread : KoinComponent {
                                     it[matcher] = matchers[field.key] ?: 0
                                     it[count] = field.value
                                 }
-                                taskEntity.addFoundAttribute(field.key)
+                                taskEntity.addFoundAttribute(field.key, field.value)
                             }
                             if (!scanRes.isEmpty()) {
                                 taskEntity.incrementFoundFiles()

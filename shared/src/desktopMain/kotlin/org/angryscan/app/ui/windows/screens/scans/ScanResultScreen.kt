@@ -145,10 +145,10 @@ fun ScanResultScreen(
     }
 
     LaunchedEffect(foundAttributes) {
-        foundAttributes.filter { it !in attributesOnOpen }
+        foundAttributes.filter { it.key !in attributesOnOpen }
             .let { attributes ->
-                selectedAttributes.addAll(attributes)
-                attributesOnOpen.addAll(attributes)
+                selectedAttributes.addAll(attributes.keys)
+                attributesOnOpen.addAll(attributes.keys)
             }
 
         taskFilesViewModel.update()

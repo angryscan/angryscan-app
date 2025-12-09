@@ -19,9 +19,13 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.FullName
 
 @Composable
-fun AttributeCard(attribute: IMatcher) {
+fun AttributeCard(
+    attribute: IMatcher,
+    count: Int
+) {
     MatcherTooltip(
-        matcher = attribute
+        matcher = attribute,
+        count
     ) {
         Box(
             modifier = Modifier
@@ -43,9 +47,10 @@ fun AttributeCard(attribute: IMatcher) {
 }
 
 @Composable
-fun AttributeCard(attribute: IMatcher, onClick: () -> Unit, enabled: Boolean) {
+fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled: Boolean) {
     MatcherTooltip(
-        matcher = attribute
+        matcher = attribute,
+        count = count
     ) {
         Box(
             modifier = Modifier
@@ -80,7 +85,8 @@ fun AttributeCard(attribute: IMatcher, onClick: () -> Unit, enabled: Boolean) {
 fun AttributeCardPreview() {
     PreviewModule {
         AttributeCard(
-            FullName
+            FullName,
+            5
         )
     }
 }
