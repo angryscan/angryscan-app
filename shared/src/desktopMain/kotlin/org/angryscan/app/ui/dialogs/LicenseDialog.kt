@@ -1,17 +1,28 @@
 package org.angryscan.app.ui.dialogs
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.LocalPolice
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberDialogState
-import org.jetbrains.compose.resources.stringResource
 import org.angryscan.app.resources.*
+import org.angryscan.app.ui.windows.components.DesktopWindowShapes
+import org.angryscan.app.ui.windows.components.TitleBar
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LicenseDialog(
@@ -21,14 +32,41 @@ fun LicenseDialog(
     DialogWindow(
         onCloseRequest = onCloseRequest,
         state = dialogState,
-        title = stringResource(Res.string.About_License),
+        transparent = true,
+        undecorated = true,
         resizable = false
     ) {
-        MaterialTheme {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.surface
-            ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+            shape = DesktopWindowShapes(),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        ) {
+            Column {
+                TitleBar(
+                    windowPlacement = WindowPlacement.Floating
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.LocalPolice,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(Res.string.About_License),
+                            fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                            fontWeight = MaterialTheme.typography.titleMedium.fontWeight,
+                            lineHeight = MaterialTheme.typography.titleMedium.lineHeight,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -40,20 +78,20 @@ fun LicenseDialog(
                         text = stringResource(Res.string.license_title),
                         style = MaterialTheme.typography.headlineSmall
                     )
-                    
+
                     Text(
                         text = stringResource(Res.string.license_copyright),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    
+
                     Text(
                         text = stringResource(Res.string.license_text),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End

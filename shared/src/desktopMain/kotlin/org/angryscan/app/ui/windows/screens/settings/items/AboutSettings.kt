@@ -21,7 +21,7 @@ fun AboutSettings() {
     val descriptionDialogState = rememberDialogState(width = 600.dp, height = 450.dp)
 
     var showLicenseDialog by remember { mutableStateOf(false) }
-    val licenseDialogState = rememberDialogState(width = 600.dp, height = 580.dp)
+    val licenseDialogState = rememberDialogState(width = 600.dp, height = 590.dp)
 
     SettingsRow(title = stringResource(Res.string.SideMenu_AboutPage)) {
         Row(

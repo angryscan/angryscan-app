@@ -142,6 +142,7 @@ fun AttributeLocationWindow(
     DialogWindow(
         onCloseRequest = { onClose(!searching && !errorSearching && !failedToFind && locations.isEmpty()) },
         state = state,
+        transparent = true,
         undecorated = true,
         resizable = false
     ) {
