@@ -60,7 +60,6 @@ fun SettingsBoxDetectFunctionsGrouped(
                     DriverLicense,
                     RIN,
                     MilitaryID,
-                    TemporaryID,
                     ResidencePermit,
                     SberBook,
                     SocialUserId,
@@ -70,7 +69,6 @@ fun SettingsBoxDetectFunctionsGrouped(
                     OGRNIP,
                     OKPO,
                     StateRegContract,
-                    EpCertificateNumber,
                     ExecDocNumber,
                     CadastralNumber,
                     MedicareUS,
@@ -86,14 +84,12 @@ fun SettingsBoxDetectFunctionsGrouped(
                     Address,
                     Login,
                     Password,
-                    BirthCert,
+                    Certificate,
                     EducationDoc,
                     EducationLevel,
                     EducationLicense,
                     IdentityDocType,
-                    InheritanceDoc,
                     MaritalStatus,
-                    MarriageCert,
                     MilitaryRank,
                     SecurityAffiliation,
                     Geo,
@@ -106,8 +102,7 @@ fun SettingsBoxDetectFunctionsGrouped(
                     CardNumber(),
                     CVV,
                     BankAccount,
-                    BankAccountLE,
-                    UidContractBankBki
+                    BankAccountLE
                 )
             ),
             MatchersGroup(

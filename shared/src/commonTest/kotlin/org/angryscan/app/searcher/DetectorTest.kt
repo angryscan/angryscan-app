@@ -38,7 +38,7 @@ val matchers = listOf<IKotlinMatcher>(
 internal class DetectorTest : IKoinTestRule {
     @Test
     fun scan() {
-        val sampleText = """Sample text, 4279432112344321 199-510-399 13  
+        val sampleText = """Sample text, 4279432112344321 Снилс 199-510-399 13  
 583410778676
 омс 7755320882002755"""
         val doc = Document(1, "123")
