@@ -30,9 +30,13 @@ fun ContactDialog(
     dialogState: DialogState = rememberDialogState(width = 600.dp, height = 450.dp)
 ) {
     val coroutineScope = rememberCoroutineScope()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
     SimpleDialogWindow(
         onCloseRequest = onCloseRequest,
         dialogState = dialogState,
+        snackbarHostState = snackbarHostState,
         title = stringResource(Res.string.ContactDialog_Title)
     ) {
         val uriHandler = LocalUriHandler.current
@@ -42,7 +46,6 @@ fun ContactDialog(
         val email = stringResource(Res.string.ContactDialog_Email)
         val websiteLabel = stringResource(Res.string.ContactDialog_WebsiteLabel)
         val emailLabel = stringResource(Res.string.ContactDialog_EmailLabel)
-        val snackbarHostState = remember { SnackbarHostState() }
         val copiedMessage = stringResource(Res.string.ScanResultScreen_ClipboardCopiedMessage)
 
         Box {
@@ -166,11 +169,6 @@ fun ContactDialog(
                     }
                 }
             }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
     }
 }
