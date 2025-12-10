@@ -1,17 +1,7 @@
 package org.angryscan.app.scan
 
-import MigrationUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
-import org.angryscan.common.engine.IMatcher
-import org.flywaydb.core.Flyway
-import org.flywaydb.core.api.exception.FlywayValidateException
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.ScanSettings
@@ -24,9 +14,12 @@ import org.angryscan.app.scan.common.files.types.CodeFileType
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
-import java.io.File
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.io.path.absolutePathString
 
 private val logger = KotlinLogging.logger {}
 
@@ -45,84 +38,8 @@ class ScanService : KoinComponent {
 
     val changingThreadsCount = AtomicBoolean(false)
 
-    private var migrationRequired = false
-
     init {
-        if (File(
-                AppFiles
-                    .MigrationsDirectory
-                    .resolve("V2__AddMissingColumns.sql")
-                    .absolutePathString()
-            ).exists()
-        ) {
-            File(AppFiles.MigrationsDirectory.absolutePathString()).listFiles()?.forEach {
-                it.delete()
-            }
-            appSettings.firstMigration.value = true
-            appSettings.save()
-        }
-
-        transaction(database.connection) {
-            SchemaUtils.create(
-                Tasks,
-                TaskFiles,
-                TaskFileExtensions,
-                TaskMatchers,
-                TaskFileScanResults
-            )
-
-
-            val statements = MigrationUtils.statementsRequiredForDatabaseMigration(Tasks, withLogs = false)
-            if (statements.isNotEmpty()) {
-                logger.info {
-                    "Database migration required."
-                }
-                migrationRequired = true
-                if (!File(AppFiles.MigrationsDirectory.absolutePathString()).exists()) {
-                    File(AppFiles.MigrationsDirectory.absolutePathString()).mkdir()
-                }
-
-                MigrationUtils.generateMigrationScript(
-                    Tasks,
-                    scriptDirectory = AppFiles.MigrationsDirectory.absolutePathString(),
-                    scriptName = "V2__FirstMigration",
-                )
-            }
-        }
-
-        if (migrationRequired) {
-            val flyway = Flyway.configure()
-                .dataSource(database.dbSettings.url, "", "")
-                .defaultSchema("main")
-                .schemas("main")
-                .locations("filesystem:${AppFiles.MigrationsDirectory}")
-                .baselineOnMigrate(appSettings.firstMigration.value)
-                .load()
-            try {
-                flyway.validate()
-
-                val m = runBlocking {
-                    database.transaction {
-                        flyway.migrate()
-                    }
-                }
-
-                if (m.success && m.successfulMigrations.isNotEmpty()) {
-                    appSettings.firstMigration.value = false
-                    appSettings.save()
-                    migrationRequired = false
-                    logger.info {
-                        "Database migration completed."
-                    }
-                } else {
-                    logger.error {
-                        "Database migration failed."
-                    }
-                }
-            } catch (_: FlywayValidateException) {
-
-            }
-        }
+        DatabaseMigration.migrate()
 
         scanThreads = Array(appSettings.threadCount.value) { ScanThread() }
         CoroutineScope(Dispatchers.IO).launch {
