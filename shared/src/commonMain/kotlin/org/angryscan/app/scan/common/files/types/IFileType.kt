@@ -2,12 +2,13 @@ package org.angryscan.app.scan.common.files.types
 
 import kotlinx.serialization.Serializable
 import org.angryscan.app.scan.common.Document
+import org.angryscan.app.serializers.IFileTypeSerializer
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import java.io.File
 import kotlin.coroutines.CoroutineContext
 
-@Serializable
+@Serializable(with = IFileTypeSerializer::class)
 sealed interface IFileType {
     val name: String
     val extensions: List<String>

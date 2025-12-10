@@ -9,6 +9,7 @@ import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.scan.common.connectors.IConnector
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.scan.functions.RKNDomainDetectFun
@@ -75,6 +76,7 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(CertDetectFun::class)
         subclass(CodeDetectFun::class)
         subclass(RKNDomainDetectFun::class)
+
         defaultDeserializer { _ -> serializer<UnknownDetectFun>() }
     }
     polymorphic(IConnector::class) {
@@ -87,6 +89,7 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(HyperScanEngine::class)
         subclass(CustomEngine::class)
     }
+    contextual(IFileType::class, IFileTypeSerializer)
 }
 
 val PolymorphicFormatter = Json {
