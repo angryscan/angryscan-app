@@ -128,17 +128,16 @@ class ScanService : KoinComponent {
         CoroutineScope(Dispatchers.IO).launch {
             database.transaction {
                 Task.all().forEach { task ->
-
                     val taskEntity = TaskEntityViewModel(
                         dbTask = task,
                         state = task.taskState,
                         totalFiles = task.filesCount,
                         foundAttributes = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
-                            .select(TaskMatchers.matcher)
+                            .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
+                            .groupBy(TaskMatchers.matcher)
                             .where { TaskFiles.task.eq(task.id) }
-                            .withDistinct()
-                            .map { it[TaskMatchers.matcher] }
-                            .toSet(),
+                            .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
+                            .filter { it.value > 0 },
                         foundFiles = TaskFiles
                             .innerJoin(TaskFileScanResults)
                             .select(TaskFiles.id)

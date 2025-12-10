@@ -72,8 +72,6 @@
     <string name="SideMenu-ScanListPage">Scans</string>
     <string name="SideMenu-SettingsPage">Settings</string>
     <string name="SideMenu-AboutPage">About</string>
-    <string name="About-Description">Description</string>
-    <string name="About-License">License</string>
 
     <string name="UpperMenu-Tooltip-FileShare">File share scanning</string>
     <string name="UpperMenu-Tooltip-S3">S3 storage scanning</string>
@@ -243,9 +241,9 @@
     <string name="ThemeType-Dark">Dark</string>
     <string name="ThemeType-System">System</string>
 
-    <string name="Task-StartedAt">Started: %1$s</string>
-    <string name="Task-FinishedAt">Finished: %1$s</string>
-    <string name="Task-PausedAt">Paused: %1$s</string>
+    <string name="Task-StartedAt">Started:</string>
+    <string name="Task-FinishedAt">Finished:</string>
+    <string name="Task-PausedAt">Paused:</string>
     <string name="Task-Progress">Progress: %1$s%</string>
     <string name="Task-TotalFiles">Total files</string>
     <string name="Task-SelectedFiles">Selected files</string>
@@ -283,7 +281,10 @@
 
     <string name="AboutScreen-Version">Version: %1$s</string>
     <string name="AboutScreen-Copyright">Open Source Software, 2025</string>
-    <string name="AboutScreen-Description">Angry Data Scanner is a personal software to quickly check the presence of personal data and card numbers in files. Angry Data Scanner supports the following file formats: .xlsx, .docx, .txt, .csv, .xml, .json, .log, .doc, .xls, .pdf, .zip.\nAngry Data Scanner does not make any changes into the files it scans, and it requires read-only access to the file.\n\nScan results are advisory and may require additional verification from the user.</string>
+    <string name="AboutScreen-Description">Angry Data Scanner is a personal open source software to quickly check the presence of personal data and card numbers in files.</string>
+    <string name="DescriptionDialog-Title">Description</string>
+    <string name="LicenseDialog-Title">License</string>
+    <string name="ContactDialog-Title">Contacts</string>
 
     <string name="MessageBox-Cancel">Cancel</string>
     <string name="MessageBox-OK">OK</string>

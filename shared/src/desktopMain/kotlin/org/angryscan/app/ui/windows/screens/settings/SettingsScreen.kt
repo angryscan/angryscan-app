@@ -54,12 +54,12 @@ fun SettingsScreen() {
                             .padding(end = 20.dp)
                             .verticalScroll(scrollState)
                     ) {
+                        AboutSettings()
                         ThreadCountSettings()
                         ContextMenuSettings()
                         LanguageSettings()
                         ThemeSettings()
                         LoggingSettings()
-                        AboutSettings()
                         EngineSettings()
                     }
                     VerticalScrollbar(

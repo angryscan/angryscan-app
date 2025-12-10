@@ -12,20 +12,16 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.matchers.UserSignature
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FilesCounter
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import kotlin.time.Clock
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -35,7 +31,7 @@ private val logger = KotlinLogging.logger {}
 class TaskEntityViewModel(
     val dbTask: Task,
     totalFiles: Long? = null,
-    foundAttributes: Set<IMatcher>? = null,
+    foundAttributes: Map<IMatcher, Int>? = null,
     foundFiles: Long? = null,
     folderSize: String? = null,
     state: TaskState = TaskState.LOADING
@@ -79,7 +75,7 @@ class TaskEntityViewModel(
     val skippedFiles
         get() = _skippedFiles.asStateFlow()
 
-    private var _foundAttributes = MutableStateFlow(setOf<IMatcher>())
+    private var _foundAttributes = MutableStateFlow(mapOf<IMatcher, Int>())
     val foundAttributes
         get() = _foundAttributes.asStateFlow()
 
@@ -154,12 +150,12 @@ class TaskEntityViewModel(
                 _totalFiles.value = dbTask.filesCount ?: 0L
 
                 _foundAttributes.value =
-                    TaskFileScanResults
-                        .innerJoin(TaskMatchers)
-                        .select(TaskMatchers.matcher)
-                        .where { TaskMatchers.task.eq(dbTask.id) }
-                        .map { it[TaskMatchers.matcher] }
-                        .toSet()
+                    (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
+                        .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
+                        .groupBy(TaskMatchers.matcher)
+                        .where { TaskFiles.task.eq(dbTask.id) }
+                        .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
+                        .filter { it.value > 0 }
             }
         }
         _id.value = dbTask.id.value
@@ -176,23 +172,25 @@ class TaskEntityViewModel(
                     TaskFileScanResults.file.eq(fileId) and TaskFileScanResults.matcher.eq(dbMatcher.id)
                 }
                 _foundAttributes.value =
-                    TaskFileScanResults
-                        .innerJoin(TaskMatchers)
-                        .select(TaskMatchers.matcher)
-                        .where { TaskMatchers.task.eq(dbTask.id) }
-                        .map { it[TaskMatchers.matcher] }
-                        .toSet()
+                    (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
+                        .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
+                        .groupBy(TaskMatchers.matcher)
+                        .where { TaskFiles.task.eq(dbTask.id) }
+                        .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
+                        .filter { it.value > 0 }
             }
         }
     }
 
-    fun addFoundAttribute(matcher: IMatcher) {
-        //Check if user signature already added
-        if (
-            matcher !is UserSignature ||
-            _foundAttributes.value.none { it.name == matcher.name }
-        )
-            _foundAttributes.value += matcher
+    fun addFoundAttribute(matcher: IMatcher, count: Int) {
+        val key = _foundAttributes.value.keys.find { it.name == matcher.name }
+        if(key == null) {
+            _foundAttributes.value += (matcher to count)
+        } else {
+            _foundAttributes.value = _foundAttributes.value.toMutableMap().apply {
+                this[key] = this[key]!! + count
+            }
+        }
     }
 
     fun incrementFoundFiles() {

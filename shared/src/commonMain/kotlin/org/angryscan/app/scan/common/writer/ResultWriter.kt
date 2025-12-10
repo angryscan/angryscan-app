@@ -76,7 +76,7 @@ object ResultWriter {
                 writer.append(
                     listOf(
                         fileRow.path,
-                        fileRow.foundAttributes.map { attr -> attr.readableName() }
+                        fileRow.foundAttributes.keys.map { attr -> attr.readableName() }
                             .joinToString(", "),
                         fileRow.score.toString(),
                         fileRow.count.toString(),
@@ -113,7 +113,7 @@ object ResultWriter {
                     sheet.value(
                         index + 1,
                         1,
-                        fileRow.foundAttributes.map { attr -> attr.readableName() }
+                        fileRow.foundAttributes.keys.map { attr -> attr.readableName() }
                             .joinToString(", "))
                     sheet.value(index + 1, 2, fileRow.score.toString())
                     sheet.value(index + 1, 3, fileRow.count.toString())
@@ -158,7 +158,7 @@ object ResultWriter {
 
             fileRow.foundAttributes.forEach { attr ->
                 val attrElement = doc.createElement("attribute")
-                attrElement.appendChild(doc.createTextNode(attr.readableName()))
+                attrElement.appendChild(doc.createTextNode(attr.key.readableName()))
                 attributesElement.appendChild(attrElement)
             }
 

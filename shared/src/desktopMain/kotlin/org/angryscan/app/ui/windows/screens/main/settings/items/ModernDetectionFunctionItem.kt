@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
@@ -23,7 +24,7 @@ import org.angryscan.app.ui.windows.components.MatcherTooltip
 @Composable
 fun ModernDetectionFunctionItem(
     matcher: IMatcher,
-    scanSettings: org.angryscan.app.common.ScanSettings
+    scanSettings: ScanSettings
 ) {
     val isChecked = scanSettings.matchers.any {
         it::class == matcher::class

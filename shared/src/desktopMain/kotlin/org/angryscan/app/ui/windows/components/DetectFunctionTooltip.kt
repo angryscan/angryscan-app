@@ -14,9 +14,13 @@ import org.angryscan.app.ui.strings.description
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MatcherTooltip(matcher: IMatcher, block: @Composable () -> Unit) {
+fun MatcherTooltip(
+    matcher: IMatcher,
+    count: Int? = null,
+    block: @Composable () -> Unit
+) {
     DescriptionTooltip(
-        description = matcher.description(),
+        description = matcher.description() + if (count != null) " ($count)" else "",
         block = block
     )
 }

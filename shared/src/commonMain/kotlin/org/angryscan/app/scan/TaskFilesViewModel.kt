@@ -22,7 +22,7 @@ data class TaskFileResult(
     val id: Int,
     val path: String,
     val size: FileSize,
-    val foundAttributes: List<IMatcher>,
+    val foundAttributes: Map<IMatcher, Int>,
     val count: Int,
     val score: Long
 )
@@ -79,7 +79,7 @@ class TaskFilesViewModel(val task: Task) : KoinComponent, ViewModel() {
                     id = fileRow[TaskFiles.id].value,
                     path = fileRow[TaskFiles.path],
                     size = FileSize(fileRow[TaskFiles.size]),
-                    foundAttributes = detectRows.map { it.first },
+                    foundAttributes = detectRows.toMap(),
                     count = detectRows.sumOf { it.second },
                     score = detectRows.sumOf { row ->
                         (if (containsFIO) 20 else detectRows.size - 1) +

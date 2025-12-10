@@ -406,7 +406,7 @@ fun ResultTable(
                 ) {
                     items(
                         sortedFiles.filter { f ->
-                            f.foundAttributes.any { attr -> attr in selectedAttributes }
+                            f.foundAttributes.keys.any { attr -> attr in selectedAttributes }
                         }
                     ) { file ->
                         val fileType = IFileType.getFileType(file.path)
@@ -523,11 +523,12 @@ fun ResultTable(
                                 modifier = Modifier
                                     .weight(0.5f)
                             ) {
-                                file.foundAttributes.forEach { attr ->
+                                file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
                                     AttributeCard(
-                                        attribute = attr,
+                                        attribute = attr.first,
+                                        count = attr.second,
                                         onClick = {
-                                            attributeSelected = attr
+                                            attributeSelected = attr.first
                                             fileSelected = file
                                             longScanMessageBoxVisible = true
                                         },

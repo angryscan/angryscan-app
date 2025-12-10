@@ -1,48 +1,62 @@
 package org.angryscan.app.ui.windows.screens.settings.items
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberDialogState
-import org.jetbrains.compose.resources.stringResource
-import org.angryscan.app.resources.About_Description
-import org.angryscan.app.resources.About_License
-import org.angryscan.app.resources.Res
-import org.angryscan.app.resources.SideMenu_AboutPage
-import org.angryscan.app.ui.dialogs.DescriptionDialog
+import org.angryscan.app.common.AppVersion
+import org.angryscan.app.resources.*
+import org.angryscan.app.ui.dialogs.ContactDialog
 import org.angryscan.app.ui.dialogs.LicenseDialog
 import org.angryscan.app.ui.windows.screens.settings.SettingsRow
 import org.angryscan.app.ui.windows.screens.settings.components.SettingsButton
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AboutSettings() {
-    var showDescriptionDialog by remember { mutableStateOf(false) }
-    val descriptionDialogState = rememberDialogState(width = 600.dp, height = 450.dp)
+    var showContactDialog by remember { mutableStateOf(false) }
+    val contactDialogState = rememberDialogState(width = 400.dp, height = 260.dp)
 
     var showLicenseDialog by remember { mutableStateOf(false) }
-    val licenseDialogState = rememberDialogState(width = 600.dp, height = 580.dp)
+    val licenseDialogState = rememberDialogState(width = 600.dp, height = 590.dp)
 
     SettingsRow(title = stringResource(Res.string.SideMenu_AboutPage)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SettingsButton(
-                onClick = { showDescriptionDialog = true },
-                text = stringResource(Res.string.About_Description)
+            Text(
+                text = stringResource(Res.string.AboutScreen_Description),
+                style = MaterialTheme.typography.bodyMedium
             )
+            Text(
+                text = stringResource(Res.string.AboutScreen_Version, AppVersion),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SettingsButton(
+                    onClick = { showContactDialog = true },
+                    text = stringResource(Res.string.ContactDialog_Title)
+                )
 
-            SettingsButton(
-                onClick = { showLicenseDialog = true },
-                text = stringResource(Res.string.About_License)
-            )
+                SettingsButton(
+                    onClick = { showLicenseDialog = true },
+                    text = stringResource(Res.string.LicenseDialog_Title)
+                )
+            }
         }
     }
 
-    if (showDescriptionDialog) {
-        DescriptionDialog(
-            onCloseRequest = { showDescriptionDialog = false },
-            dialogState = descriptionDialogState
+    if (showContactDialog) {
+        ContactDialog(
+            onCloseRequest = { showContactDialog = false },
+            dialogState = contactDialogState
         )
     }
 

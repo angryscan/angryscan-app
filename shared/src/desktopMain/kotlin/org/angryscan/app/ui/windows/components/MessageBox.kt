@@ -44,6 +44,7 @@ fun MessageBox(
     DialogWindow(
         onCloseRequest = onDismiss,
         state = state,
+        transparent = true,
         undecorated = true,
         resizable = false
     ) {
