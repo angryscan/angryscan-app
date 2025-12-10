@@ -15,12 +15,15 @@ import kotlin.coroutines.CoroutineContext
 
 @Serializable
 enum class CertFileType: IFileType {
+    @Serializable
     ASCII {
         override val extensions = listOf("ovpn", "pem", "crt", "cer", "key", "ca-bundle")
     },
+    @Serializable
     PKCS {
         override val extensions = listOf("p7b", "p7s", "der")
     },
+    @Serializable
     KEYSTORE {
         override val extensions = listOf("pfx", "p12", "keystore", "jks")
     }
