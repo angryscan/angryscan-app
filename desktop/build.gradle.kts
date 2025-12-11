@@ -65,7 +65,8 @@ compose.desktop {
         jvmArgs += listOf(
             "-Xmx8g",
             "-Dsun.stdout.encoding=UTF-8",
-            "-Dsun.stderr.encoding=UTF-8"
+            "-Dsun.stderr.encoding=UTF-8",
+            "-Dfile.encoding=UTF-8"
         )
 
         buildTypes.release.proguard {
@@ -76,7 +77,7 @@ compose.desktop {
         }
 
         nativeDistributions {
-            packageName = "Angry Data Scanner"
+            packageName = "AngryDataScanner"
             packageVersion = version.toString()
             copyright = "Open Source Software, 2025"
             licenseFile.set(rootProject.file("LICENSE.en.txt"))
@@ -93,7 +94,7 @@ compose.desktop {
 
             windows {
                 menuGroup = "start-menu-group"
-                installationPath = "Angry Data Scanner"
+                installationPath = "AngryDataScanner"
                 upgradeUuid = "baf17015-b8d3-4b88-9a59-0031a7b53b34"
                 iconFile.set(project(":shared").projectDir.resolve("src\\desktopMain\\composeResources\\files\\icon.ico"))
                 console = true
