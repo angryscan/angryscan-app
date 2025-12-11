@@ -144,6 +144,7 @@ suspend fun main(args: Array<String>) {
     if (args.isNotEmpty() &&
         arrayOf(
             "scan",
+            "settings",
             "-h", "--help",
             "-v", "--version"
         ).any { args.contains(it) }

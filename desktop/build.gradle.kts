@@ -16,6 +16,7 @@ kotlin {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
     sourceSets {
+        @Suppress("unused")
         val desktopMain by getting {
             dependencies {
                 implementation(project(":shared"))
@@ -30,9 +31,11 @@ kotlin {
                 implementation(libs.clikt.full)
                 implementation(libs.clikt.markdown)
                 implementation(libs.mordant.coroutines)
+                implementation(libs.mordant)
                 implementation(libs.jansi)
             }
         }
+        @Suppress("unused")
         val desktopTest by getting {
             dependencies {
                 implementation(compose.desktop.uiTestJUnit4)

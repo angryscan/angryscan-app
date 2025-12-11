@@ -2,6 +2,7 @@ package org.angryscan.app.console.commands
 
 import com.github.ajalt.clikt.command.SuspendingCliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
+import com.github.ajalt.clikt.core.terminal
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.int
@@ -31,6 +32,7 @@ class Settings : SuspendingCliktCommand(
         return "View and modify application settings (AppSettings and ScanSettings)\u0085\u0085" +
                 "Examples:\u0085" +
                 "  settings                                    # View current settings\u0085" +
+                "  settings --interactive                        # Interactive settings menu\u0085" +
                 "  settings --thread-count 4                   # Set thread count to 4\u0085" +
                 "  settings --report-extension csv             # Set report extension to CSV\u0085" +
                 "  settings --extensions Text,PDF              # Set file extensions\u0085" +
@@ -42,6 +44,11 @@ class Settings : SuspendingCliktCommand(
     val userSignatureSettings: UserSignatureSettings by inject()
     val scanSettings by inject<ScanSettings>()
     val appSettings by inject<AppSettings>()
+
+    val interactive by option(
+        "-i", "--interactive",
+        help = "Run interactive settings menu (requires a real console)"
+    ).flag(default = false)
 
     // AppSettings options
     val threadCount by option(
@@ -166,17 +173,43 @@ class Settings : SuspendingCliktCommand(
 
     override suspend fun run() {
         var hasChanges = false
+        val hasCliEdits =
+            threadCount != null ||
+                reportExtension != null ||
+                extensions != null ||
+                matchers != null ||
+                userSignatures != null ||
+                fastScan != null ||
+                engine != null
 
-        // Display current settings if no options provided
-        if (threadCount == null &&
-            reportExtension == null &&
-            extensions == null &&
-            matchers == null &&
-            userSignatures == null &&
-            fastScan == null &&
-            engine == null
-        ) {
-            displayCurrentSettings()
+        if (interactive) {
+            if (hasCliEdits) {
+                throw PrintMessage("Interactive mode cannot be combined with other settings flags")
+            }
+            if (System.console() == null) {
+                throw PrintMessage("Interactive mode requires a real console")
+            }
+            InteractiveSettingsMenu(
+                terminal = terminal,
+                appSettings = appSettings,
+                scanSettings = scanSettings,
+                userSignatureSettings = userSignatureSettings,
+            ).run()
+            return
+        }
+
+        // Auto interactive menu when no options provided (only when a console is available).
+        if (!hasCliEdits) {
+            if (System.console() != null) {
+                InteractiveSettingsMenu(
+                    terminal = terminal,
+                    appSettings = appSettings,
+                    scanSettings = scanSettings,
+                    userSignatureSettings = userSignatureSettings,
+                ).run()
+            } else {
+                displayCurrentSettings()
+            }
             return
         }
 

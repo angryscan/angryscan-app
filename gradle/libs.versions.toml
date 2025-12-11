@@ -82,6 +82,7 @@ aws-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "aws" }
 clikt-full = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref = "clikt" }
 mordant-coroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", version.ref = "mordant" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
 
 [plugins]
