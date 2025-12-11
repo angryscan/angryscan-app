@@ -1,11 +1,11 @@
 package org.angryscan.app
 
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import ch.qos.logback.classic.Level
+import com.github.ajalt.clikt.command.main
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.FileKit
 import io.ktor.network.selector.*
@@ -17,23 +17,28 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import org.koin.core.context.startKoin
-import org.angryscan.app.common.AppFiles
+import kotlinx.coroutines.withContext
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.AppVersion
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.OS
-import org.angryscan.app.di.*
+import org.angryscan.app.console.ConsoleApp
+import org.angryscan.app.di.databaseModule
+import org.angryscan.app.di.s3Module
+import org.angryscan.app.di.scanModule
+import org.angryscan.app.di.settingsModule
 import org.angryscan.app.logging.LogLevel
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.ui.MainWindow
 import org.angryscan.app.ui.tray.DorkTray
 import org.angryscan.app.ui.windows.ApplicationErrorWindow
+import org.fusesource.jansi.internal.Kernel32.SetConsoleOutputCP
 import org.koin.compose.koinInject
+import org.koin.core.context.startKoin
 import java.awt.event.WindowEvent
 import java.io.File
 import java.net.BindException
-import java.util.Locale
+import java.util.*
 import javax.swing.UIManager
 import kotlin.system.exitProcess
 
@@ -61,6 +66,11 @@ suspend fun main(args: Array<String>) {
             else -> "OPENGL"
         }
     )
+
+    if(OS.currentOS() == OS.WINDOWS) {
+        SetConsoleOutputCP(65001)
+    }
+
     FileKit.init(appId = "Angry Data Scanner")
 
     try {
@@ -106,8 +116,10 @@ suspend fun main(args: Array<String>) {
                 val clientSocket = aSocket(selectorManager).tcp().connect("127.0.0.1", port)
                 val output = clientSocket.openWriteChannel(autoFlush = true)
                 output.writeFully(path.toByteArray())
-                clientSocket.close()
-                selectorManager.close()
+                withContext(Dispatchers.IO) {
+                    clientSocket.close()
+                    selectorManager.close()
+                }
                 logger.info { "Path sent to running app" }
             }
         }
@@ -130,22 +142,14 @@ suspend fun main(args: Array<String>) {
     }
 
     if (args.isNotEmpty() &&
-        arrayOf("-c", "-console", "-h", "-help", "-v", "-version").any { args.contains(it) }
+        arrayOf(
+            "scan",
+            "-h", "--help",
+            "-v", "--version"
+        ).any { args.contains(it) }
     ) {
-        if (arrayOf("-h", "-help").any { args.contains(it) }) {
-            Console.help()
-        } else if (arrayOf("-v", "-version").any { args.contains(it) }) {
-            Console.version()
-        } else if (arrayOf("-c", "-console").any { args.contains(it) }) {
-            if (AppFiles.ResultDBFile.exists()) {
-                if (!AppFiles.ResultDBFile.delete()) {
-                    logger.error { "Cannot access to database. Check it is in use by another process!" }
-                    return
-                }
-            }
-            logger.info(throwable = null, LogMarkers.UserAction) { "Starting console application" }
-            Console.consoleRun(args)
-        }
+        ConsoleApp()
+            .main(args)
     } else {
         if (args.isNotEmpty()) {
             logger.warn { "Started with ${args.size} argument(s): ${args.joinToString(", ")}" }

@@ -22,11 +22,15 @@ kotlin {
                 implementation(libs.logging.oshai)
                 implementation(libs.logging.logback)
                 implementation(libs.logging.log4j.core)
-                implementation(libs.console.progressbar)
 
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.server.netty)
                 implementation(libs.ktor.network)
+
+                implementation(libs.clikt.full)
+                implementation(libs.clikt.markdown)
+                implementation(libs.mordant.coroutines)
+                implementation(libs.jansi)
             }
         }
         val desktopTest by getting {
@@ -55,9 +59,10 @@ compose.desktop {
     application {
         mainClass = "org.angryscan.app.MainKt"
 
-
         jvmArgs += listOf(
-            "-Xmx8g"
+            "-Xmx8g",
+            "-Dsun.stdout.encoding=UTF-8",
+            "-Dsun.stderr.encoding=UTF-8"
         )
 
         buildTypes.release.proguard {
