@@ -33,9 +33,9 @@ internal class ViewportSelectListPrompter(private val terminal: Terminal) : Inte
 
         val instructionsWidget = Text(
             if (isRootMenu) {
-                dim("↑/↓ move • →/enter/space select • esc exit • ctrl+c abort")
+                dim("↑/↓/tab move • →/enter/space select • esc exit • ctrl+c abort")
             } else {
-                dim("↑/↓ move • →/enter/space select • ← back • esc exit • ctrl+c abort")
+                dim("↑/↓/tab move • →/enter/space select • ←/esc back • ctrl+c abort")
             }
         )
 
@@ -95,10 +95,19 @@ internal class ViewportSelectListPrompter(private val terminal: Terminal) : Inte
         return terminal.receiveKeyEvents { key: KeyboardEvent ->
             when {
                 key.ctrl && key.key.equals("c", ignoreCase = true) -> throw InteractiveSettingsMenu.AbortException()
-                key.key == "Escape" -> throw InteractiveSettingsMenu.ExitRequestedException()
+                // Escape exits only from the root menu. Everywhere else it behaves like "Back".
+                key.key == "Escape" && isRootMenu -> throw InteractiveSettingsMenu.ExitRequestedException()
+                key.key == "Escape" && !isRootMenu -> finish(null)
                 // In the root menu, Left should do nothing (not even \"back\") to avoid surprises.
                 key.key == "ArrowLeft" && !isRootMenu -> finish(null)
                 key.key == "Enter" || key.key == "ArrowRight" || key.key == " " -> finish(entries[state.cursor])
+                // Treat Tab as "next item" for keyboard-only navigation.
+                key.key == "Tab" || key.key == "\t" -> {
+                    val newCursor = (state.cursor + 1).coerceAtMost(entries.lastIndex)
+                    state = state.copy(cursor = newCursor, scrollDown = computeScroll(newCursor, state.scrollDown))
+                    animation.update(state)
+                    InputReceiver.Status.Continue
+                }
 
                 key.key == "ArrowUp" -> {
                     val newCursor = (state.cursor - 1).coerceAtLeast(0)
@@ -134,7 +143,7 @@ internal class ViewportSelectListPrompter(private val terminal: Terminal) : Inte
         }
 
         val instructionsWidget = Text(
-            dim("↑/↓ move • →/enter/space toggle • ← apply • esc exit • ctrl+c abort")
+            dim("↑/↓/tab move • →/enter/space toggle • ←/esc back • ctrl+c abort")
         )
 
         val reservedLines = (if (titleWidget == null) 0 else 1) + 1
@@ -192,9 +201,17 @@ internal class ViewportSelectListPrompter(private val terminal: Terminal) : Inte
             when {
                 key.ctrl && key.key.equals("c", ignoreCase = true) -> throw InteractiveSettingsMenu.AbortException()
 
-                // Apply on exit (no explicit Apply/Cancel in the list).
-                key.key == "Escape" -> throw InteractiveSettingsMenu.ExitRequestedException()
+                // Escape exits only from the root menu. Everywhere else it behaves like "Back".
+                // In multi-select, "Back" applies the current selection.
+                key.key == "Escape" -> finish(state.selected)
                 key.key == "ArrowLeft" -> finish(state.selected)
+                // Treat Tab as "next item" for keyboard-only navigation.
+                key.key == "Tab" || key.key == "\t" -> {
+                    val newCursor = (state.cursor + 1).coerceAtMost(entries.lastIndex)
+                    state = state.copy(cursor = newCursor, scrollDown = computeScroll(newCursor, state.scrollDown))
+                    animation.update(state)
+                    InputReceiver.Status.Continue
+                }
 
                 key.key == "ArrowUp" -> {
                     val newCursor = (state.cursor - 1).coerceAtLeast(0)

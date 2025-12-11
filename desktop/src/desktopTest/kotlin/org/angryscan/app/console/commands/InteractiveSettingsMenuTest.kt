@@ -12,6 +12,8 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import java.util.ArrayDeque
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.exists
+import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -62,6 +64,10 @@ internal class InteractiveSettingsMenuTest {
             multiCalls += 1
             return multiDecision(title, entries, initialSelected)
         }
+    }
+
+    private class FakeDirectoryPrompter(private val value: String?) : InteractiveSettingsMenu.DirectoryPrompter {
+        override fun promptDirectory(title: String, initial: String): String? = value
     }
 
     private lateinit var tempDirPath: java.nio.file.Path
@@ -328,5 +334,153 @@ internal class InteractiveSettingsMenuTest {
         assertEquals(1, prompter.multiCalls, "Expected matchers multiSelect to be invoked once")
         val applied = scanSettings.matchers.map { it.name.replace(" ", "_") }.toSet()
         assertEquals(selectedIds, applied)
+    }
+
+    @Test
+    fun `user signatures menu contains manage actions`() = runBlocking {
+        val appSettings = AppSettings()
+        val scanSettings = ScanSettings()
+        val userSignatureSettings = UserSignatureSettings()
+
+        val decisions = ArrayDeque<(String, List<String>, Int) -> String?>()
+
+        // Main menu -> Scan Settings
+        decisions += { title, entries, _ ->
+            assertEquals("Settings", title)
+            val scan = entries.firstOrNull { it.startsWith("Scan Settings") }
+            assertNotNull(scan)
+            scan
+        }
+
+        // Scan menu -> User signatures
+        decisions += { title, entries, _ ->
+            assertEquals("Scan Settings", title)
+            val signatures = entries.firstOrNull { it.startsWith("User signatures:") }
+            assertNotNull(signatures)
+            signatures
+        }
+
+        // User signatures submenu should exist and include Manage entry.
+        decisions += { title, entries, _ ->
+            assertEquals("User signatures", title)
+            assertTrue(entries.any { it.contains("Manage", ignoreCase = true) }, "Expected Manage entry in user signatures menu")
+            // Go back.
+            val back = entries.firstOrNull { it.equals("Back", ignoreCase = true) }
+            assertNotNull(back)
+            back
+        }
+
+        // Scan menu -> Back
+        decisions += { title, entries, _ ->
+            assertEquals("Scan Settings", title)
+            val back = entries.firstOrNull { it == "Back" }
+            assertNotNull(back)
+            back
+        }
+
+        // Main menu -> Exit
+        decisions += { title, entries, _ ->
+            assertEquals("Settings", title)
+            val exit = entries.firstOrNull { it == "Exit" }
+            assertNotNull(exit)
+            exit
+        }
+
+        // Exit confirmation: Exit
+        decisions += { title, entries, startingIndex ->
+            assertEquals("Exit?", title)
+            assertEquals(listOf("Exit", "Cancel"), entries)
+            assertEquals(entries.lastIndex, startingIndex)
+            "Exit"
+        }
+
+        InteractiveSettingsMenu(
+            prompter = FakePrompter(decisions),
+            appSettings = appSettings,
+            scanSettings = scanSettings,
+            userSignatureSettings = userSignatureSettings,
+        ).run()
+    }
+
+    @Test
+    fun `import export menu can export all settings files`() = runBlocking {
+        val appSettings = AppSettings()
+        val scanSettings = ScanSettings()
+        val userSignatureSettings = UserSignatureSettings()
+
+        val exportDir = createTempDirectory(prefix = "interactive-export-all-")
+        try {
+            val decisions = ArrayDeque<(String, List<String>, Int) -> String?>()
+
+            // Main menu -> Import/Export
+            decisions += { title, entries, _ ->
+                assertEquals("Settings", title)
+                val io = entries.firstOrNull { it.contains("Import/Export", ignoreCase = true) }
+                assertNotNull(io)
+                io
+            }
+
+            // Import/Export menu -> Export all
+            decisions += { title, entries, _ ->
+                assertEquals("Import/Export", title)
+                val exportAll = entries.firstOrNull { it.contains("Export all", ignoreCase = true) }
+                assertNotNull(exportAll)
+                exportAll
+            }
+
+            // After export action we show a one-shot OK dialog.
+            decisions += { title, entries, _ ->
+                assertTrue(title.contains("Export", ignoreCase = true))
+                assertEquals(listOf("OK"), entries)
+                "OK"
+            }
+
+            // Import/Export menu -> Back
+            decisions += { title, entries, _ ->
+                assertEquals("Import/Export", title)
+                val back = entries.firstOrNull { it == "Back" }
+                assertNotNull(back)
+                back
+            }
+
+            // Main menu -> Exit
+            decisions += { title, entries, _ ->
+                assertEquals("Settings", title)
+                val exit = entries.firstOrNull { it == "Exit" }
+                assertNotNull(exit)
+                exit
+            }
+
+            // Exit confirmation: Exit
+            decisions += { title, entries, startingIndex ->
+                assertEquals("Exit?", title)
+                assertTrue(entries.contains("Exit"))
+                assertEquals(entries.lastIndex, startingIndex)
+                "Exit"
+            }
+
+            InteractiveSettingsMenu(
+                prompter = FakePrompter(decisions),
+                appSettings = appSettings,
+                scanSettings = scanSettings,
+                userSignatureSettings = userSignatureSettings,
+                directoryPrompter = FakeDirectoryPrompter(exportDir.toString()),
+            ).run()
+
+            val exportedApp = exportDir.resolve("AppSettings.json")
+            val exportedScan = exportDir.resolve("ScanSettings.json")
+            val exportedSigs = exportDir.resolve("UserSignatures.json")
+
+            assertTrue(exportedApp.exists(), "Expected AppSettings.json to be exported")
+            assertTrue(exportedScan.exists(), "Expected ScanSettings.json to be exported")
+            assertTrue(exportedSigs.exists(), "Expected UserSignatures.json to be exported")
+
+            // Basic sanity: files are non-empty (menu should save before exporting).
+            assertTrue(exportedApp.readText().isNotBlank())
+            assertTrue(exportedScan.readText().isNotBlank())
+            assertTrue(exportedSigs.readText().isNotBlank())
+        } finally {
+            exportDir.toFile().deleteRecursively()
+        }
     }
 }

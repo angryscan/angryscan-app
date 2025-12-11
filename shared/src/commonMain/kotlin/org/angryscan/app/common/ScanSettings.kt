@@ -40,78 +40,95 @@ class ScanSettings : KoinComponent {
     val extensions: MutableList<IFileType> = mutableStateListOf()
 
     @Serializable(with = MutableStateSerializer::class)
-    var extensionsSettingsExpanded: MutableState<Boolean>
+    var extensionsSettingsExpanded: MutableState<Boolean> = mutableStateOf(false)
 
     @Serializable
     val matchers: MutableList<IMatcher> = mutableStateListOf()
 
     @Serializable(with = MutableStateSerializer::class)
-    var matchersSettingsExpanded: MutableState<Boolean>
+    var matchersSettingsExpanded: MutableState<Boolean> = mutableStateOf(false)
 
     @Serializable
     val userSignatures: MutableList<UserSignature> = mutableStateListOf()
 
     @Serializable(with = MutableStateSerializer::class)
-    var userSignatureSettingsExpanded: MutableState<Boolean>
+    var userSignatureSettingsExpanded: MutableState<Boolean> = mutableStateOf(false)
 
     @Transient
     var mainScreenSettingsExpanded: MutableState<Boolean> = mutableStateOf(false)
 
     @Serializable(with = MutableStateSerializer::class)
-    var selectionType: MutableState<SelectionTypes>
+    var selectionType: MutableState<SelectionTypes> = mutableStateOf(SelectionTypes.Folder)
 
     @Serializable(with = MutableStateSerializer::class)
-    var fastScan: MutableState<Boolean>
+    var fastScan: MutableState<Boolean> = mutableStateOf(false)
     val sampleLength = 10_000
     val sampleCount = 100
 
     @Serializable(with = MutableStateKClassSerializer::class)
-    var engine: MutableState<KClass<out IScanEngine>>
+    var engine: MutableState<KClass<out IScanEngine>> = mutableStateOf(
+        when (OS.currentOS()) {
+            OS.WINDOWS -> KotlinEngine::class
+            else -> HyperScanEngine::class
+        }
+    )
 
     constructor() {
+        reload()
+    }
+
+    /**
+     * Reload scan settings from disk, and re-bind selected user signatures to the current
+     * [UserSignatureSettings] definitions by name.
+     */
+    fun reload() {
         val userSignatureSettings by inject<UserSignatureSettings>()
         try {
             val prop: ScanSettings = PolymorphicFormatter.decodeFromString(settingsFile.readText())
 
-            this.extensions.addAll(prop.extensions)
-            this.extensionsSettingsExpanded = prop.extensionsSettingsExpanded
-
-            this.fastScan = prop.fastScan
-
-            this.matchers.addAll(prop.matchers.distinct())
-            this.matchersSettingsExpanded = prop.matchersSettingsExpanded
-
-            this.userSignatures.addAll(prop.userSignatures.filter { it in userSignatureSettings.userSignatures })
-            this.userSignatureSettingsExpanded = prop.userSignatureSettingsExpanded
-            this.selectionType = prop.selectionType
-            this.engine = prop.engine
-        } catch (_: Exception) {
-            logger.error {
-                "Failed to load ScanSettings. Loading default."
-            }
             this.extensions.clear()
-            this.extensions.addAll(FileType.values.filter {
-                it !in listOf(
-                    ZIPType,
-                    RARType,
-                    CertFileType.entries,
-                    CodeFileType.entries
-                )
-            })
-            this.extensionsSettingsExpanded = mutableStateOf(false)
+            this.extensions.addAll(prop.extensions)
+            this.extensionsSettingsExpanded.value = prop.extensionsSettingsExpanded.value
+
+            this.fastScan.value = prop.fastScan.value
+
+            this.matchers.clear()
+            this.matchers.addAll(prop.matchers.distinct())
+            this.matchersSettingsExpanded.value = prop.matchersSettingsExpanded.value
+
+            val defsByName = userSignatureSettings.userSignatures.associateBy { it.name }
+            this.userSignatures.clear()
+            this.userSignatures.addAll(
+                prop.userSignatures.mapNotNull { defsByName[it.name] }
+            )
+            this.userSignatureSettingsExpanded.value = prop.userSignatureSettingsExpanded.value
+            this.selectionType.value = prop.selectionType.value
+            this.engine.value = prop.engine.value
+        } catch (_: Exception) {
+            logger.error { "Failed to load ScanSettings. Loading default." }
+            this.extensions.clear()
+            this.extensions.addAll(
+                FileType.values.filter {
+                    it !in listOf(
+                        ZIPType,
+                        RARType,
+                        CertFileType.entries,
+                        CodeFileType.entries,
+                    )
+                }
+            )
+            this.extensionsSettingsExpanded.value = false
             this.matchers.clear()
             this.matchers.addAll(Matchers)
-            this.matchersSettingsExpanded = mutableStateOf(false)
-            this.fastScan = mutableStateOf(false)
-            this.userSignatureSettingsExpanded = mutableStateOf(false)
-            this.selectionType = mutableStateOf(SelectionTypes.Folder)
-            this.engine = mutableStateOf(
-                when(OS.currentOS()) {
-                    OS.WINDOWS -> KotlinEngine::class
-                    else -> HyperScanEngine::class
-                }
-
-            )
+            this.matchersSettingsExpanded.value = false
+            this.fastScan.value = false
+            this.userSignatureSettingsExpanded.value = false
+            this.selectionType.value = SelectionTypes.Folder
+            this.engine.value = when (OS.currentOS()) {
+                OS.WINDOWS -> KotlinEngine::class
+                else -> HyperScanEngine::class
+            }
+            this.userSignatures.clear()
         }
     }
 

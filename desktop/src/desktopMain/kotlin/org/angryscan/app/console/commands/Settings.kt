@@ -2,6 +2,7 @@ package org.angryscan.app.console.commands
 
 import com.github.ajalt.clikt.command.SuspendingCliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
+import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.core.terminal
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.choice
@@ -18,15 +19,29 @@ import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.common.engine.IScanEngine
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.kotlin.KotlinEngine
+import org.angryscan.common.matchers.UserSignature
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import kotlin.io.path.Path as KtPath
+import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
+import kotlin.io.path.name
 import kotlin.reflect.KClass
 
 private val logger = KotlinLogging.logger {}
 
 class Settings : SuspendingCliktCommand(
-    name = "settings"
+    name = "settings",
 ), KoinComponent {
+    init {
+        subcommands(UserSignatures())
+    }
+
+    // Clikt: ensure this command still runs without a subcommand.
+    override val invokeWithoutSubcommand: Boolean = true
     
     override fun help(context: com.github.ajalt.clikt.core.Context): String {
         return "View and modify application settings (AppSettings and ScanSettings)\u0085\u0085" +
@@ -38,17 +53,47 @@ class Settings : SuspendingCliktCommand(
                 "  settings --extensions Text,PDF              # Set file extensions\u0085" +
                 "  settings --matchers Email,Phone             # Set matchers\u0085" +
                 "  settings --fast                             # Enable fast scan\u0085" +
-                "  settings --engine HyperScan                 # Set scan engine"
+                "  settings --engine HyperScan                 # Set scan engine\u0085" +
+                "  settings --user-signature-add --user-signature-name Name --user-signature-signature AAA,BBB   # Add user signature\u0085" +
+                "  settings --user-signature-remove --user-signature-name Name                                   # Remove user signature\u0085" +
+                "  settings --user-signature-replace --user-signature-name Name --user-signature-signature AAA   # Replace user signature values\u0085" +
+                "  settings signatures add --name Name --signature AAA,BBB                                       # Add user signature (subcommand)\u0085" +
+                "  settings signatures remove --name Name                                                       # Remove user signature (subcommand)\u0085" +
+                "  settings signatures replace --name Name --signature AAA                                       # Replace user signature values (subcommand)"
     }
     
     val userSignatureSettings: UserSignatureSettings by inject()
     val scanSettings by inject<ScanSettings>()
     val appSettings by inject<AppSettings>()
 
+    private val appSettingsFile: AppSettings.AppSettingsFile by inject()
+    private val scanSettingsFile: ScanSettings.SettingsFile by inject()
+    private val userSignaturesFile: UserSignatureSettings.SettingsFile by inject()
+
     val interactive by option(
         "-i", "--interactive",
         help = "Run interactive settings menu (requires a real console)"
     ).flag(default = false)
+
+    private val exportKind by option(
+        "--export",
+        help = "Export settings. Values: all, app, scan, signatures"
+    ).choice("all", "app", "scan", "signatures")
+
+    private val importKind by option(
+        "--import",
+        help = "Import settings (replaces current files). Values: all, app, scan, signatures"
+    ).choice("all", "app", "scan", "signatures")
+
+    private val dir by option(
+        "--dir",
+        help = "Directory path used for --export all / --import all"
+    )
+
+    private val file by option(
+        "--file",
+        help = "File path used for --export app|scan|signatures and --import app|scan|signatures"
+    )
 
     // AppSettings options
     val threadCount by option(
@@ -150,6 +195,32 @@ class Settings : SuspendingCliktCommand(
             }
         }
 
+    // User signature management (non-interactive mode)
+    val userSignatureAdd by option(
+        "--user-signature-add",
+        help = "Add a user signature (requires --user-signature-name and --user-signature-signature)"
+    ).flag(default = false)
+
+    val userSignatureRemove by option(
+        "--user-signature-remove",
+        help = "Remove a user signature (requires --user-signature-name)"
+    ).flag(default = false)
+
+    val userSignatureReplace by option(
+        "--user-signature-replace",
+        help = "Replace a user signature (requires --user-signature-name and --user-signature-signature)"
+    ).flag(default = false)
+
+    val userSignatureName by option(
+        "--user-signature-name",
+        help = "User signature name"
+    )
+
+    val userSignatureSignature by option(
+        "--user-signature-signature",
+        help = "Signature value(s), comma separated"
+    )
+
     val fastScan by option().switch(
         "--fast" to true,
         "--full" to false,
@@ -172,15 +243,63 @@ class Settings : SuspendingCliktCommand(
         }
 
     override suspend fun run() {
+        // If a subcommand is invoked, Clikt will run it. Ensure we don't apply the main settings flow.
+        if (currentContext.invokedSubcommand != null) return
+
         var hasChanges = false
+        var hasUserSignatureChanges = false
+
+        val hasTransfer = exportKind != null || importKind != null
         val hasCliEdits =
             threadCount != null ||
                 reportExtension != null ||
                 extensions != null ||
                 matchers != null ||
                 userSignatures != null ||
+                userSignatureAdd ||
+                userSignatureRemove ||
+                userSignatureReplace ||
                 fastScan != null ||
                 engine != null
+
+        if (hasTransfer) {
+            if (interactive) {
+                throw PrintMessage("Interactive mode cannot be combined with --export/--import")
+            }
+            if (hasCliEdits) {
+                throw PrintMessage("--export/--import cannot be combined with other settings flags")
+            }
+            if (exportKind != null && importKind != null) {
+                throw PrintMessage("Specify only one: --export or --import")
+            }
+
+            val kind = exportKind ?: importKind ?: error("unreachable")
+            if (kind == "all") {
+                val dirRaw = dir?.trim().orEmpty()
+                if (dirRaw.isEmpty()) throw PrintMessage("--dir is required for --export all / --import all")
+                if (file != null) throw PrintMessage("--file cannot be used with 'all'")
+
+                val dirPath = KtPath(dirRaw)
+                if (exportKind != null) {
+                    exportAllToDirectory(dirPath)
+                } else {
+                    importAllFromDirectory(dirPath)
+                }
+                return
+            } else {
+                val fileRaw = file?.trim().orEmpty()
+                if (fileRaw.isEmpty()) throw PrintMessage("--file is required for --export/--import $kind")
+                if (dir != null) throw PrintMessage("--dir cannot be used with '$kind' (use --file)")
+
+                val filePath = KtPath(fileRaw)
+                if (exportKind != null) {
+                    exportSingleToFile(kind = kind, destFilePath = filePath)
+                } else {
+                    importSingleFromFile(kind = kind, srcFilePath = filePath)
+                }
+                return
+            }
+        }
 
         if (interactive) {
             if (hasCliEdits) {
@@ -264,11 +383,94 @@ class Settings : SuspendingCliktCommand(
             hasChanges = true
         }
 
+        // Update user signatures (UserSignatureSettings + ScanSettings.userSignatures)
+        if (userSignatureAdd || userSignatureRemove || userSignatureReplace) {
+            val actions = listOf(userSignatureAdd, userSignatureRemove, userSignatureReplace).count { it }
+            if (actions != 1) {
+                throw PrintMessage("Specify exactly one of: --user-signature-add, --user-signature-remove, --user-signature-replace")
+            }
+            val rawName = userSignatureName?.trim().orEmpty()
+            if (rawName.isEmpty()) {
+                throw PrintMessage("--user-signature-name is required")
+            }
+
+            fun matchesName(sig: UserSignature, rawName: String): Boolean {
+                return sig.name == rawName || sig.name.replace(" ", "_") == rawName
+            }
+
+            fun parseSignatureValues(raw: String): List<String> {
+                return raw
+                    .split(',')
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .distinct()
+            }
+
+            if (userSignatureRemove) {
+                val removed = userSignatureSettings.userSignatures.removeIf { matchesName(it, rawName) }
+                if (!removed) {
+                    throw PrintMessage("Unknown user signature: $rawName")
+                }
+                scanSettings.userSignatures.removeIf { matchesName(it, rawName) }
+                echo("User signature removed: $rawName")
+                hasUserSignatureChanges = true
+                hasChanges = true
+            }
+
+            if (userSignatureAdd) {
+                val rawSig = userSignatureSignature?.trim().orEmpty()
+                if (rawSig.isEmpty()) throw PrintMessage("--user-signature-signature is required")
+                val sigs = parseSignatureValues(rawSig)
+                if (sigs.isEmpty()) throw PrintMessage("--user-signature-signature must contain at least one value")
+                if (userSignatureSettings.userSignatures.any { matchesName(it, rawName) }) {
+                    throw PrintMessage("User signature '$rawName' already exists")
+                }
+                val created = UserSignature(name = rawName, searchSignatures = sigs.toMutableList())
+                userSignatureSettings.userSignatures.add(created)
+                // Keep behavior consistent with UI: add signature and select it immediately.
+                scanSettings.userSignatures.add(created)
+                echo("User signature added: $rawName")
+                hasUserSignatureChanges = true
+                hasChanges = true
+            }
+
+            if (userSignatureReplace) {
+                val rawSig = userSignatureSignature?.trim().orEmpty()
+                if (rawSig.isEmpty()) throw PrintMessage("--user-signature-signature is required")
+                val sigs = parseSignatureValues(rawSig)
+                if (sigs.isEmpty()) throw PrintMessage("--user-signature-signature must contain at least one value")
+
+                val index = userSignatureSettings.userSignatures.indexOfFirst { matchesName(it, rawName) }
+                if (index < 0) {
+                    throw PrintMessage("Unknown user signature: $rawName")
+                }
+                val old = userSignatureSettings.userSignatures[index]
+                val wasSelected = scanSettings.userSignatures.any { matchesName(it, old.name) }
+                val updated = UserSignature(name = old.name, searchSignatures = sigs.toMutableList())
+
+                userSignatureSettings.userSignatures[index] = updated
+                scanSettings.userSignatures.removeIf { matchesName(it, old.name) }
+                if (wasSelected) scanSettings.userSignatures.add(updated)
+
+                echo("User signature replaced: ${old.name}")
+                hasUserSignatureChanges = true
+                hasChanges = true
+            }
+
+            // Ensure ScanSettings doesn't reference missing definitions.
+            scanSettings.userSignatures.removeIf { sig ->
+                userSignatureSettings.userSignatures.none { it.name == sig.name }
+            }
+        }
+
         // Save changes
         if (hasChanges) {
             try {
                 appSettings.save()
                 scanSettings.save()
+                if (hasUserSignatureChanges) {
+                    userSignatureSettings.save()
+                }
                 echo("Settings saved successfully")
             } catch (e: Exception) {
                 logger.error(e) { "Failed to save settings" }
@@ -299,6 +501,225 @@ class Settings : SuspendingCliktCommand(
             HyperScanEngine::class -> "HyperScan"
             KotlinEngine::class -> "Kotlin"
             else -> engineClass.simpleName ?: "Unknown"
+        }
+    }
+
+    private fun exportAllToDirectory(dirPath: Path) {
+        // Persist latest state before exporting.
+        appSettings.save()
+        scanSettings.save()
+        userSignatureSettings.save()
+
+        Files.createDirectories(dirPath)
+        if (!dirPath.isDirectory()) throw PrintMessage("Target path is not a directory: $dirPath")
+
+        for (f in listOf(appSettingsFile, scanSettingsFile, userSignaturesFile)) {
+            val src = KtPath(f.path)
+            val dst = dirPath.resolve(src.name)
+            Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING)
+        }
+
+        echo("Export completed: all -> $dirPath")
+    }
+
+    private fun exportSingleToFile(kind: String, destFilePath: Path) {
+        // Persist latest state before exporting.
+        when (kind) {
+            "app" -> appSettings.save()
+            "scan" -> scanSettings.save()
+            "signatures" -> userSignatureSettings.save()
+        }
+
+        if (destFilePath.exists() && destFilePath.isDirectory()) {
+            throw PrintMessage("Expected a file path but got a directory: $destFilePath")
+        }
+
+        destFilePath.parent?.let { Files.createDirectories(it) }
+        val src = KtPath(sourceFileForKind(kind).path)
+        Files.copy(src, destFilePath, StandardCopyOption.REPLACE_EXISTING)
+
+        echo("Export completed: $kind -> $destFilePath")
+    }
+
+    private fun importAllFromDirectory(dirPath: Path) {
+        if (!dirPath.exists() || !dirPath.isDirectory()) {
+            throw PrintMessage("Directory not found: $dirPath")
+        }
+
+        fun copyExpectedFile(target: java.io.File) {
+            val targetPath = KtPath(target.path)
+            val srcPath = dirPath.resolve(targetPath.name)
+            if (!srcPath.exists()) throw PrintMessage("Missing file in import directory: $srcPath")
+            Files.copy(srcPath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+        }
+
+        copyExpectedFile(appSettingsFile)
+        copyExpectedFile(scanSettingsFile)
+        copyExpectedFile(userSignaturesFile)
+
+        // Reload in-memory state so subsequent usage is consistent.
+        userSignatureSettings.reload()
+        scanSettings.reload()
+        appSettings.reload()
+
+        echo("Import completed: all <- $dirPath")
+    }
+
+    private fun importSingleFromFile(kind: String, srcFilePath: Path) {
+        if (!srcFilePath.exists()) {
+            throw PrintMessage("File not found: $srcFilePath")
+        }
+        if (srcFilePath.isDirectory()) {
+            throw PrintMessage("Expected a file but got a directory: $srcFilePath")
+        }
+
+        val targetFile = sourceFileForKind(kind)
+        val targetPath = KtPath(targetFile.path)
+        Files.copy(srcFilePath, targetPath, StandardCopyOption.REPLACE_EXISTING)
+
+        when (kind) {
+            "app" -> appSettings.reload()
+            "scan" -> scanSettings.reload()
+            "signatures" -> {
+                userSignatureSettings.reload()
+                syncScanUserSignaturesWithDefinitions()
+            }
+        }
+
+        echo("Import completed: $kind <- $srcFilePath")
+    }
+
+    private fun sourceFileForKind(kind: String): java.io.File {
+        return when (kind) {
+            "app" -> appSettingsFile
+            "scan" -> scanSettingsFile
+            "signatures" -> userSignaturesFile
+            else -> error("Unknown kind: $kind")
+        }
+    }
+
+    private fun syncScanUserSignaturesWithDefinitions() {
+        val defsByName = userSignatureSettings.userSignatures.associateBy { it.name }
+        val selectedNames = scanSettings.userSignatures.map { it.name }
+        scanSettings.userSignatures.clear()
+        scanSettings.userSignatures.addAll(selectedNames.mapNotNull { defsByName[it] })
+    }
+}
+
+private class UserSignatures : SuspendingCliktCommand(
+    name = "signatures",
+), KoinComponent {
+    init {
+        subcommands(Add(), Remove(), Replace(), ListCmd())
+    }
+
+    override fun help(context: com.github.ajalt.clikt.core.Context): String {
+        return "Manage user signature definitions (UserSignatures.json)"
+    }
+
+    override suspend fun run() {
+        // No-op: actions are implemented in subcommands.
+    }
+
+    private abstract class Base : SuspendingCliktCommand(), KoinComponent {
+        protected val userSignatureSettings: UserSignatureSettings by inject()
+        protected val scanSettings: ScanSettings by inject()
+
+        protected fun parseSignatureValues(raw: String): List<String> {
+            return raw
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+        }
+
+        protected fun matchesName(sig: UserSignature, rawName: String): Boolean {
+            return sig.name == rawName || sig.name.replace(" ", "_") == rawName
+        }
+    }
+
+    private class Add : Base() {
+        private val name by option("-n", "--name", help = "Signature name").required()
+        private val signature by option("-s", "--signature", help = "Signature value(s), comma separated").required()
+
+        override suspend fun run() {
+            val rawName = name.trim()
+            if (rawName.isEmpty()) throw PrintMessage("--name cannot be empty")
+
+            val sigs = parseSignatureValues(signature)
+            if (sigs.isEmpty()) throw PrintMessage("--signature must contain at least one value")
+
+            if (userSignatureSettings.userSignatures.any { matchesName(it, rawName) }) {
+                throw PrintMessage("User signature '$rawName' already exists")
+            }
+
+            val created = UserSignature(name = rawName, searchSignatures = sigs.toMutableList())
+            userSignatureSettings.userSignatures.add(created)
+            // Keep behavior consistent with UI: add and select immediately.
+            scanSettings.userSignatures.add(created)
+
+            userSignatureSettings.save()
+            scanSettings.save()
+            echo("Settings saved successfully")
+        }
+    }
+
+    private class Remove : Base() {
+        private val name by option("-n", "--name", help = "Signature name").required()
+
+        override suspend fun run() {
+            val rawName = name.trim()
+            if (rawName.isEmpty()) throw PrintMessage("--name cannot be empty")
+
+            val removed = userSignatureSettings.userSignatures.removeIf { matchesName(it, rawName) }
+            if (!removed) throw PrintMessage("Unknown user signature: $rawName")
+
+            scanSettings.userSignatures.removeIf { matchesName(it, rawName) }
+
+            userSignatureSettings.save()
+            scanSettings.save()
+            echo("Settings saved successfully")
+        }
+    }
+
+    private class Replace : Base() {
+        private val name by option("-n", "--name", help = "Signature name").required()
+        private val signature by option("-s", "--signature", help = "Signature value(s), comma separated").required()
+
+        override suspend fun run() {
+            val rawName = name.trim()
+            if (rawName.isEmpty()) throw PrintMessage("--name cannot be empty")
+
+            val sigs = parseSignatureValues(signature)
+            if (sigs.isEmpty()) throw PrintMessage("--signature must contain at least one value")
+
+            val index = userSignatureSettings.userSignatures.indexOfFirst { matchesName(it, rawName) }
+            if (index < 0) throw PrintMessage("Unknown user signature: $rawName")
+
+            val old = userSignatureSettings.userSignatures[index]
+            val wasSelected = scanSettings.userSignatures.any { matchesName(it, old.name) }
+            val updated = UserSignature(name = old.name, searchSignatures = sigs.toMutableList())
+
+            userSignatureSettings.userSignatures[index] = updated
+            scanSettings.userSignatures.removeIf { matchesName(it, old.name) }
+            if (wasSelected) scanSettings.userSignatures.add(updated)
+
+            userSignatureSettings.save()
+            scanSettings.save()
+            echo("Settings saved successfully")
+        }
+    }
+
+    private class ListCmd : Base() {
+        override suspend fun run() {
+            if (userSignatureSettings.userSignatures.isEmpty()) {
+                echo("No user signatures")
+                return
+            }
+            echo("User signatures:")
+            userSignatureSettings.userSignatures
+                .sortedBy { it.name }
+                .forEach { echo("- ${it.name}") }
         }
     }
 }
