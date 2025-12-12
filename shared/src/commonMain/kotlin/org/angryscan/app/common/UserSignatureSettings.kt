@@ -23,13 +23,19 @@ class UserSignatureSettings : KoinComponent {
     val userSignatures: MutableList<UserSignature> = mutableStateListOf()
 
     constructor() {
+        reload()
+    }
+
+    /**
+     * Reload user signatures from disk.
+     */
+    fun reload() {
         try {
             val prop: UserSignatureSettings = Json.decodeFromString(settingsFile.readText())
+            this.userSignatures.clear()
             this.userSignatures.addAll(prop.userSignatures)
         } catch (_: Exception) {
-            logger.error {
-                "Failed to load User signatures. Save example."
-            }
+            logger.error { "Failed to load User signatures. Save example." }
             userSignatures.clear()
             userSignatures.addAll(
                 listOf(
@@ -68,7 +74,7 @@ class UserSignatureSettings : KoinComponent {
                             "МВК",
                             "СКУД",
                             "ИНКАССАЦИЯ",
-                            "ГОСУДАРСТВ"
+                            "ГОСУДАРСТВ",
                         )
                     )
                 )

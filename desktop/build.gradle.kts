@@ -16,19 +16,26 @@ kotlin {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
     sourceSets {
+        @Suppress("unused")
         val desktopMain by getting {
             dependencies {
                 implementation(project(":shared"))
                 implementation(libs.logging.oshai)
                 implementation(libs.logging.logback)
                 implementation(libs.logging.log4j.core)
-                implementation(libs.console.progressbar)
 
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.server.netty)
                 implementation(libs.ktor.network)
+
+                implementation(libs.clikt.full)
+                implementation(libs.clikt.markdown)
+                implementation(libs.mordant.coroutines)
+                implementation(libs.mordant)
+                implementation(libs.jansi)
             }
         }
+        @Suppress("unused")
         val desktopTest by getting {
             dependencies {
                 implementation(compose.desktop.uiTestJUnit4)
@@ -55,9 +62,11 @@ compose.desktop {
     application {
         mainClass = "org.angryscan.app.MainKt"
 
-
         jvmArgs += listOf(
-            "-Xmx8g"
+            "-Xmx8g",
+            "-Dsun.stdout.encoding=UTF-8",
+            "-Dsun.stderr.encoding=UTF-8",
+            "-Dfile.encoding=UTF-8"
         )
 
         buildTypes.release.proguard {
@@ -68,7 +77,7 @@ compose.desktop {
         }
 
         nativeDistributions {
-            packageName = "Angry Data Scanner"
+            packageName = "AngryDataScanner"
             packageVersion = version.toString()
             copyright = "Open Source Software, 2025"
             licenseFile.set(rootProject.file("LICENSE.en.txt"))
@@ -85,7 +94,7 @@ compose.desktop {
 
             windows {
                 menuGroup = "start-menu-group"
-                installationPath = "Angry Data Scanner"
+                installationPath = "AngryDataScanner"
                 upgradeUuid = "baf17015-b8d3-4b88-9a59-0031a7b53b34"
                 iconFile.set(project(":shared").projectDir.resolve("src\\desktopMain\\composeResources\\files\\icon.ico"))
                 console = true

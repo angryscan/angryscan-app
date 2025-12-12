@@ -27,6 +27,8 @@ sealed interface IFileType {
             .toMap()
     }
 
+    fun extensions() = extensions
+
     companion object {
         fun getAll(): List<IFileType> {
             return buildList {
@@ -66,5 +68,6 @@ sealed interface IFileType {
          */
         fun getFileType(filePath: String): IFileType? =
             getFileType(File(filePath))
+
     }
 }

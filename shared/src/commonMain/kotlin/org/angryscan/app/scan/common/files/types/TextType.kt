@@ -26,6 +26,10 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
     override val extensions =
         (1..999).map { it.toString().padStart(3, '0') } +
                 listOf("txt", "csv", "xml", "json", "log")
+
+    override fun extensions() =
+        extensions.filter { !"^\\d{1,3}$".toRegex().matches(it) }
+
     override suspend fun scanFile(
         file: File,
         context: CoroutineContext,

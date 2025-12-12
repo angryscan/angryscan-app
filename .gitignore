@@ -1,9 +1,8 @@
 *.db
 /target/
 /build/
-/.gradle/
-/.idea/
-/.kotlin/
+.*/
+!.github/
 /gradle-bin/
 /*/build/
 /*/generated.conveyor.conf

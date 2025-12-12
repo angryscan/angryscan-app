@@ -5,7 +5,6 @@ poi = "5.4.0"
 compose = "1.9.3"
 ktor = "3.2.3"
 core = "1.4.4"
-progressbar = "0.10.1"
 log4j = "2.24.3"
 koin = "4.0.2"
 viewmodel = "2.9.3"
@@ -16,6 +15,8 @@ aws = "1.4.92"
 navigation = "2.9.1"
 hyperscan = "5.4.11-3.1.0"
 hyperscan-windows = "5.4.0-2.0.0"
+clikt = "5.0.3"
+mordant = "3.0.2"
 
 [libraries]
 #Hyperscan
@@ -43,7 +44,7 @@ files-poi-core = { module = "org.apache.poi:poi", version.ref = "poi" }
 files-poi-scratchpad = { module = "org.apache.poi:poi-scratchpad", version.ref = "poi" }
 files-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 files-odftoolkit-java = { module = "org.odftoolkit:odfdom-java", version = "0.12.0" }
-files-odftoolkit-simple = {module = "org.odftoolkit:simple-odf", version = "0.9.0"}
+files-odftoolkit-simple = { module = "org.odftoolkit:simple-odf", version = "0.9.0" }
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.0" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.7.1" }
@@ -53,16 +54,14 @@ sql-sqlite = { module = "io.github.willena:sqlite-jdbc", version = "3.49.1.0" }
 sql-postgresql = { module = "org.postgresql:postgresql", version = "42.7.5" }
 sql-flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 
-ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"}
-ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor"}
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor"}
-ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor"}
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentnegotation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serializtion-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-angryscan-core = { module = "org.angryscan:core", version.ref = "core"}
-
-console-progressbar = { module = "me.tongfei:progressbar", version.ref = "progressbar" }
+angryscan-core = { module = "org.angryscan:core", version.ref = "core" }
 
 filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
 
@@ -73,18 +72,24 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 koin-test-junit4 = { module = "io.insert-koin:koin-test-junit4", version.ref = "koin" }
 
-lifecycle-viewmodel = { module ="org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "viewmodel" }
+lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "viewmodel" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigation" }
 
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 
 aws-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "aws" }
 
+clikt-full = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
+clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref = "clikt" }
+mordant-coroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", version.ref = "mordant" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
+jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
+
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin"}
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.1" }
 conveyor = { id = "dev.hydraulic.conveyor", version = "1.12" }

@@ -47,7 +47,6 @@ kotlin {
                         }
                     }
                 }
-                println("Target OS: ${System.getenv("TARGET_OS")}")
 
                 implementation(libs.files.pdfbox)
                 implementation(libs.files.fastexcel)
@@ -92,6 +91,7 @@ kotlin {
                 implementation(libs.koin.test.junit4)
             }
         }
+        @Suppress("Unused")
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)

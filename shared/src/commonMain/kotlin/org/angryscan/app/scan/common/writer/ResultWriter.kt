@@ -29,16 +29,16 @@ object ResultWriter {
         XML("xml"),
     }
 
-    suspend fun saveResult(filePath: String, result: List<TaskFileResult>, onSaveError: () -> Unit): Boolean {
+    suspend fun saveResult(filePath: String, result: List<TaskFileResult>, onSaveError: (String) -> Unit): Boolean {
         val extension = FileExtensions.entries.find { filePath.endsWith(".${it.extension}") }
         if (extension == null) {
-            onSaveError()
+            onSaveError("Unsupported file extension")
             return false
         }
 
 
         if (File(filePath).exists() && !File(filePath).delete()) {
-            onSaveError()
+            onSaveError("Failed to replace file")
             return false
         }
 
@@ -52,7 +52,7 @@ object ResultWriter {
             return true
         } catch (e: Exception) {
             logger.error { "Failed to save report. ${e.message}" }
-            onSaveError()
+            onSaveError("Failed to save report")
             return false
         }
     }
