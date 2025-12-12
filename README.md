@@ -145,7 +145,7 @@ It is possible to add custom data search signatures using plain text: `Secret`, 
 
 ### Console Mode
 
-AngryData can also be launched in [console mode](https://github.com/angryscan/angrydata-app/blob/main/doc/CONSOLE.md), which is convenient for automation and running tasks without a graphical interface.
+Angry Data Scanner can also be launched in [console mode](https://github.com/angryscan/angrydata-app/blob/main/doc/CONSOLE.md), which is convenient for automation and running tasks without a graphical interface.
 
 ### System Requirements
 `Windows`, `Linux `
