@@ -109,7 +109,7 @@ compose.desktop {
             }
             macOS {
                 iconFile.set(project(":shared").projectDir.resolve("src\\desktopMain\\composeResources\\files\\icon.icns"))
-                bundleID = "ru.packetdima.datascanner"
+                bundleID = "org.angryscan.app"
                 appCategory = "public.app-category.utilities"
             }
         }
