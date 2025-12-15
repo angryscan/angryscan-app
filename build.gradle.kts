@@ -8,10 +8,10 @@ plugins {
     alias(libs.plugins.conveyor).apply(false)
 }
 
-val dummyAttribute = Attribute.of("ru.packetdima", String::class.java)
+val dummyAttribute = Attribute.of("org.angryscan", String::class.java)
 
-group = "ru.packetdima"
-version = System.getenv("VERSION") ?: "1.4.1"
+group = "org.angryscan"
+version = System.getenv("VERSION") ?: "1.5.0"
 
 subprojects {
     group = rootProject.group

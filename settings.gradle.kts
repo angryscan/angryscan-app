@@ -19,4 +19,3 @@ dependencyResolutionManagement {
 
 include(":shared")
 include(":desktop")
-include(":console")
