@@ -8,12 +8,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.ui.windows.screens.main.settings.items.*
+import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.matchers.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -27,21 +27,32 @@ fun SettingsBoxDetectFunctionsGrouped(
     val expandedState = scanSettings.matchersSettingsExpanded
     val expanded by expandedState
     var selectedCountry by remember { mutableStateOf(MatcherCountry.ALL) }
+    val currentEngine by scanSettings.engine
 
     LaunchedEffect(detectFunctions, expanded) {
         scanSettings.save()
+    }
+
+    // Remove CryptoSeedPhrase from selected matchers if HyperScan engine is selected
+    LaunchedEffect(currentEngine) {
+        if (currentEngine == HyperScanEngine::class) {
+            scanSettings.matchers.removeIf { it::class == CryptoSeedPhrase::class }
+            scanSettings.save()
+        }
     }
 
     val personalDataNumbersName = stringResource(Res.string.DetectGroup_PersonalDataNumbers)
     val personalDataTextName = stringResource(Res.string.DetectGroup_PersonalDataText)
     val bankingSecrecyName = stringResource(Res.string.DetectGroup_BankingSecrecy)
     val itAssetsName = stringResource(Res.string.DetectGroup_ITAssets)
+    val cryptoName = stringResource(Res.string.DetectGroup_Crypto)
 
     val matchersGroups = remember(
         personalDataNumbersName,
         personalDataTextName,
         bankingSecrecyName,
-        itAssetsName
+        itAssetsName,
+        cryptoName
     ) {
         listOf(
             MatchersGroup(
@@ -115,6 +126,13 @@ fun SettingsBoxDetectFunctionsGrouped(
 //                    RKNDomainDetectFun,
                     HashData
                 )
+            ),
+            MatchersGroup(
+                name = cryptoName,
+                matchers = listOf(
+                    CryptoWallet,
+                    CryptoSeedPhrase
+                )
             )
         )
     }
@@ -138,8 +156,9 @@ fun SettingsBoxDetectFunctionsGrouped(
                 },
                 modifier = Modifier.padding(bottom = 4.dp),
                 getCountryStats = { country ->
+                    val allMatchers = matchersGroups.flatMap { it.matchers }
                     val countryMatchers = MatcherCountryMapping.filterMatchers(
-                        MatchersRegister,
+                        allMatchers,
                         country
                     )
                     val selectedInCountry = countryMatchers.count { matcher ->
@@ -154,8 +173,22 @@ fun SettingsBoxDetectFunctionsGrouped(
                 selectedCountry = selectedCountry
             )
 
-            val filteredGroups = remember(matchersGroups, selectedCountry) {
-                MatcherCountryMapping.filterGroups(matchersGroups, selectedCountry)
+            val filteredGroups = remember(matchersGroups, selectedCountry, currentEngine) {
+                val groups = MatcherCountryMapping.filterGroups(matchersGroups, selectedCountry)
+                // Filter out CryptoSeedPhrase if HyperScan engine is selected
+                if (currentEngine == HyperScanEngine::class) {
+                    groups.map { group ->
+                        if (group.name == cryptoName) {
+                            group.copy(
+                                matchers = group.matchers.filter { it::class != CryptoSeedPhrase::class }
+                            )
+                        } else {
+                            group
+                        }
+                    }.filter { it.matchers.isNotEmpty() }
+                } else {
+                    groups
+                }
             }
 
             filteredGroups.forEach { group ->

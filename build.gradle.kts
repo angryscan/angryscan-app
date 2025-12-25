@@ -11,7 +11,7 @@ plugins {
 val dummyAttribute = Attribute.of("org.angryscan", String::class.java)
 
 group = "org.angryscan"
-version = System.getenv("VERSION") ?: "1.5.0"
+version = System.getenv("VERSION") ?: "1.5.1"
 
 subprojects {
     group = rootProject.group

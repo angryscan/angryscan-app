@@ -30,6 +30,8 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(CadastralNumber::class)
         subclass(CardNumber::class)
         subclass(CVV::class)
+        subclass(CryptoWallet::class)
+        subclass(CryptoSeedPhrase::class)
         subclass(DeathDate::class)
         subclass(DriverLicense::class)
         subclass(EducationDoc::class)
