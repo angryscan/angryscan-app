@@ -1,12 +1,60 @@
 name: Nightly build
 on:
   pull_request:
-  push:
-    branches:
-      - feature/conveyor-ci
 
 jobs:
+  Wait-For-Tests:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Wait for Tests workflow to succeed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.payload.pull_request?.head.sha ?? context.sha;
+            const workflowId = 'tests.yml';
+            const event = 'pull_request';
+            const maxAttempts = 30;
+            const delayMs = 20000;
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: workflowId,
+                event,
+                head_sha: sha,
+                per_page: 5,
+              });
+
+              const run = data.workflow_runs.find((r) => r.head_sha === sha);
+              if (run) {
+                core.info(`Found Tests run: status=${run.status}, conclusion=${run.conclusion}`);
+                if (run.status === 'completed') {
+                  if (run.conclusion === 'success') {
+                    core.info('Tests workflow succeeded, proceeding.');
+                    return;
+                  }
+                  core.setFailed(`Tests workflow finished with conclusion: ${run.conclusion}`);
+                  return;
+                }
+              } else {
+                core.info('Tests workflow not found yet for this SHA.');
+              }
+
+              core.info(`Attempt ${attempt}/${maxAttempts}: waiting ${delayMs}ms for tests to finish...`);
+              await sleep(delayMs);
+            }
+
+            core.setFailed('Timeout waiting for Tests workflow to complete successfully.');
+
   Build-Convey-Unix:
+    needs: Wait-For-Tests
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -74,6 +122,7 @@ jobs:
             LICENSE*
 
   Build-Convey-Win:
+    needs: Wait-For-Tests
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -124,3 +173,90 @@ jobs:
           path: |
             desktop/build/packages/*windows*.zip
             LICENSE*
+
+  Post-Artifacts-Comment:
+    needs: [Build-Convey-Unix, Build-Convey-Win]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Post nightly artifacts comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- nightly-artifacts -->';
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request?.number;
+
+            if (!prNumber) {
+              core.info('No pull request context, skipping comment creation.');
+              return;
+            }
+
+            // Remove previous bot comments to keep the thread clean.
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: prNumber, per_page: 100 }
+            );
+            const oldComments = comments.filter((comment) => comment.body?.includes(marker));
+            for (const comment of oldComments) {
+              await github.rest.issues.deleteComment({ owner, repo, comment_id: comment.id });
+            }
+
+            // Collect current run artifacts.
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              { owner, repo, run_id: context.runId, per_page: 100 }
+            );
+
+            const platformByName = (name) => {
+              const lower = name.toLowerCase();
+              if (lower.startsWith('linux')) return 'linux';
+              if (lower.startsWith('mac')) return 'macos';
+              if (lower.startsWith('windows')) return 'windows';
+              return 'other';
+            };
+
+            const grouped = { linux: [], macos: [], windows: [], other: [] };
+            for (const artifact of artifacts) {
+              if (artifact.expired) continue;
+              const platform = platformByName(artifact.name);
+              grouped[platform].push({
+                name: artifact.name,
+                url: artifact.archive_download_url,
+              });
+            }
+
+            const renderSection = (title, emoji, items) => {
+              const lines = [`### ${emoji} ${title}`];
+              if (!items.length) {
+                lines.push('- No artifacts');
+              } else {
+                for (const item of items) {
+                  lines.push(`- [${item.name}](${item.url}) ⬇️`);
+                }
+              }
+              return lines.join('\n');
+            };
+
+            const body = [
+              marker,
+              '## 📦 Nightly Build Artifacts',
+              renderSection('Linux', '🐧', grouped.linux),
+              renderSection('macOS', '🍎', grouped.macos),
+              renderSection('Windows', '🪟', grouped.windows),
+              grouped.other.length ? renderSection('Other', '📁', grouped.other) : '',
+            ]
+              .filter(Boolean)
+              .join('\n\n');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body,
+            });
