@@ -113,6 +113,7 @@
     <string name="Matcher-FullNameUS">ФИО (США)</string>
     <string name="Matcher-Code">Программный код</string>
     <string name="Matcher-Cert">Сертификат</string>
+    <string name="Matcher-Gitleaks">Gitleaks</string>
     <string name="Matcher-DetectBlockedDomains">Домен</string>
     <string name="Matcher-BankAccount">Банковский счет</string>
     <string name="Matcher-BankAccountLE">Банковский счет (юр. лицо)</string>
@@ -174,6 +175,7 @@
     <string name="Matcher-Description-IPv6">IP адрес v6</string>
     <string name="Matcher-Description-Code">Поиск программный кода</string>
     <string name="Matcher-Description-Cert">Поиск сертификатов</string>
+    <string name="Matcher-Description-Gitleaks">Поиск секретов (ключи, токены)</string>
     <string name="Matcher-Description-DetectBlockedDomains">Поиск доменов из реестра заблокированных РосКомНадзором</string>
     <string name="Matcher-Description-BankAccount">Номер банковского счета</string>
     <string name="Matcher-Description-BankAccountLE">Номер банковского счета (юридическое лицо)</string>
