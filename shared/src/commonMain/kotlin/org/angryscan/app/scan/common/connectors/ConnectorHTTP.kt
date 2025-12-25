@@ -6,9 +6,12 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.angryscan.app.common.AppVersion
 import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
 private val logger = KotlinLogging.logger {}
@@ -35,10 +38,12 @@ class ConnectorHTTP: IConnector, AutoCloseable {
             header("User-Agent", "DataScanner/${AppVersion}")
         }
 
-        val outputFile = File.createTempFile(
-            "ADS_",
-            ".txt"
-        )
+        val outputFile = withContext(Dispatchers.IO) {
+            File.createTempFile(
+                "ADS_",
+                ".txt"
+            )
+        }
 
         if (response.status.value in 200..299) {
             outputFile.writeBytes(response.body())
@@ -51,7 +56,7 @@ class ConnectorHTTP: IConnector, AutoCloseable {
 
     override suspend fun scanDirectory(
         dir: String,
-        extensions: List<String>,
+        extensions: List<IFileType>,
         fileSelected: (FoundedFile) -> Unit
     ): FilesCounter {
         logger.info { "HTTP scan page: $dir" }

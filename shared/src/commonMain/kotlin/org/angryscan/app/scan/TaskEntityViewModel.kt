@@ -17,6 +17,7 @@ import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FilesCounter
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -390,7 +391,7 @@ class TaskEntityViewModel(
                 delay(1000)
 
             val extensions = database.transaction {
-                dbTask.extensions.flatMap { it.extension.extensions }
+                dbTask.extensions.map { it.extension }
             }
             while (_state.value == TaskState.LOADING) {
                 delay(500)
@@ -450,7 +451,7 @@ class TaskEntityViewModel(
 
     private suspend fun scanDirectory(
         dir: String,
-        extensions: List<String>,
+        extensions: List<IFileType>,
         fileSelected: (file: FoundedFile) -> Unit
     ): FilesCounter {
         try {

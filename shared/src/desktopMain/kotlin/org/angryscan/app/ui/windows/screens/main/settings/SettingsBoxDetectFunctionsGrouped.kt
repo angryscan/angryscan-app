@@ -15,6 +15,7 @@ import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.ui.windows.screens.main.settings.items.*
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.matchers.*
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.jetbrains.compose.resources.stringResource
 
 
@@ -124,7 +125,8 @@ fun SettingsBoxDetectFunctionsGrouped(
                     CodeDetectFun,
                     CertDetectFun,
 //                    RKNDomainDetectFun,
-                    HashData
+                    HashData,
+                    GitleaksMatcher,
                 )
             ),
             MatchersGroup(

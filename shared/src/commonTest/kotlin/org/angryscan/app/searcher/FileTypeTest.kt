@@ -119,7 +119,7 @@ internal class FileTypeTest() {
                         val path = javaClass.getResource("/files/$filename")
                         assertNotNull(path)
                         val f = File(path.file)
-                        val enumType: IFileType? = f.let { IFileType.getFileType(it) }
+                        val enumType: IFileType? = f.let { IFileType.getFileType(it).firstOrNull() }
                         enumType?.scanFile(
                             f,
                             currentCoroutineContext(),
@@ -160,7 +160,7 @@ internal class FileTypeTest() {
             val path = javaClass.getResource("/files/$filename")
             assertNotNull(path)
             val f = File(path.file)
-            val enumType: IFileType? = f.let { IFileType.getFileType(it) }
+            val enumType: IFileType? = f.let { IFileType.getFileType(it).firstOrNull() }
 
             val engines = listOf(
                 KotlinEngine(Matchers.toKotlinMatchers())
@@ -197,10 +197,10 @@ internal class FileTypeTest() {
         )
         runBlocking {
             try {
-                val enumType: IFileType? = IFileType.getFileType(f)
+                val enumType: IFileType? = IFileType.getFileType(f).firstOrNull()
                 enumType?.scanFile(f, currentCoroutineContext(), engines, false).let {
                     assertEquals(mapOf(), it?.getDocumentFields())
-                    assertTrue(it?.skipped() == true)
+                    assertEquals(it?.skipped(), true)
                 }
             } catch (e: Exception) {
                 fail(e.message)

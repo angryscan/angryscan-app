@@ -94,7 +94,7 @@ fun ResultTable(
             fileSelected?.path ?: "",
             attribute = attributeSelected!!,
             onClose = { allMasked ->
-                if(allMasked) {
+                if (allMasked) {
                     task.deleteFoundAttribute(fileSelected!!.id, attributeSelected!!)
                     coroutineScope.launch {
                         taskFilesViewModel.update()
@@ -410,8 +410,7 @@ fun ResultTable(
                         }
                     ) { file ->
                         val fileType = IFileType.getFileType(file.path)
-                        val locationSupported = fileType != null &&
-                                LocationFinder.isSupported(fileType) &&
+                        val locationSupported = fileType.any { LocationFinder.isSupported(it) } &&
                                 task.dbTask.connector is ConnectorFileShare
                         val exist = filesExists.contains(file.id)
                         var menuExpanded by remember { mutableStateOf(false) }

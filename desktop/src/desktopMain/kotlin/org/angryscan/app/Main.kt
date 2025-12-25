@@ -84,7 +84,12 @@ suspend fun main(args: Array<String>) {
 
     try {
         if (args.isEmpty() ||
-            arrayOf("-c", "-console", "-h", "-help").all { !args.contains(it) }
+            arrayOf(
+                "scan",
+                "settings",
+                "-h", "--help",
+                "-v", "--version"
+            ).all { !args.contains(it) }
         ) {
             val serverSocket = aSocket(selectorManager).tcp().bind("127.0.0.1", port)
             logger.info { "Server started at port $port" }

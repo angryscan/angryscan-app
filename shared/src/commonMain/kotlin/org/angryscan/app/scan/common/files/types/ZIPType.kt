@@ -70,14 +70,16 @@ object ZIPType : FileType() {
                                             bufferedOutputStream.flush()
                                         }
                                     }
-                                    IFileType.getFileType(tmpFile)?.scanFile(tmpFile, context, engines, fastScan)
-                                        ?.also { doc ->
+                                    IFileType.getFileType(tmpFile).forEach { ft->
+                                        ft.scanFile(tmpFile, context, engines, fastScan)
+                                        .also { doc ->
                                             if (!doc.skipped()) {
                                                 res + doc.getDocumentFields()
                                             } else {
                                                 skipped++
                                             }
                                         }
+                                    }
                                     all++
                                 } catch (_: IOException) {
                                     continue

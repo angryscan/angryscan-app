@@ -119,39 +119,68 @@ class ScanThread : KoinComponent {
                 val fileObject = taskEntity.dbTask.connector.getFile(filePath)
 
                 val matchers = database.transaction {
-                    taskEntity.dbTask.lastFileDate =  Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                    taskEntity.dbTask.lastFileDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
                     TaskMatchers
                         .select(TaskMatchers.matcher, TaskMatchers.id)
                         .where { TaskMatchers.task.eq(taskEntity.dbTask.id) }
                         .associate { it[TaskMatchers.matcher] to it[TaskMatchers.id].value }
                 }
+                val extensions = database.transaction {
+                    taskEntity.dbTask.extensions.map { it.extension }
+                }
                 val engines: MutableList<IScanEngine> = mutableListOf()
-                engines.add(
-                    scanSettings.value.engine.value.getEngine(matchers.map { it.key })
-                )
-                val iMatchers = engines[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
-                do {
-                    val fbe = engines.last().fallback().getEngine(iMatchers)
-                    iMatchers.removeAll(fbe.matchers)
-                } while (iMatchers.isNotEmpty() || fbe::class == engines[0])
+                scanSettings.value.engine.value
+                    .getEngine(matchers.map { it.key })
+                    .let {
+                        if (it.matchers.isNotEmpty())
+                            engines.add(it)
+                    }
+                val iMatchers = if(engines.isNotEmpty())
+                    engines[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
+                else
+                    matchers.map { it.key }.toMutableList()
+
+                if (iMatchers.isNotEmpty()) {
+                    var fbe = scanSettings.value.engine.value.fallback()
+                    do {
+                        val e = fbe
+                            .getEngine(iMatchers)
+                        if(e.matchers.isNotEmpty()) {
+                            engines.add(e)
+                            iMatchers.removeAll(e.matchers)
+                        }
+                        fbe = e.fallback()
+                    } while(iMatchers.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
+                }
 
 
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
 
-                    val scanRes = IFileType
+                    val scanResults = IFileType
                         .getFileType(fileObject)
-                        ?.scanFile(
-                            file = fileObject,
-                            context = currentCoroutineContext(),
-                            engines = engines,
-                            fastScan = fastScan
-                        )
+                        .filter { ft ->
+                            ft in extensions
+                        }.map { ft ->
+                            ft.scanFile(
+                                file = fileObject,
+                                context = currentCoroutineContext(),
+                                engines = engines,
+                                fastScan = fastScan
+                            )
+                        }
 
                     engines.forEach { eng ->
                         eng.close()
+                    }
+
+                    val scanRes = scanResults.firstOrNull()
+                    if (scanRes != null) {
+                        scanResults.drop(1).forEach {
+                            scanRes.plus(it.getDocumentFields())
+                        }
                     }
 
 

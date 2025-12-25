@@ -40,12 +40,14 @@ object RARType: FileType() {
 
                     try {
                         archive.extractFile(fileHeader, tmpFile.outputStream())
-                        IFileType.getFileType(tmpFile)?.scanFile(tmpFile, context, engines, fastScan)?.also { doc ->
+                        IFileType.getFileType(tmpFile).forEach { ft ->
+                            ft.scanFile(tmpFile, context, engines, fastScan).also { doc ->
                             if (!doc.skipped()) {
                                 res + doc.getDocumentFields()
                             } else {
                                 skipped++
                             }
+                        }
                         }
                         all++
                     } catch (_: IOException) {

@@ -62,8 +62,12 @@ fun AttributeLocationWindow(
     val selectedLocations = remember { mutableStateListOf<Location>() }
 
     val fileType = IFileType.getFileType(filePath)
-    val maskingSupported = fileType?.let { LocationFinder.isMaskSupported(it) && attribute is IMask } ?: false
-    val exportSupported = fileType?.let { LocationFinder.isExportSupported(it) } ?: false
+    val maskingSupported = fileType.any { ft ->
+        LocationFinder.isMaskSupported(ft) && attribute is IMask
+    }
+    val exportSupported = fileType.any { ft ->
+        LocationFinder.isExportSupported(ft)
+    }
 
     coroutineScope.launch {
         searching = true

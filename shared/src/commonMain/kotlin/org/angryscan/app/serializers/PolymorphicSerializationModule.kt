@@ -20,6 +20,7 @@ import org.angryscan.common.engine.custom.CustomEngine
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.kotlin.KotlinEngine
 import org.angryscan.common.matchers.*
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 
 val PolymorphicSerializationModule = SerializersModule {
     polymorphic(IMatcher::class) {
@@ -78,6 +79,7 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(CertDetectFun::class)
         subclass(CodeDetectFun::class)
         subclass(RKNDomainDetectFun::class)
+        subclass(GitleaksMatcher::class)
 
         defaultDeserializer { _ -> serializer<UnknownDetectFun>() }
     }

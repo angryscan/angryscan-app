@@ -23,9 +23,71 @@ import kotlin.coroutines.CoroutineContext
 @Serializable
 object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
     override val name = "Text"
-    override val extensions =
-        (1..999).map { it.toString().padStart(3, '0') } +
-                listOf("txt", "csv", "xml", "json", "log")
+    override val extensions = (
+            listOf(
+                // Plain text / docs
+                "txt",
+                "md",
+                "markdown",
+                "rst",
+                "adoc",
+
+                // Structured data
+                "csv",
+                "tsv",
+                "json",
+                "jsonl",
+                "ndjson",
+                "xml",
+                "yml",
+                "yaml",
+                "toml",
+
+                // Config formats
+                "ini",
+                "cfg",
+                "conf",
+                "properties",
+                "prop",
+                "prefs",
+                "env",   // sometimes used as file.env
+
+                // IaC / deployment configs (non-code)
+                "hcl",
+
+                // Web text formats (still plain text)
+                "html",
+                "htm",
+                "css",
+                "scss",
+                "sass",
+                "less",
+                "svg",
+
+                // Logs / traces
+                "log",
+                "out",
+                "err",
+                "trace",
+
+                // Diffs / patches
+                "diff",
+                "patch",
+
+                // Lock / manifests (dependency & tooling metadata)
+                "lock",
+
+                // No extension (e.g., Dockerfile, Makefile, README, .env)
+                ""
+            ) +
+                    //Code extensions also text format
+                    CodeFileType.entries.flatMap { it.extensions }
+            )
+        .distinct()
+
+    override fun allowExtension(ext: String): Boolean {
+        return ext in extensions || """^\d+$""".toRegex().matches(ext)
+    }
 
     override fun extensions() =
         extensions.filter { !"^\\d{1,3}$".toRegex().matches(it) }
@@ -163,7 +225,7 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                         locationsMasked++
                                     }
                                     locationIndex++
-                                    if(locationIndex < sortedLocations.size) {
+                                    if (locationIndex < sortedLocations.size) {
                                         locationRowIndex = sortedLocations[locationIndex]
                                             .location
                                             .substring(2)
@@ -210,7 +272,7 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                         .use { reader ->
                             var line = reader.readLine()
                             while (line != null && rowIndex < rows.size) {
-                                if(lineNumber == rows[rowIndex]) {
+                                if (lineNumber == rows[rowIndex]) {
                                     writer.write(line)
                                     writer.newLine()
                                     rowIndex++

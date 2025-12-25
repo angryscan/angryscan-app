@@ -37,6 +37,7 @@ kotlin {
                 implementation(libs.exposed.migration)
 
                 api(libs.angryscan.core)
+                api(libs.angryscan.gitleaks)
                 when (System.getenv("TARGET_OS")) { // Conveyor building
                     "windows" -> implementation(libs.hyperscan.windows)
                     "unix" -> implementation(libs.hyperscan.default)
