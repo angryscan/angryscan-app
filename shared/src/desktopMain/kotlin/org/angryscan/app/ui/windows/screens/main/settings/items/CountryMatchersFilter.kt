@@ -93,6 +93,8 @@ object MatcherCountryMapping {
         CertDetectFun::class to MatcherCountry.INTERNATIONAL,
         HashData::class to MatcherCountry.INTERNATIONAL,
         LegalEntityId::class to MatcherCountry.INTERNATIONAL,
+        CryptoWallet::class to MatcherCountry.INTERNATIONAL,
+        CryptoSeedPhrase::class to MatcherCountry.INTERNATIONAL,
     )
 
     fun getCountry(matcher: IMatcher): MatcherCountry {

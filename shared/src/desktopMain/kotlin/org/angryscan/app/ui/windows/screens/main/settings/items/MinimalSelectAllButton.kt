@@ -14,22 +14,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.ScanSettings_SelectAll
+import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MinimalSelectAllButton(
     scanSettings: ScanSettings,
-    selectedCountry: MatcherCountry = MatcherCountry.ALL
+    selectedCountry: MatcherCountry = MatcherCountry.ALL,
+    availableMatchers: List<IMatcher>
 ) {
     val matchers = remember { scanSettings.matchers }
     
-    // Получаем мэтчеры для текущей страны
-    val countryMatchers = remember(selectedCountry) {
-        MatcherCountryMapping.filterMatchers(MatchersRegister, selectedCountry)
+    // Получаем мэтчеры для текущей страны из доступных матчеров
+    val countryMatchers = remember(selectedCountry, availableMatchers) {
+        MatcherCountryMapping.filterMatchers(availableMatchers, selectedCountry)
     }
     
     val isAllSelected = countryMatchers.all { m ->

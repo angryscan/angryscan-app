@@ -151,6 +151,8 @@
     <string name="Matcher-StateRegContract">Contract reg. no.</string>
     <string name="Matcher-VIN">VIN</string>
     <string name="Matcher-VehicleRegNumber">Vehicle reg #</string>
+    <string name="Matcher-CryptoWallet">Crypto wallet</string>
+    <string name="Matcher-CryptoSeedPhrase">Crypto seed phrase</string>
     <string name="Matcher-Description-Emails">Email</string>
     <string name="Matcher-Description-Phones">Phone (+7)</string>
     <string name="Matcher-Description-PhoneUS">Phone number (US format)</string>
@@ -204,6 +206,8 @@
     <string name="Matcher-Description-StateRegContract">State registration number of the contract</string>
     <string name="Matcher-Description-VIN">Vehicle Identification Number</string>
     <string name="Matcher-Description-VehicleRegNumber">Vehicle registration number</string>
+    <string name="Matcher-Description-CryptoWallet">Cryptocurrency wallet address</string>
+    <string name="Matcher-Description-CryptoSeedPhrase">Cryptocurrency seed phrase (mnemonic phrase)</string>
     <string name="Matcher-Description-UserSignature">User-defined signature pattern</string>
     <string name="Matcher-UserSignature-Name">Signature name</string>
     <string name="Matcher-UserSignature-Signature">User signature</string>
@@ -219,6 +223,7 @@
     <string name="DetectGroup-PersonalDataText">Personal Data (text)</string>
     <string name="DetectGroup-BankingSecrecy">Banking Secrecy</string>
     <string name="DetectGroup-ITAssets">IT assets</string>
+    <string name="DetectGroup-Crypto">Crypto</string>
 
     <!-- Matcher Countries -->
     <string name="MatcherCountry-All">All</string>

@@ -151,6 +151,8 @@
     <string name="Matcher-StateRegContract">Гос. рег. договора</string>
     <string name="Matcher-VIN">VIN</string>
     <string name="Matcher-VehicleRegNumber">Рег. номер ТС</string>
+    <string name="Matcher-CryptoWallet">Криптокошелёк</string>
+    <string name="Matcher-CryptoSeedPhrase">Сид-фраза криптовалюты</string>
     <string name="Matcher-Description-Emails">Электронная почта</string>
     <string name="Matcher-Description-Phones">Номер телефона (+7)</string>
     <string name="Matcher-Description-PhoneUS">Номер телефона (формат США)</string>
@@ -204,6 +206,8 @@
     <string name="Matcher-Description-StateRegContract">Номер государственной регистрации договора</string>
     <string name="Matcher-Description-VIN">Идентификационный номер транспортного средства (VIN)</string>
     <string name="Matcher-Description-VehicleRegNumber">Номер регистрации транспортного средства</string>
+    <string name="Matcher-Description-CryptoWallet">Адрес криптовалютного кошелька</string>
+    <string name="Matcher-Description-CryptoSeedPhrase">Сид-фраза криптовалюты (мнемоническая фраза)</string>
     <string name="Matcher-Description-UserSignature">Пользовательский шаблон сигнатуры</string>
     <string name="Matcher-UserSignature-Name">Наименование сигнатуры</string>
     <string name="Matcher-UserSignature-Signature">Сигнатура</string>
@@ -216,6 +220,7 @@
     <string name="DetectGroup-PersonalDataText">Персональные данные (текст)</string>
     <string name="DetectGroup-BankingSecrecy">Банковская тайна</string>
     <string name="DetectGroup-ITAssets">IT активы</string>
+    <string name="DetectGroup-Crypto">Криптовалюта</string>
 
     <!-- Страны мэтчеров -->
     <string name="MatcherCountry-All">Все</string>

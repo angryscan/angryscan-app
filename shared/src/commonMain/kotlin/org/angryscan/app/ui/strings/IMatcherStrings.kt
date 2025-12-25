@@ -21,6 +21,8 @@ private val matcherResources: Map<KClass<out IMatcher>, Pair<StringResource, Str
     put(CadastralNumber::class, Res.string.Matcher_CadastralNumber to Res.string.Matcher_Description_CadastralNumber)
     put(CardNumber::class, Res.string.Matcher_CardNumbers to Res.string.Matcher_Description_CardNumbers)
     put(CVV::class, Res.string.Matcher_CVV to Res.string.Matcher_Description_CVV)
+    put(CryptoWallet::class, Res.string.Matcher_CryptoWallet to Res.string.Matcher_Description_CryptoWallet)
+    put(CryptoSeedPhrase::class, Res.string.Matcher_CryptoSeedPhrase to Res.string.Matcher_Description_CryptoSeedPhrase)
     put(DeathDate::class, Res.string.Matcher_DeathDate to Res.string.Matcher_Description_DeathDate)
     put(DriverLicense::class, Res.string.Matcher_DriverLicense to Res.string.Matcher_Description_DriverLicense)
     put(EducationDoc::class, Res.string.Matcher_EducationDoc to Res.string.Matcher_Description_EducationDoc)
