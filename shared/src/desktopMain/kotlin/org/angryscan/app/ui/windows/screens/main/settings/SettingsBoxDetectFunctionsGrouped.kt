@@ -157,8 +157,14 @@ fun SettingsBoxDetectFunctionsGrouped(
                 modifier = Modifier.padding(bottom = 4.dp),
                 getCountryStats = { country ->
                     val allMatchers = matchersGroups.flatMap { it.matchers }
+                    // Filter out CryptoSeedPhrase if HyperScan engine is selected
+                    val filteredMatchers = if (currentEngine == HyperScanEngine::class) {
+                        allMatchers.filter { it::class != CryptoSeedPhrase::class }
+                    } else {
+                        allMatchers
+                    }
                     val countryMatchers = MatcherCountryMapping.filterMatchers(
-                        allMatchers,
+                        filteredMatchers,
                         country
                     )
                     val selectedInCountry = countryMatchers.count { matcher ->
@@ -168,9 +174,21 @@ fun SettingsBoxDetectFunctionsGrouped(
                 }
             )
 
+            // Get all available matchers from groups (before country filtering) for Select All button
+            val availableMatchers = remember(matchersGroups, currentEngine) {
+                val allMatchers = matchersGroups.flatMap { it.matchers }
+                // Filter out CryptoSeedPhrase if HyperScan engine is selected
+                if (currentEngine == HyperScanEngine::class) {
+                    allMatchers.filter { it::class != CryptoSeedPhrase::class }
+                } else {
+                    allMatchers
+                }
+            }
+
             MinimalSelectAllButton(
                 scanSettings = scanSettings,
-                selectedCountry = selectedCountry
+                selectedCountry = selectedCountry,
+                availableMatchers = availableMatchers
             )
 
             val filteredGroups = remember(matchersGroups, selectedCountry, currentEngine) {
