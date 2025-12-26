@@ -22,6 +22,7 @@ import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.kotlin.KotlinEngine
 import org.angryscan.common.extensions.Matchers
 import org.angryscan.common.matchers.UserSignature
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
@@ -104,6 +105,9 @@ class ScanSettings : KoinComponent {
             this.userSignatureSettingsExpanded.value = prop.userSignatureSettingsExpanded.value
             this.selectionType.value = prop.selectionType.value
             this.engine.value = prop.engine.value
+
+            GitleaksMatcher.close()
+            GitleaksMatcher.init()
         } catch (_: Exception) {
             logger.error { "Failed to load ScanSettings. Loading default." }
             this.extensions.clear()
@@ -129,6 +133,9 @@ class ScanSettings : KoinComponent {
                 else -> HyperScanEngine::class
             }
             this.userSignatures.clear()
+
+            GitleaksMatcher.close()
+            GitleaksMatcher.init()
         }
     }
 

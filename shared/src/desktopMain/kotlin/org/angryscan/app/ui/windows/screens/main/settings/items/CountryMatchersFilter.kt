@@ -6,6 +6,7 @@ import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.*
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.reflect.KClass
@@ -93,6 +94,7 @@ object MatcherCountryMapping {
         CertDetectFun::class to MatcherCountry.INTERNATIONAL,
         HashData::class to MatcherCountry.INTERNATIONAL,
         LegalEntityId::class to MatcherCountry.INTERNATIONAL,
+        GitleaksMatcher::class to MatcherCountry.INTERNATIONAL,
         CryptoWallet::class to MatcherCountry.INTERNATIONAL,
         CryptoSeedPhrase::class to MatcherCountry.INTERNATIONAL,
     )

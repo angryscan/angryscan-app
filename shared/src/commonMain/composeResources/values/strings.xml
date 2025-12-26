@@ -113,6 +113,7 @@
     <string name="Matcher-IPv6">IPv6</string>
     <string name="Matcher-Code">Program code</string>
     <string name="Matcher-Cert">Certificate</string>
+    <string name="Matcher-Gitleaks">Gitleaks</string>
     <string name="Matcher-DetectBlockedDomains">Domain</string>
     <string name="Matcher-BankAccount">Bank account</string>
     <string name="Matcher-BankAccountLE">Bank account (LE)</string>
@@ -174,6 +175,7 @@
     <string name="Matcher-Description-IPv6">IP address v6</string>
     <string name="Matcher-Description-Code">Program code</string>
     <string name="Matcher-Description-Cert">Certificate</string>
+    <string name="Matcher-Description-Gitleaks">Secrets detection</string>
     <string name="Matcher-Description-DetectBlockedDomains">Domain from registry blocked by RKN</string>
     <string name="Matcher-Description-BankAccount">Bank account number</string>
     <string name="Matcher-Description-BankAccountLE">Bank account number (legal entity)</string>

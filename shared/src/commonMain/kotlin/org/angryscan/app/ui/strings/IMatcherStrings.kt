@@ -7,6 +7,7 @@ import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.scan.functions.RKNDomainDetectFun
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.*
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -70,6 +71,7 @@ private val matcherResources: Map<KClass<out IMatcher>, Pair<StringResource, Str
     put(CertDetectFun::class, Res.string.Matcher_Cert to Res.string.Matcher_Description_Cert)
     put(CodeDetectFun::class, Res.string.Matcher_Code to Res.string.Matcher_Description_Code)
     put(RKNDomainDetectFun::class, Res.string.Matcher_DetectBlockedDomains to Res.string.Matcher_Description_DetectBlockedDomains)
+    put(GitleaksMatcher::class, Res.string.Matcher_Gitleaks to Res.string.Matcher_Description_Gitleaks)
     
     // User signatures
     put(UserSignature::class, Res.string.Matcher_UserSignature_Title to Res.string.Matcher_Description_UserSignature)

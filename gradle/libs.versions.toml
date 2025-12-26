@@ -4,7 +4,6 @@ exposed = "0.61.0"
 poi = "5.4.0"
 compose = "1.9.3"
 ktor = "3.2.3"
-core = "1.4.5"
 log4j = "2.24.3"
 koin = "4.0.2"
 viewmodel = "2.9.3"
@@ -17,6 +16,9 @@ hyperscan = "5.4.11-3.1.0"
 hyperscan-windows = "5.4.0-2.0.0"
 clikt = "5.0.3"
 mordant = "3.0.2"
+#Angryscan libraries
+gitleaks = "0.1.1"
+core = "1.4.5"
 
 [libraries]
 #Hyperscan
@@ -61,8 +63,6 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentnegotation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serializtion-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-angryscan-core = { module = "org.angryscan:core", version.ref = "core" }
-
 filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
 
 #Koin
@@ -84,6 +84,10 @@ clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref
 mordant-coroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", version.ref = "mordant" }
 mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
+
+#Angryscan libraries
+angryscan-core = { module = "org.angryscan:core", version.ref = "core" }
+angryscan-gitleaks = { module = "org.angryscan:gitleaks", version.ref = "gitleaks" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

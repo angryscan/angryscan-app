@@ -13,7 +13,15 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
         mavenLocal()
+        maven {
+            name = "Central Portal Snapshots"
+            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
 
+            content {
+                includeModule("org.angryscan", "gitleaks")
+                includeModule("org.angryscan", "gitleaks-jvm")
+            }
+        }
     }
 }
 

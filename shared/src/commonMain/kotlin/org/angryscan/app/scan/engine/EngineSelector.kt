@@ -16,13 +16,17 @@ fun KClass<out IScanEngine>.getEngine(matchers: List<IMatcher>): IScanEngine {
     }
 }
 
-fun IScanEngine.fallback() : KClass<out IScanEngine> {
+fun KClass<out IScanEngine>.fallback(): KClass<out IScanEngine> {
     return when(this) {
-        is HyperScanEngine -> KotlinEngine::class
-        is KotlinEngine -> CustomEngine::class
-        is CustomEngine -> HyperScanEngine::class
+        HyperScanEngine::class -> KotlinEngine::class
+        KotlinEngine::class -> CustomEngine::class
+        CustomEngine::class -> HyperScanEngine::class
         else -> throw IllegalArgumentException("Unknown engine")
     }
+}
+
+fun IScanEngine.fallback() : KClass<out IScanEngine> {
+    return this::class.fallback()
 }
 
 fun IScanEngine.inappropriateMatchers(matchers: List<IMatcher>): List<IMatcher> {

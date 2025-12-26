@@ -15,6 +15,7 @@ import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 val matchers = listOf<IKotlinMatcher>(
     Email,
@@ -50,7 +51,7 @@ internal class DetectorTest : IKoinTestRule {
             .forEach { (t, u) ->
                 doc.updateDocument(t, u)
             }
-        
+
         assertEquals(4, doc.length())
     }
 
@@ -58,7 +59,7 @@ internal class DetectorTest : IKoinTestRule {
     fun testText() {
         val file = javaClass.getResource("/files/TestText.txt")?.file
         assertNotNull(file)
-        
+
         for (attribute in matchers) {
             assertEquals(1, getCountOfAttribute(file, attribute))
         }
@@ -187,10 +188,18 @@ internal class DetectorTest : IKoinTestRule {
 
         val document = runBlocking(coroutineContext) {
             IFileType
-                .getFileType(file)?.scanFile(file, coroutineContext, engines, false).let {
-                assertNotNull(it)
-            }
+                .getFileType(file).map { ft ->
+                    ft.scanFile(file, coroutineContext, engines, false)
+                }.let {
+                    assertTrue(it.isNotEmpty())
+                    val r = it.first()
+                    it.drop(1).forEach { d ->
+                        r.plus(d.getDocumentFields())
+                    }
+                    r
+                }
         }
+
         return document.getDocumentFields().getOrDefault(matcher, 0)
     }
 }

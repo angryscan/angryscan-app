@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
 private val logger = KotlinLogging.logger {}
@@ -110,10 +111,12 @@ class ConnectorS3(
                 key = filePath
             }
 
-            val outputFile = File.createTempFile(
-                "ADS_",
-                "." + filePath.substringAfterLast(".")
-            )
+            val outputFile = withContext(Dispatchers.IO) {
+                File.createTempFile(
+                    "ADS_",
+                    "." + filePath.substringAfterLast(".")
+                )
+            }
 
             s3Client.getObject(request) { response ->
                 response.body?.writeToFile(outputFile)
@@ -125,7 +128,7 @@ class ConnectorS3(
 
     override suspend fun scanDirectory(
         dir: String,
-        extensions: List<String>,
+        extensions: List<IFileType>,
         fileSelected: (file: FoundedFile) -> Unit
     ): FilesCounter =
         withContext(Dispatchers.Default) {
@@ -162,7 +165,7 @@ class ConnectorS3(
                                     filesCounter.add(fileSize)
 
                                     val fileExtension = key.substringAfterLast('.', "")
-                                    if (extensions.any { it == fileExtension }) {
+                                    if (extensions.any { it.allowExtension(fileExtension) }) {
                                         fileSelected(
                                             FoundedFile(
                                                 path = key,

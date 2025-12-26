@@ -29,6 +29,8 @@ sealed interface IFileType {
 
     fun extensions() = extensions
 
+    fun allowExtension(ext: String): Boolean = ext in extensions
+
     companion object {
         fun getAll(): List<IFileType> {
             return buildList {
@@ -56,17 +58,17 @@ sealed interface IFileType {
         /**
          * Found IFileType by file extension
          */
-        fun getFileType(file: File): IFileType? {
+        fun getFileType(file: File): List<IFileType> {
             val extension = file.extension.lowercase()
-            return getAll().find { fileType ->
-                fileType.extensions.any { it.lowercase() == extension }
+            return getAll().filter { fileType ->
+                fileType.allowExtension(extension)
             }
         }
 
         /**
          * Found IFileType by file extension
          */
-        fun getFileType(filePath: String): IFileType? =
+        fun getFileType(filePath: String): List<IFileType> =
             getFileType(File(filePath))
 
     }

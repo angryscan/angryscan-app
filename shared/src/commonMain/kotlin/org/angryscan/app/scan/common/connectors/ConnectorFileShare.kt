@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
 @Serializable
@@ -15,7 +16,7 @@ class ConnectorFileShare: IConnector {
 
     override suspend fun scanDirectory(
         dir: String,
-        extensions: List<String>,
+        extensions: List<IFileType>,
         fileSelected: (FoundedFile) -> Unit
     ): FilesCounter =
         withContext(Dispatchers.IO) {
@@ -34,7 +35,8 @@ class ConnectorFileShare: IConnector {
                     } else {
                         filesCounter.add(item.length())
 
-                        if (extensions.any { item.extension == it }) {
+
+                        if (extensions.any { it.allowExtension(item.extension) }) {
                             val foundedFile = FoundedFile(
                                 path = item.absolutePath,
                                 size = item.length()
@@ -46,7 +48,7 @@ class ConnectorFileShare: IConnector {
             } else {
                 filesCounter.add(d.length())
 
-                if (extensions.any { d.extension == it }) {
+                if (extensions.any { it.allowExtension(d.extension) }) {
                     val foundedFile = FoundedFile(
                         path = d.absolutePath,
                         size = d.length()

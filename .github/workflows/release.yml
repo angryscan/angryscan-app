@@ -5,7 +5,58 @@ on:
       - "v*.*.*"
 
 jobs:
+  Wait-For-Tests:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Wait for Tests workflow to succeed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            const workflowId = 'tests.yml';
+            const event = 'push';
+            const maxAttempts = 30;
+            const delayMs = 20000;
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: workflowId,
+                event,
+                head_sha: sha,
+                per_page: 5,
+              });
+
+              const run = data.workflow_runs.find((r) => r.head_sha === sha);
+              if (run) {
+                core.info(`Found Tests run: status=${run.status}, conclusion=${run.conclusion}`);
+                if (run.status === 'completed') {
+                  if (run.conclusion === 'success') {
+                    core.info('Tests workflow succeeded, proceeding.');
+                    return;
+                  }
+                  core.setFailed(`Tests workflow finished with conclusion: ${run.conclusion}`);
+                  return;
+                }
+              } else {
+                core.info('Tests workflow not found yet for this SHA.');
+              }
+
+              core.info(`Attempt ${attempt}/${maxAttempts}: waiting ${delayMs}ms for tests to finish...`);
+              await sleep(delayMs);
+            }
+
+            core.setFailed('Timeout waiting for Tests workflow to complete successfully.');
+
   Build-Convey-Unix:
+    needs: Wait-For-Tests
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -59,6 +110,7 @@ jobs:
             LICENSE.en.txt
 
   Build-Convey-Win:
+    needs: Wait-For-Tests
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -6,12 +6,14 @@ import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.extensions.Matchers
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import java.util.function.IntFunction
 
 object MatchersRegister: List<IMatcher> by Matchers.toList() + listOf(
 //    RKNDomainDetectFun,
     CodeDetectFun,
-    CertDetectFun
+    CertDetectFun,
+    GitleaksMatcher,
 ) {
     override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?>? {
         return super.toArray(generator)
