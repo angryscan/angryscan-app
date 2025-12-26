@@ -1,8 +1,12 @@
-name: Tests
+name: tests
 
 on:
   push:
   pull_request:
+
+permissions:
+  contents: read
+  statuses: write
 
 jobs:
   Linux:
