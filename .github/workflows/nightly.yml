@@ -227,7 +227,7 @@ jobs:
               const platform = platformByName(artifact.name);
               grouped[platform].push({
                 name: artifact.name,
-                url: artifact.archive_download_url,
+                url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}/artifacts/${artifact.id}`,
               });
             }
 
