@@ -16,7 +16,8 @@ sealed interface IFileType {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document
 
     fun scan(text: String, engine: IScanEngine): Map<IMatcher, Int> {

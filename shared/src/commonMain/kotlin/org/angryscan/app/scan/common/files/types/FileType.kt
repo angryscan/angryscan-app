@@ -4,14 +4,11 @@ import kotlinx.serialization.Serializable
 import org.angryscan.app.common.ScanSettings
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import kotlin.getValue
 
 @Serializable
 sealed class FileType : IFileType, KoinComponent {
     val scanSettings: ScanSettings by inject()
-
-    init {
-        values += this
-    }
 
     fun isSampleOverload(sample: Int, fastScan: Boolean): Boolean {
         return (fastScan && sample >= scanSettings.sampleCount)
@@ -31,17 +28,12 @@ sealed class FileType : IFileType, KoinComponent {
         return (isLengthOverload(length))
     }
 
-    fun selectedExtension(fileName: String): Boolean =
-        values
-            .filter {
-                scanSettings.extensions.contains(it) // TODO: Заменить на загруженные из задачи, а не из текущих настроек
-            }.flatMap {
-                it.extensions
-            }.any { fileName.endsWith(it) }
+    fun selectedExtension(fileName: String, selectedExtension: List<IFileType>): Boolean =
+        selectedExtension.flatMap {
+            it.extensions
+        }.any { fileName.endsWith(it) }
 
     companion object {
-        var values = listOf<FileType>()
-            private set
     }
 
     override fun toString(): String {

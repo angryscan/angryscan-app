@@ -109,7 +109,8 @@ enum class CodeFileType : IFileType {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document {
         var count = 0
         val res = Document(file.length(), file.absolutePath)

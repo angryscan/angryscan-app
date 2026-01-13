@@ -21,7 +21,8 @@ object ODSType: FileType() {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document {
         val str = StringBuilder()
         val res = Document(file.length(), file.absolutePath)

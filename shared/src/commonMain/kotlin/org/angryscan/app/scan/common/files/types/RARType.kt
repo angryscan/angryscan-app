@@ -19,7 +19,8 @@ object RARType: FileType() {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document {
         val res = Document(file.length(), file.absolutePath)
         var skipped = 0
@@ -30,7 +31,7 @@ object RARType: FileType() {
                 while (true) {
                     val fileHeader = archive.nextFileHeader() ?: break
 
-                    if (!selectedExtension(fileHeader.fileName))
+                    if (!selectedExtension(fileHeader.fileName, selectedExtensions))
                         continue
 
                     val tmpFile = File.createTempFile(
@@ -41,7 +42,7 @@ object RARType: FileType() {
                     try {
                         archive.extractFile(fileHeader, tmpFile.outputStream())
                         IFileType.getFileType(tmpFile).forEach { ft ->
-                            ft.scanFile(tmpFile, context, engines, fastScan).also { doc ->
+                            ft.scanFile(tmpFile, context, engines, fastScan, selectedExtensions).also { doc ->
                             if (!doc.skipped()) {
                                 res + doc.getDocumentFields()
                             } else {
