@@ -23,6 +23,7 @@ import org.angryscan.app.common.AppVersion
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.OS
 import org.angryscan.app.console.ConsoleApp
+import org.angryscan.app.console.extensions.WindowsCLI
 import org.angryscan.app.di.databaseModule
 import org.angryscan.app.di.s3Module
 import org.angryscan.app.di.scanModule
@@ -32,7 +33,6 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.ui.MainWindow
 import org.angryscan.app.ui.tray.DorkTray
 import org.angryscan.app.ui.windows.ApplicationErrorWindow
-import org.fusesource.jansi.internal.Kernel32.SetConsoleOutputCP
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import java.awt.event.WindowEvent
@@ -46,6 +46,25 @@ private val logger = KotlinLogging.logger {}
 
 @OptIn(ExperimentalComposeUiApi::class)
 suspend fun main(args: Array<String>) {
+
+    val isCliMode = args.isNotEmpty() &&
+            arrayOf(
+                "scan",
+                "settings",
+                "-h", "--help",
+                "-v", "--version"
+            ).any { args.contains(it) }
+    if (OS.currentOS() == OS.WINDOWS) {
+        if (isCliMode) {
+            WindowsCLI.setup()
+        } else {
+            WindowsCLI.freeConsole()
+        }
+    }
+
+
+    if (!isCliMode && OS.currentOS() == OS.WINDOWS)
+        WindowsCLI.freeConsole()
 
     if (AppVersion != "Debug") {
         LogLevel.setLoggingLevel(Level.INFO)
@@ -67,11 +86,7 @@ suspend fun main(args: Array<String>) {
         }
     )
 
-    if(OS.currentOS() == OS.WINDOWS) {
-        SetConsoleOutputCP(65001)
-    }
-
-    FileKit.init(appId = "Angry Data Scanner")
+    FileKit.init(appId = "AngryDataScanner")
 
     try {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
@@ -83,14 +98,7 @@ suspend fun main(args: Array<String>) {
     val selectorManager = SelectorManager(Dispatchers.IO)
 
     try {
-        if (args.isEmpty() ||
-            arrayOf(
-                "scan",
-                "settings",
-                "-h", "--help",
-                "-v", "--version"
-            ).all { !args.contains(it) }
-        ) {
+        if (!isCliMode) {
             val serverSocket = aSocket(selectorManager).tcp().bind("127.0.0.1", port)
             logger.info { "Server started at port $port" }
             CoroutineScope(Dispatchers.IO).launch {
@@ -146,14 +154,7 @@ suspend fun main(args: Array<String>) {
         )
     }
 
-    if (args.isNotEmpty() &&
-        arrayOf(
-            "scan",
-            "settings",
-            "-h", "--help",
-            "-v", "--version"
-        ).any { args.contains(it) }
-    ) {
+    if (isCliMode) {
         ConsoleApp()
             .main(args)
     } else {
@@ -185,7 +186,7 @@ suspend fun main(args: Array<String>) {
                 var mainIsVisible by remember { mutableStateOf(true) }
 
                 Locale.setDefault(Locale.forLanguageTag(appLocale.locale))
-                
+
                 LaunchedEffect(Unit) {
                     if (OS.currentOS() == OS.MAC) {
                         try {
