@@ -189,7 +189,7 @@ internal class DetectorTest : IKoinTestRule {
         val document = runBlocking(coroutineContext) {
             IFileType
                 .getFileType(file).map { ft ->
-                    ft.scanFile(file, coroutineContext, engines, false)
+                    ft.scanFile(file, coroutineContext, engines, false, IFileType.getAll())
                 }.let {
                     assertTrue(it.isNotEmpty())
                     val r = it.first()
