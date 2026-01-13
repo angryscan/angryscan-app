@@ -168,7 +168,8 @@ class ScanThread : KoinComponent {
                                 file = fileObject,
                                 context = currentCoroutineContext(),
                                 engines = engines,
-                                fastScan = fastScan
+                                fastScan = fastScan,
+                                selectedExtensions = extensions
                             )
                         }
 

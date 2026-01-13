@@ -22,7 +22,8 @@ object ZIPType : FileType() {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document {
         val res = Document(file.length(), file.absolutePath)
         var skipped = 0
@@ -52,7 +53,7 @@ object ZIPType : FileType() {
                                 if (zipEntry == null) continue
 
                                 // не распаковывать если расширение не из выбранных
-                                if (!selectedExtension(zipEntry.name))
+                                if (!selectedExtension(zipEntry.name, selectedExtensions))
                                     continue
 
                                 val tmpFile = File.createTempFile(
@@ -71,7 +72,7 @@ object ZIPType : FileType() {
                                         }
                                     }
                                     IFileType.getFileType(tmpFile).forEach { ft->
-                                        ft.scanFile(tmpFile, context, engines, fastScan)
+                                        ft.scanFile(tmpFile, context, engines, fastScan, selectedExtensions)
                                         .also { doc ->
                                             if (!doc.skipped()) {
                                                 res + doc.getDocumentFields()

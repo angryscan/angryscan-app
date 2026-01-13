@@ -33,10 +33,11 @@ enum class CertFileType: IFileType {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document = when (this) {
-        ASCII -> scanASCII(file, context, engines, fastScan)
-        PKCS -> scanPKCS(file, context, engines, fastScan)
+        ASCII -> scanASCII(file, context, engines, fastScan, selectedExtensions)
+        PKCS -> scanPKCS(file, context, engines, fastScan, selectedExtensions)
         KEYSTORE -> scanKeyStore(file)
     }
 
@@ -44,13 +45,15 @@ enum class CertFileType: IFileType {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document {
         return TextType.scanFile(
             file,
             context,
             engines,
-            fastScan
+            fastScan,
+            selectedExtensions
         )
     }
 
@@ -62,7 +65,8 @@ enum class CertFileType: IFileType {
         file: File,
         context: CoroutineContext,
         engines: List<IScanEngine>,
-        fastScan: Boolean
+        fastScan: Boolean,
+        selectedExtensions: List<IFileType>
     ): Document {
         val factory = CertificateFactory.getInstance("X.509")
         val res = Document(file.length(), file.absolutePath)
@@ -91,7 +95,8 @@ enum class CertFileType: IFileType {
                         file,
                         context,
                         engines,
-                        fastScan
+                        fastScan,
+                        selectedExtensions
                     ).getDocumentFields()
                 }
             }
@@ -100,7 +105,8 @@ enum class CertFileType: IFileType {
                 file,
                 context,
                 engines,
-                fastScan
+                fastScan,
+                selectedExtensions
             ).getDocumentFields()
             return res
         }

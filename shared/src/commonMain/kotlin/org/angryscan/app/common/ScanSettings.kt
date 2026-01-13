@@ -6,12 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.angryscan.app.scan.common.files.types.CertFileType
-import org.angryscan.app.scan.common.files.types.CodeFileType
-import org.angryscan.app.scan.common.files.types.FileType
-import org.angryscan.app.scan.common.files.types.IFileType
-import org.angryscan.app.scan.common.files.types.RARType
-import org.angryscan.app.scan.common.files.types.ZIPType
+import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.serializers.MutableStateKClassSerializer
 import org.angryscan.app.serializers.MutableStateSerializer
 import org.angryscan.app.serializers.PolymorphicFormatter
@@ -112,13 +107,9 @@ class ScanSettings : KoinComponent {
             logger.error { "Failed to load ScanSettings. Loading default." }
             this.extensions.clear()
             this.extensions.addAll(
-                FileType.values.filter {
-                    it !in listOf(
-                        ZIPType,
-                        RARType,
-                        CertFileType.entries,
-                        CodeFileType.entries,
-                    )
+                IFileType.getAll().filter {
+                    it !in CertFileType.entries +
+                            CodeFileType.entries
                 }
             )
             this.extensionsSettingsExpanded.value = false

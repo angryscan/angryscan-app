@@ -57,7 +57,8 @@ class CertFileTypeTest {
                 File(p7sFile),
                 coroutineContext,
                 engines = listOf(KotlinEngine(listOf(CertDetectFun))),
-                false
+                false,
+                listOf(CertFileType.PKCS)
             )
             assertEquals(3, res.getDocumentFields()[CertDetectFun])
         }
@@ -69,7 +70,8 @@ class CertFileTypeTest {
                 File(p7b1File),
                 coroutineContext,
                 engines = listOf(KotlinEngine(listOf(CertDetectFun))),
-                false
+                false,
+                listOf(CertFileType.PKCS)
             )
             assertEquals(1, res.getDocumentFields()[CertDetectFun])
         }
@@ -81,7 +83,8 @@ class CertFileTypeTest {
                 File(keyDerFile),
                 coroutineContext,
                 engines = listOf(KotlinEngine(listOf(CertDetectFun))),
-                false
+                false,
+                listOf(CertFileType.PKCS)
             )
             assertEquals(1, res.getDocumentFields()[CertDetectFun])
         }

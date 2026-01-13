@@ -124,7 +124,8 @@ internal class FileTypeTest() {
                             f,
                             currentCoroutineContext(),
                             engines,
-                            false
+                            false,
+                            IFileType.getAll()
                         ).let { doc ->
                             Matrix.getMap(filename)
                                 ?.let { m -> assertEquals(m, doc?.getDocumentFields(), "File: $filename") }
@@ -167,7 +168,7 @@ internal class FileTypeTest() {
             )
 
             runBlocking {
-                enumType?.scanFile(f, currentCoroutineContext(), engines, isFastScan).let {
+                enumType?.scanFile(f, currentCoroutineContext(), engines, isFastScan, IFileType.getAll()).let {
                     assertNotNull(it)
                     assertEquals(map, it.getDocumentFields())
                 }
@@ -198,7 +199,7 @@ internal class FileTypeTest() {
         runBlocking {
             try {
                 val enumType: IFileType? = IFileType.getFileType(f).firstOrNull()
-                enumType?.scanFile(f, currentCoroutineContext(), engines, false).let {
+                enumType?.scanFile(f, currentCoroutineContext(), engines, false, IFileType.getAll()).let {
                     assertEquals(mapOf(), it?.getDocumentFields())
                     assertEquals(it?.skipped(), true)
                 }
@@ -225,7 +226,7 @@ internal class FileTypeTest() {
 
         runBlocking {
             try {
-                DOCType.scanFile(f, currentCoroutineContext(), engines, false).let {
+                DOCType.scanFile(f, currentCoroutineContext(), engines, false, IFileType.getAll()).let {
                     assertEquals(0, it.length())
                     assertEquals(mapOf(), it.getDocumentFields())
                 }
