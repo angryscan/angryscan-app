@@ -129,9 +129,23 @@ class ScanThread : KoinComponent {
                 val extensions = database.transaction {
                     taskEntity.dbTask.extensions.map { it.extension }
                 }
+                
+                // Determine file types early to decide on requireKeywords
+                val fileTypes = IFileType
+                    .getFileType(fileObject)
+                    .filter { ft ->
+                        ft in extensions
+                    }
+                
+                // Check if file requires requireKeywords = false
+                val requireKeywords = !fileTypes.any { 
+                    it is XLSXType || it is XLSType || it is ODSType || 
+                    (it is TextType && fileObject.extension.lowercase() == "csv")
+                }
+                
                 val engines: MutableList<IScanEngine> = mutableListOf()
                 scanSettings.value.engine.value
-                    .getEngine(matchers.map { it.key })
+                    .getEngine(matchers.map { it.key }, requireKeywords = requireKeywords)
                     .let {
                         if (it.matchers.isNotEmpty())
                             engines.add(it)
@@ -145,7 +159,7 @@ class ScanThread : KoinComponent {
                     var fbe = scanSettings.value.engine.value.fallback()
                     do {
                         val e = fbe
-                            .getEngine(iMatchers)
+                            .getEngine(iMatchers, requireKeywords = requireKeywords)
                         if(e.matchers.isNotEmpty()) {
                             engines.add(e)
                             iMatchers.removeAll(e.matchers)
@@ -158,55 +172,17 @@ class ScanThread : KoinComponent {
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
-                    val fileTypes = IFileType
-                        .getFileType(fileObject)
-                        .filter { ft ->
-                            ft in extensions
-                        }
-                    
-                    // Create engines with requireKeywords = false for specific file types
-                    val fileEngines = if (fileTypes.any { it is XLSXType || it is XLSType || it is ODSType || 
-                            (it is TextType && fileObject.extension.lowercase() == "csv") }) {
-                        val enginesNoKeywords: MutableList<IScanEngine> = mutableListOf()
-                        scanSettings.value.engine.value
-                            .getEngine(matchers.map { it.key }, requireKeywords = false)
-                            .let {
-                                if (it.matchers.isNotEmpty())
-                                    enginesNoKeywords.add(it)
-                            }
-                        val iMatchersNoKeywords = if(enginesNoKeywords.isNotEmpty())
-                            enginesNoKeywords[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
-                        else
-                            matchers.map { it.key }.toMutableList()
-
-                        if (iMatchersNoKeywords.isNotEmpty()) {
-                            var fbe = scanSettings.value.engine.value.fallback()
-                            do {
-                                val e = fbe
-                                    .getEngine(iMatchersNoKeywords, requireKeywords = false)
-                                if(e.matchers.isNotEmpty()) {
-                                    enginesNoKeywords.add(e)
-                                    iMatchersNoKeywords.removeAll(e.matchers)
-                                }
-                                fbe = e.fallback()
-                            } while(iMatchersNoKeywords.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
-                        }
-                        enginesNoKeywords
-                    } else {
-                        engines
-                    }
-
                     val scanResults = fileTypes.map { ft ->
                         ft.scanFile(
                             file = fileObject,
                             context = currentCoroutineContext(),
-                            engines = fileEngines,
+                            engines = engines,
                             fastScan = fastScan,
                             selectedExtensions = extensions
                         )
                     }
 
-                    fileEngines.forEach { eng ->
+                    engines.forEach { eng ->
                         eng.close()
                     }
 
