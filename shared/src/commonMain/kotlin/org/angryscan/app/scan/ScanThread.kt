@@ -10,7 +10,7 @@ import org.angryscan.app.db.models.TaskFileScanResults
 import org.angryscan.app.db.models.TaskFiles
 import org.angryscan.app.db.models.TaskMatchers
 import org.angryscan.app.db.models.TaskState
-import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.scan.engine.inappropriateMatchers
@@ -158,22 +158,55 @@ class ScanThread : KoinComponent {
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
-
-                    val scanResults = IFileType
+                    val fileTypes = IFileType
                         .getFileType(fileObject)
                         .filter { ft ->
                             ft in extensions
-                        }.map { ft ->
-                            ft.scanFile(
-                                file = fileObject,
-                                context = currentCoroutineContext(),
-                                engines = engines,
-                                fastScan = fastScan,
-                                selectedExtensions = extensions
-                            )
                         }
+                    
+                    // Create engines with requireKeywords = false for specific file types
+                    val fileEngines = if (fileTypes.any { it is XLSXType || it is XLSType || it is ODSType || 
+                            (it is TextType && fileObject.extension.lowercase() == "csv") }) {
+                        val enginesNoKeywords: MutableList<IScanEngine> = mutableListOf()
+                        scanSettings.value.engine.value
+                            .getEngine(matchers.map { it.key }, requireKeywords = false)
+                            .let {
+                                if (it.matchers.isNotEmpty())
+                                    enginesNoKeywords.add(it)
+                            }
+                        val iMatchersNoKeywords = if(enginesNoKeywords.isNotEmpty())
+                            enginesNoKeywords[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
+                        else
+                            matchers.map { it.key }.toMutableList()
 
-                    engines.forEach { eng ->
+                        if (iMatchersNoKeywords.isNotEmpty()) {
+                            var fbe = scanSettings.value.engine.value.fallback()
+                            do {
+                                val e = fbe
+                                    .getEngine(iMatchersNoKeywords, requireKeywords = false)
+                                if(e.matchers.isNotEmpty()) {
+                                    enginesNoKeywords.add(e)
+                                    iMatchersNoKeywords.removeAll(e.matchers)
+                                }
+                                fbe = e.fallback()
+                            } while(iMatchersNoKeywords.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
+                        }
+                        enginesNoKeywords
+                    } else {
+                        engines
+                    }
+
+                    val scanResults = fileTypes.map { ft ->
+                        ft.scanFile(
+                            file = fileObject,
+                            context = currentCoroutineContext(),
+                            engines = fileEngines,
+                            fastScan = fastScan,
+                            selectedExtensions = extensions
+                        )
+                    }
+
+                    fileEngines.forEach { eng ->
                         eng.close()
                     }
 
