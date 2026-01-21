@@ -6,21 +6,28 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
+import org.apache.poi.hwpf.HWPFDocument
 import org.apache.poi.hwpf.HWPFOldDocument
 import org.apache.poi.hwpf.extractor.WordExtractor
+import org.apache.poi.hwpf.usermodel.Paragraph
+import org.apache.poi.hwpf.usermodel.Range
 import org.apache.poi.poifs.filesystem.DirectoryNode
 import org.apache.poi.poifs.filesystem.Ole10Native
 import org.apache.poi.poifs.filesystem.POIFSFileSystem
 import org.angryscan.app.scan.common.Document
 import org.angryscan.app.scan.common.files.IFileLocation
+import org.angryscan.app.scan.common.files.IMaskFile
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
+import org.angryscan.app.scan.common.files.extensions.isMaskable
+import org.angryscan.app.scan.common.files.extensions.mask
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
 
 @Serializable
-object DOCType : FileType(), IFileLocation {
+object DOCType : FileType(), IMaskFile, IFileLocation {
     override val name = "DOC"
     override val extensions = listOf("doc")
 
@@ -152,6 +159,51 @@ object DOCType : FileType(), IFileLocation {
         return res
     }
 
+    override suspend fun maskLocations(
+        inputFile: String,
+        outputFile: String,
+        locations: List<Location>
+    ): Int {
+        val maskableLocations = locations
+            .filter { it.isMaskable() }
+            .mapNotNull { parseMaskLocation(it) }
+
+        var locationsMasked = 0
+        withContext(Dispatchers.IO) {
+            FileInputStream(inputFile).use { inputStream ->
+                HWPFDocument(inputStream).use { document ->
+                    val locationsByType = maskableLocations.groupBy { it.type }
+                    locationsMasked += maskRange(
+                        document.range,
+                        locationsByType["Paragraph"].orEmpty()
+                    )
+                    runCatching { document.commentsRange }.getOrNull()?.let { range ->
+                        locationsMasked += maskRange(
+                            range,
+                            locationsByType["Comment"].orEmpty()
+                        )
+                    }
+                    runCatching { document.footnoteRange }.getOrNull()?.let { range ->
+                        locationsMasked += maskRange(
+                            range,
+                            locationsByType["Footnote"].orEmpty()
+                        )
+                    }
+                    runCatching { document.endnoteRange }.getOrNull()?.let { range ->
+                        locationsMasked += maskRange(
+                            range,
+                            locationsByType["Endnote"].orEmpty()
+                        )
+                    }
+                    FileOutputStream(outputFile).use { outputStream ->
+                        document.write(outputStream)
+                    }
+                }
+            }
+        }
+        return locationsMasked
+    }
+
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
@@ -165,67 +217,38 @@ object DOCType : FileType(), IFileLocation {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
                 FileInputStream(file).use { inputStream ->
-                    WordExtractor(inputStream).use { extractor ->
-                        extractor.paragraphText.forEachIndexed { index, text ->
-                            engine
-                                .scan(text)
-                                .filter { it.matcher::class == matcher::class }
-                                .forEach {
-                                    locations.add(Location(it, "Paragraph:$index"))
+                    HWPFDocument(inputStream).use { document ->
+                        fun scanRange(range: Range, typeLabel: String): Boolean {
+                            for (index in 0 until range.numParagraphs()) {
+                                val text = range.getParagraph(index).text()
+                                    .replace("\u0007", "\n")
+                                    .replace("\u000B", "\n")
+                                engine
+                                    .scan(text)
+                                    .filter { it.matcher::class == matcher::class }
+                                    .forEach {
+                                        locations.add(Location(it, "$typeLabel:$index"))
+                                    }
+                                length += text.length
+                                if (isLengthOverload(length, isActive)) {
+                                    length = 0
+                                    sample++
+                                    if (isSampleOverload(sample, fastScan, isActive))
+                                        return true
                                 }
+                            }
+                            return false
+                        }
 
-                            length += text.length
-                            if (isLengthOverload(length, isActive)) {
-                                length = 0
-                                sample++
-                                if (isSampleOverload(sample, fastScan, isActive))
-                                    return@withContext
-                            }
+                        if (scanRange(document.range, "Paragraph")) return@withContext
+                        runCatching { document.commentsRange }.getOrNull()?.let { range ->
+                            if (scanRange(range, "Comment")) return@withContext
                         }
-                        extractor.commentsText.forEachIndexed { index, text ->
-                            engine
-                                .scan(text)
-                                .filter { it.matcher::class == matcher::class }
-                                .forEach {
-                                locations.add(Location(it, "Comment:$index"))
-                            }
-                            length += text.length
-                            if (isLengthOverload(length, isActive)) {
-                                length = 0
-                                sample++
-                                if (isSampleOverload(sample, fastScan, isActive))
-                                    return@withContext
-                            }
+                        runCatching { document.footnoteRange }.getOrNull()?.let { range ->
+                            if (scanRange(range, "Footnote")) return@withContext
                         }
-                        extractor.footnoteText.forEachIndexed { index, text ->
-                            engine
-                                .scan(text)
-                                .filter { it.matcher::class == matcher::class }
-                                .forEach {
-                                locations.add(Location(it, "Footnote:$index"))
-                            }
-                            length += text.length
-                            if (isLengthOverload(length, isActive)) {
-                                length = 0
-                                sample++
-                                if (isSampleOverload(sample, fastScan, isActive))
-                                    return@withContext
-                            }
-                        }
-                        extractor.endnoteText.forEachIndexed { index, text ->
-                            engine
-                                .scan(text)
-                                .filter { it.matcher::class == matcher::class }
-                                .forEach {
-                                locations.add(Location(it, "Endnote:$index"))
-                            }
-                            length += text.length
-                            if (isLengthOverload(length, isActive)) {
-                                length = 0
-                                sample++
-                                if (isSampleOverload(sample, fastScan, isActive))
-                                    return@withContext
-                            }
+                        runCatching { document.endnoteRange }.getOrNull()?.let { range ->
+                            if (scanRange(range, "Endnote")) return@withContext
                         }
                     }
                 }
@@ -260,5 +283,63 @@ object DOCType : FileType(), IFileLocation {
             }
         }
         return locations
+    }
+
+    private data class DocMaskLocation(
+        val location: Location,
+        val type: String,
+        val index: Int
+    )
+
+    private fun parseMaskLocation(location: Location): DocMaskLocation? {
+        val type = location.location.substringBefore(":", "").trim()
+        val index = location.location.substringAfter(":", "")
+            .trim()
+            .toIntOrNull()
+            ?: return null
+        if (type.isEmpty()) return null
+        return DocMaskLocation(location, type, index)
+    }
+
+    private fun maskRange(range: Range, locations: List<DocMaskLocation>): Int {
+        var masked = 0
+        locations
+            .sortedBy { it.index }
+            .forEach { maskLocation ->
+                if (maskLocation.index < 0 || maskLocation.index >= range.numParagraphs()) {
+                    return@forEach
+                }
+                val paragraph = range.getParagraph(maskLocation.index)
+                val target = maskLocation.location.entry.value
+                val replacement = maskLocation.location.mask()
+                var replaced = replaceFirstInParagraph(paragraph, target, replacement)
+                if (!replaced && paragraph.text().contains(target)) {
+                    paragraph.replaceText(target, replacement)
+                    replaced = true
+                }
+                if (replaced || !paragraph.text().contains(target)) {
+                    masked++
+                }
+            }
+        return masked
+    }
+
+    private fun replaceFirstInParagraph(
+        paragraph: Paragraph,
+        target: String,
+        replacement: String
+    ): Boolean {
+        for (runIndex in 0 until paragraph.numCharacterRuns()) {
+            val run = paragraph.getCharacterRun(runIndex)
+            val text = run.text() ?: ""
+            if (text.contains(target)) {
+                val replaced = text.replaceFirst(target, replacement)
+                if (replaced != text) {
+                    run.replaceText(text, replaced)
+                }
+                return true
+            }
+        }
+        return false
     }
 }

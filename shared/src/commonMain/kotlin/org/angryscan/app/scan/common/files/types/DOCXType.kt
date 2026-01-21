@@ -13,14 +13,18 @@ import org.apache.poi.poifs.filesystem.POIFSFileSystem
 import org.apache.poi.xwpf.usermodel.*
 import org.angryscan.app.scan.common.Document
 import org.angryscan.app.scan.common.files.IFileLocation
+import org.angryscan.app.scan.common.files.IMaskFile
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
+import org.angryscan.app.scan.common.files.extensions.isMaskable
+import org.angryscan.app.scan.common.files.extensions.mask
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
 
 @Serializable
-object DOCXType : FileType(), IFileLocation {
+object DOCXType : FileType(), IMaskFile, IFileLocation {
     override val name = "DOCX"
     override val extensions = listOf("docx")
 
@@ -193,6 +197,78 @@ object DOCXType : FileType(), IFileLocation {
         return res
     }
 
+    override suspend fun maskLocations(
+        inputFile: String,
+        outputFile: String,
+        locations: List<Location>
+    ): Int {
+        val maskableLocations = locations
+            .filter { it.isMaskable() }
+            .mapNotNull { parseMaskLocation(it) }
+            .sortedBy { it.position }
+
+        var locationsMasked = 0
+        withContext(Dispatchers.IO) {
+            FileInputStream(inputFile).use { inputStream ->
+                XWPFDocument(inputStream).use { document ->
+                    val locationsByPosition = maskableLocations.groupBy { it.position }
+                    var elemPosition = 1
+                    for (elem in document.bodyElements) {
+                        val candidates = locationsByPosition[elemPosition].orEmpty()
+                        if (candidates.isNotEmpty()) {
+                            val elemType = when (elem) {
+                                is XWPFParagraph -> "Paragraph"
+                                is XWPFTable -> "Table"
+                                is XWPFComment -> "Comment"
+                                is XWPFFooter -> "Footer"
+                                else -> ""
+                            }
+                            candidates
+                                .filter { it.type == elemType }
+                                .forEach { maskLocation ->
+                                    val replaced = when (elem) {
+                                        is XWPFParagraph -> replaceFirstInParagraph(
+                                            elem,
+                                            maskLocation.location.entry.value,
+                                            maskLocation.location.mask()
+                                        )
+
+                                        is XWPFTable -> replaceFirstInTable(
+                                            elem,
+                                            maskLocation.location.entry.value,
+                                            maskLocation.location.mask()
+                                        )
+
+                                        is XWPFComment -> replaceFirstInParagraphs(
+                                            elem.paragraphs,
+                                            maskLocation.location.entry.value,
+                                            maskLocation.location.mask()
+                                        )
+
+                                        is XWPFFooter -> replaceFirstInFooter(
+                                            elem,
+                                            maskLocation.location.entry.value,
+                                            maskLocation.location.mask()
+                                        )
+
+                                        else -> false
+                                    }
+                                    if (replaced) {
+                                        locationsMasked++
+                                    }
+                                }
+                        }
+                        elemPosition++
+                    }
+                    FileOutputStream(outputFile).use { outputStream ->
+                        document.write(outputStream)
+                    }
+                }
+            }
+        }
+        return locationsMasked
+    }
+
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
@@ -322,4 +398,99 @@ object DOCXType : FileType(), IFileLocation {
         return locations
     }
 
+    private data class DocxMaskLocation(
+        val location: Location,
+        val type: String,
+        val position: Int
+    )
+
+    private fun parseMaskLocation(location: Location): DocxMaskLocation? {
+        val type = location.location.substringBefore(",").trim()
+        val position = location.location.substringAfter("Position:", "")
+            .trim()
+            .toIntOrNull()
+            ?: return null
+        if (type.isEmpty()) return null
+        return DocxMaskLocation(location, type, position)
+    }
+
+    private fun replaceFirstInFooter(
+        footer: XWPFFooter,
+        target: String,
+        replacement: String
+    ): Boolean {
+        if (replaceFirstInParagraphs(footer.paragraphs, target, replacement)) return true
+        footer.tables.forEach { table ->
+            if (replaceFirstInTable(table, target, replacement)) return true
+        }
+        return false
+    }
+
+    private fun replaceFirstInTable(
+        table: XWPFTable,
+        target: String,
+        replacement: String
+    ): Boolean {
+        table.rows.forEach { row ->
+            row.tableCells.forEach { cell ->
+                if (replaceFirstInParagraphs(cell.paragraphs, target, replacement)) return true
+            }
+        }
+        return false
+    }
+
+    private fun replaceFirstInParagraphs(
+        paragraphs: List<XWPFParagraph>,
+        target: String,
+        replacement: String
+    ): Boolean {
+        paragraphs.forEach { paragraph ->
+            if (replaceFirstInParagraph(paragraph, target, replacement)) return true
+        }
+        return false
+    }
+
+    private fun replaceFirstInParagraph(
+        paragraph: XWPFParagraph,
+        target: String,
+        replacement: String
+    ): Boolean {
+        val position = PositionInParagraph(0, 0, 0)
+        val segment = paragraph.searchText(target, position) ?: return false
+        val beginRun = segment.beginRun
+        val endRun = segment.endRun
+        if (beginRun < 0 || endRun < 0) return false
+
+        val beginTextIndex = segment.beginText
+        val endTextIndex = segment.endText
+        val beginChar = segment.beginChar
+        val endChar = segment.endChar
+        val beginRunText = paragraph.runs[beginRun].getText(beginTextIndex) ?: ""
+        val endRunText = paragraph.runs[endRun].getText(endTextIndex) ?: ""
+
+        if (beginRun == endRun) {
+            val before = beginRunText.substring(0, beginChar)
+            val after = if (endChar + 1 <= beginRunText.length) {
+                beginRunText.substring(endChar + 1)
+            } else {
+                ""
+            }
+            paragraph.runs[beginRun].setText(before + replacement + after, beginTextIndex)
+            return true
+        }
+
+        val before = beginRunText.substring(0, beginChar)
+        val after = if (endChar + 1 <= endRunText.length) {
+            endRunText.substring(endChar + 1)
+        } else {
+            ""
+        }
+
+        paragraph.runs[beginRun].setText(before + replacement, beginTextIndex)
+        paragraph.runs[endRun].setText(after, endTextIndex)
+        for (runIndex in endRun - 1 downTo beginRun + 1) {
+            paragraph.removeRun(runIndex)
+        }
+        return true
+    }
 }
