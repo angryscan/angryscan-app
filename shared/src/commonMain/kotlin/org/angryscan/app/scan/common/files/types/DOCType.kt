@@ -216,6 +216,78 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
+                val embeddedNames = mutableListOf<String>()
+                var fallbackText: String? = null
+                var hasEmbeddedObjects = false
+                fun attachLocation(source: Location, embeddedName: String): Location {
+                    val attachmentLabel = source.attachmentName ?: embeddedName
+                    val baseLabel = "Attachment: $attachmentLabel"
+                    val locationLabel = if (source.location.isNotBlank()) {
+                        "$baseLabel, ${source.location}"
+                    } else {
+                        baseLabel
+                    }
+                    return source.copy(
+                        location = locationLabel,
+                        attachmentName = attachmentLabel,
+                        isMaskable = false
+                    )
+                }
+
+                suspend fun scanEmbeddedFromDirectory(dir: DirectoryNode) {
+                    dir.entries.forEach { entry ->
+                        if (entry is DirectoryNode) {
+                            if (entry.name.equals("ObjectPool", ignoreCase = true)) {
+                                hasEmbeddedObjects = true
+                            }
+                            try {
+                                val ole = Ole10Native.createFromEmbeddedOleObject(entry)
+                                val realName = ole.fileName
+                                    .substringAfterLast("\\")
+                                    .substringAfterLast("/")
+                                if (realName.isNotBlank()) {
+                                    embeddedNames.add(realName)
+                                }
+                                hasEmbeddedObjects = true
+                                val ext = realName.substringAfterLast(".", "")
+                                val tmpFile = File.createTempFile(
+                                    "ADS_",
+                                    if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                                )
+                                try {
+                                    tmpFile.writeBytes(ole.dataBuffer)
+                                    val embeddedTypes = IFileType.getFileType(tmpFile)
+                                        .filterIsInstance<IFileLocation>()
+                                        .ifEmpty { IFileType.getAll().filterIsInstance<IFileLocation>() }
+                                    for (embeddedType in embeddedTypes) {
+                                        val embeddedLocations = runCatching {
+                                            embeddedType.findLocation(
+                                                tmpFile.absolutePath,
+                                                engine,
+                                                matcher,
+                                                fastScan
+                                            )
+                                        }.getOrDefault(emptyList())
+                                        if (embeddedLocations.isNotEmpty()) {
+                                            embeddedLocations.forEach { location ->
+                                                locations.add(attachLocation(location, realName))
+                                            }
+                                            break
+                                        }
+                                    }
+                                } finally {
+                                    tmpFile.delete()
+                                }
+                            } catch (_: Exception) {
+                                if (entry.name.isNotBlank()) {
+                                    embeddedNames.add(entry.name)
+                                }
+                                scanEmbeddedFromDirectory(entry)
+                            }
+                        }
+                    }
+                }
+
                 FileInputStream(file).use { inputStream ->
                     HWPFDocument(inputStream).use { document ->
                         fun scanRange(range: Range, typeLabel: String): Boolean {
@@ -250,7 +322,46 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                         runCatching { document.endnoteRange }.getOrNull()?.let { range ->
                             if (scanRange(range, "Endnote")) return@withContext
                         }
+                        if (locations.isEmpty()) {
+                            WordExtractor(document).use { extractor ->
+                                fallbackText = extractor.text
+                            }
+                        }
                     }
+                }
+
+                try {
+                    POIFSFileSystem(file).use { fs ->
+                        scanEmbeddedFromDirectory(fs.root)
+                    }
+                } catch (_: Exception) {
+                    // Skip embedded scan errors.
+                }
+
+                if (locations.isEmpty() && !fallbackText.isNullOrBlank()) {
+                    val attachmentName = if (hasEmbeddedObjects) {
+                        embeddedNames.firstOrNull()?.takeIf { it.isNotBlank() } ?: "Embedded file"
+                    } else {
+                        null
+                    }
+                    engine
+                        .scan(fallbackText)
+                        .filter { it.matcher::class == matcher::class }
+                        .forEach { match ->
+                            val locationLabel = if (attachmentName != null) {
+                                "Attachment: $attachmentName, Text"
+                            } else {
+                                "Text"
+                            }
+                            locations.add(
+                                Location(
+                                    match,
+                                    locationLabel,
+                                    attachmentName = attachmentName,
+                                    isMaskable = attachmentName == null
+                                )
+                            )
+                        }
                 }
             }
         } catch (_: Exception) {
@@ -276,6 +387,71 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                 }
                             }
                         }
+                    }
+
+                    try {
+                        POIFSFileSystem(file).use { fs ->
+                            suspend fun scanEmbeddedFromDirectory(dir: DirectoryNode) {
+                                dir.entries.forEach { entry ->
+                                    if (entry is DirectoryNode) {
+                                        try {
+                                            val ole = Ole10Native.createFromEmbeddedOleObject(entry)
+                                            val realName = ole.fileName
+                                                .substringAfterLast("\\")
+                                                .substringAfterLast("/")
+                                            val ext = realName.substringAfterLast(".", "")
+                                            val tmpFile = File.createTempFile(
+                                                "ADS_",
+                                                if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                                            )
+                                            try {
+                                                tmpFile.writeBytes(ole.dataBuffer)
+                                                val embeddedTypes = IFileType.getFileType(tmpFile)
+                                                    .filterIsInstance<IFileLocation>()
+                                                    .ifEmpty { IFileType.getAll().filterIsInstance<IFileLocation>() }
+                                                for (embeddedType in embeddedTypes) {
+                                                    val embeddedLocations = runCatching {
+                                                        embeddedType.findLocation(
+                                                            tmpFile.absolutePath,
+                                                            engine,
+                                                            matcher,
+                                                            fastScan
+                                                        )
+                                                    }.getOrDefault(emptyList())
+                                                    if (embeddedLocations.isNotEmpty()) {
+                                                        embeddedLocations.forEach { location ->
+                                                            val attachmentLabel = location.attachmentName ?: realName
+                                                            val baseLabel = "Attachment: $attachmentLabel"
+                                                            val locationLabel = if (location.location.isNotBlank()) {
+                                                                "$baseLabel, ${location.location}"
+                                                            } else {
+                                                                baseLabel
+                                                            }
+                                                            locations.add(
+                                                                location.copy(
+                                                                    location = locationLabel,
+                                                                    attachmentName = attachmentLabel,
+                                                                    isMaskable = false
+                                                                )
+                                                            )
+                                                        }
+                                                        break
+                                                    }
+                                                }
+                                            } finally {
+                                                tmpFile.delete()
+                                            }
+                                        } catch (_: Exception) {
+                                            scanEmbeddedFromDirectory(entry)
+                                        }
+                                    }
+                                }
+                            }
+
+                            scanEmbeddedFromDirectory(fs.root)
+                        }
+                    } catch (_: Exception) {
+                        // Skip embedded scan errors.
                     }
                 }
             } catch (_: Exception) {

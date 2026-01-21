@@ -302,6 +302,7 @@
     <string name="LocationWindow-MaskButton">Mask</string>
     <string name="LocationWindow-MaskedCount">Masked attributes: %1$d</string>
     <string name="LocationWindow-MaskError">Failed to mask attribute</string>
+    <string name="LocationWindow-MaskNotAvailable">Masking of embedded files is not available</string>
     <string name="LocationWindow-SelectAllButton">Select all</string>
     <string name="LocationWindow-ExportRows">Export rows</string>
     <string name="LocationWindow-ExportRowsCount">Rows exported: %1$d</string>

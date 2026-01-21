@@ -97,6 +97,7 @@ fun AttributeLocationWindow(
                         it.entry.matcher is IMask ||
                                 exportSupported
                     }
+                    .filter { it.isMaskable }
             )
             if (locations.isEmpty())
                 failedToFind = true
@@ -108,8 +109,8 @@ fun AttributeLocationWindow(
 
 
     val state = rememberDialogState(
-        width = 800.dp,
-        height = 500.dp
+        width = 1000.dp,
+        height = 600.dp
     )
 
     val scrollState = rememberLazyListState()
@@ -268,18 +269,19 @@ fun AttributeLocationWindow(
                                                     it.entry.matcher is IMask
                                                 } || exportSupported
                                             ) {
+                                                val selectableLocations = locations.filter { it.isMaskable }
                                                 Box(
                                                     modifier = Modifier
                                                         .clip(MaterialTheme.shapes.small)
                                                         .background(MaterialTheme.colorScheme.secondary)
                                                         .clickable {
                                                             if (
-                                                                selectedLocations.containsAll(locations)
+                                                                selectedLocations.containsAll(selectableLocations)
                                                             ) {
                                                                 selectedLocations.clear()
                                                             } else {
                                                                 selectedLocations.addAll(
-                                                                    locations
+                                                                    selectableLocations
                                                                         .filter { !selectedLocations.contains(it) }
                                                                 )
                                                             }
@@ -291,7 +293,7 @@ fun AttributeLocationWindow(
                                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                     ) {
                                                         Icon(
-                                                            imageVector = if (selectedLocations.containsAll(locations))
+                                                            imageVector = if (selectedLocations.containsAll(selectableLocations))
                                                                 Icons.Outlined.CheckBox
                                                             else
                                                                 Icons.Outlined.CheckBoxOutlineBlank,
@@ -431,7 +433,9 @@ fun AttributeLocationWindow(
                                                         checked = selectedLocations.contains(location),
                                                         onCheckedChanged = { state ->
                                                             if (state) {
-                                                                selectedLocations.add(location)
+                                                                if (location.isMaskable) {
+                                                                    selectedLocations.add(location)
+                                                                }
                                                             } else {
                                                                 selectedLocations.remove(location)
                                                             }

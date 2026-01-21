@@ -284,6 +284,43 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                 var elemPosition = 1
                 FileInputStream(file).use { fileInputStream ->
                     XWPFDocument(fileInputStream).use { document ->
+                        fun attachLocation(source: Location, embeddedName: String): Location {
+                            val attachmentLabel = source.attachmentName ?: embeddedName
+                            val baseLabel = "Attachment: $attachmentLabel"
+                            val locationLabel = if (source.location.isNotBlank()) {
+                                "$baseLabel, ${source.location}"
+                            } else {
+                                baseLabel
+                            }
+                            return source.copy(
+                                location = locationLabel,
+                                attachmentName = attachmentLabel,
+                                isMaskable = false
+                            )
+                        }
+
+                        suspend fun scanEmbeddedFile(embeddedFile: File, embeddedName: String) {
+                            val embeddedTypes = IFileType.getFileType(embeddedFile)
+                                .filterIsInstance<IFileLocation>()
+                                .ifEmpty { IFileType.getAll().filterIsInstance<IFileLocation>() }
+                            for (embeddedType in embeddedTypes) {
+                                val embeddedLocations = runCatching {
+                                    embeddedType.findLocation(
+                                        embeddedFile.absolutePath,
+                                        engine,
+                                        matcher,
+                                        fastScan
+                                    )
+                                }.getOrDefault(emptyList())
+                                if (embeddedLocations.isNotEmpty()) {
+                                    embeddedLocations.forEach { location ->
+                                        locations.add(attachLocation(location, embeddedName))
+                                    }
+                                    break
+                                }
+                            }
+                        }
+
                         for (elem in document.bodyElements) {
                             val text = when (elem) {
                                 is XWPFParagraph -> elem.text
@@ -315,6 +352,53 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 sample++
                                 if (isSampleOverload(sample, fastScan, isActive)) 
                                     return@withContext
+                            }
+                        }
+
+                        for (part in document.allEmbeddedParts) {
+                            val partName = part.partName.name
+                            val embeddedName = partName.substringAfterLast("/")
+                            val embeddedNameLower = embeddedName.lowercase()
+                            if (embeddedNameLower.endsWith(".bin")) {
+                                try {
+                                    part.inputStream.use { input ->
+                                        POIFSFileSystem(input).use { fs ->
+                                            val ole = Ole10Native.createFromEmbeddedOleObject(fs.root)
+                                            val realName = ole.fileName
+                                                .substringAfterLast("\\")
+                                                .substringAfterLast("/")
+                                            val ext = realName.substringAfterLast(".", "")
+                                            val tmpFile = File.createTempFile(
+                                                "ADS_",
+                                                if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                                            )
+                                            try {
+                                                tmpFile.writeBytes(ole.dataBuffer)
+                                                scanEmbeddedFile(tmpFile, realName)
+                                            } finally {
+                                                tmpFile.delete()
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) {
+                                    // Skip broken embedded file.
+                                }
+                            } else {
+                                val ext = embeddedNameLower.substringAfterLast(".", "")
+                                val tmpFile = File.createTempFile(
+                                    "ADS_",
+                                    if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                                )
+                                try {
+                                    part.inputStream.use { input ->
+                                        tmpFile.outputStream().use { output -> input.copyTo(output) }
+                                    }
+                                    scanEmbeddedFile(tmpFile, embeddedName)
+                                } catch (_: Exception) {
+                                    // Skip broken embedded file.
+                                } finally {
+                                    tmpFile.delete()
+                                }
                             }
                         }
                     }

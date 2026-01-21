@@ -296,6 +296,7 @@
     <string name="LocationWindow-MaskButton">Маскировать</string>
     <string name="LocationWindow-MaskedCount">Маскировано: %1$d</string>
     <string name="LocationWindow-MaskError">Не удалось маскировать данные</string>
+    <string name="LocationWindow-MaskNotAvailable">Маскирование вложенных файлов недоступно</string>
     <string name="LocationWindow-SelectAllButton">Выбрать всё</string>
     <string name="LocationWindow-ExportRows">Экспортировать строки</string>
     <string name="LocationWindow-ExportRowsCount">Строк экспортировано: %1$d</string>
