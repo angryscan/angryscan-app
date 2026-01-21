@@ -8,6 +8,8 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hwpf.HWPFDocument
 import org.apache.poi.hwpf.extractor.WordExtractor
+import org.apache.poi.poifs.filesystem.Ole10Native
+import org.apache.poi.poifs.filesystem.POIFSFileSystem
 import org.apache.poi.xwpf.usermodel.*
 import org.angryscan.app.scan.common.Document
 import org.angryscan.app.scan.common.files.IFileLocation
@@ -32,11 +34,12 @@ object DOCXType : FileType(), IFileLocation {
         val str = StringBuilder()
         val res = Document(file.length(), file.absolutePath)
         var sample = 0
+        var embeddedAll = 0
+        var embeddedSkipped = 0
         try {
             withContext(Dispatchers.IO) {
                 FileInputStream(file).use { fileInputStream ->
                     XWPFDocument(fileInputStream).use { document ->
-                        document.bodyElements
                         for (elem in document.bodyElements) {
                             val text = when (elem) {
                                 is XWPFParagraph -> elem.text
@@ -57,6 +60,95 @@ object DOCXType : FileType(), IFileLocation {
                                         fastScan
                                     ) || !isActive
                                 ) return@withContext
+                            }
+                        }
+
+                        // Scan embedded files (e.g., XLSX, DOCX) inside DOCX.
+                        // Important: Extract only files with extensions present in selectedExtensions.
+                        document.allEmbeddedParts.forEach { part ->
+                            val partName = part.partName.name
+                            val embeddedName = partName.substringAfterLast("/")
+                            val embeddedNameLower = embeddedName.lowercase()
+
+                            // Common case: embedded OLE Package is stored as oleObject*.bin without a real extension.
+                            if (embeddedNameLower.endsWith(".bin")) {
+                                try {
+                                    part.inputStream.use { input ->
+                                        POIFSFileSystem(input).use { fs ->
+                                            val ole = Ole10Native.createFromEmbeddedOleObject(fs.root)
+                                            val realName = ole.fileName
+                                                .substringAfterLast("\\")
+                                                .substringAfterLast("/")
+                                            val realNameLower = realName.lowercase()
+
+                                            // Filter before writing to disk (same idea as ZIPType).
+                                            if (!selectedExtension(realNameLower, selectedExtensions)) return@forEach
+
+                                            val ext = realNameLower.substringAfterLast(".", "")
+                                            val tmpFile = File.createTempFile(
+                                                "ADS_",
+                                                if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                                            )
+                                            try {
+                                                tmpFile.writeBytes(ole.dataBuffer)
+                                                IFileType.getFileType(tmpFile).forEach { ft ->
+                                                    ft.scanFile(
+                                                        tmpFile,
+                                                        context,
+                                                        engines,
+                                                        fastScan,
+                                                        selectedExtensions
+                                                    ).also { doc ->
+                                                        if (!doc.skipped()) {
+                                                            res + doc.getDocumentFields()
+                                                        } else {
+                                                            embeddedSkipped++
+                                                        }
+                                                    }
+                                                }
+                                                embeddedAll++
+                                            } finally {
+                                                tmpFile.delete()
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) {
+                                    // Not an OLE Package or failed to extract - skip.
+                                }
+                            } else {
+                                // If the part name contains an extension, filter by it before extraction.
+                                if (!selectedExtension(embeddedNameLower, selectedExtensions)) return@forEach
+
+                                val ext = embeddedNameLower.substringAfterLast(".", "")
+                                val tmpFile = File.createTempFile(
+                                    "ADS_",
+                                    if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                                )
+                                try {
+                                    part.inputStream.use { input ->
+                                        tmpFile.outputStream().use { output -> input.copyTo(output) }
+                                    }
+                                    IFileType.getFileType(tmpFile).forEach { ft ->
+                                        ft.scanFile(
+                                            tmpFile,
+                                            context,
+                                            engines,
+                                            fastScan,
+                                            selectedExtensions
+                                        ).also { doc ->
+                                            if (!doc.skipped()) {
+                                                res + doc.getDocumentFields()
+                                            } else {
+                                                embeddedSkipped++
+                                            }
+                                        }
+                                    }
+                                    embeddedAll++
+                                } catch (_: Exception) {
+                                    // Skip broken embedded file.
+                                } finally {
+                                    tmpFile.delete()
+                                }
                             }
                         }
                     }
@@ -93,6 +185,10 @@ object DOCXType : FileType(), IFileLocation {
             engines.forEach { engine ->
                 res + withContext(context) { scan(str.toString(), engine) }
             }
+        }
+        // If we scanned only embedded files and all of them were skipped, mark document skipped.
+        if (embeddedAll > 0 && embeddedAll == embeddedSkipped && res.isEmpty()) {
+            res.skip()
         }
         return res
     }

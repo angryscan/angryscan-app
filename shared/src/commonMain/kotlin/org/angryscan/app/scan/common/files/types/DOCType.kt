@@ -8,6 +8,8 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hwpf.HWPFOldDocument
 import org.apache.poi.hwpf.extractor.WordExtractor
+import org.apache.poi.poifs.filesystem.DirectoryNode
+import org.apache.poi.poifs.filesystem.Ole10Native
 import org.apache.poi.poifs.filesystem.POIFSFileSystem
 import org.angryscan.app.scan.common.Document
 import org.angryscan.app.scan.common.files.IFileLocation
@@ -32,6 +34,50 @@ object DOCType : FileType(), IFileLocation {
         val str = StringBuilder()
         val res = Document(file.length(), file.absolutePath)
         var sample = 0
+        var embeddedAll = 0
+        var embeddedSkipped = 0
+
+        suspend fun scanEmbeddedFromDirectory(dir: DirectoryNode) {
+            dir.entries.forEach { entry ->
+                if (entry is DirectoryNode) {
+                    try {
+                        val ole = Ole10Native.createFromEmbeddedOleObject(entry)
+                        val realName = ole.fileName
+                            .substringAfterLast("\\")
+                            .substringAfterLast("/")
+                        val realNameLower = realName.lowercase()
+
+                        // Filter before writing to disk (same idea as ZIPType).
+                        if (!selectedExtension(realNameLower, selectedExtensions)) return@forEach
+
+                        val ext = realNameLower.substringAfterLast(".", "")
+                        val tmpFile = File.createTempFile(
+                            "ADS_",
+                            if (ext.isNotEmpty()) ".$ext" else ".tmp"
+                        )
+                        try {
+                            tmpFile.writeBytes(ole.dataBuffer)
+                            IFileType.getFileType(tmpFile).forEach { ft ->
+                                ft.scanFile(tmpFile, context, engines, fastScan, selectedExtensions).also { doc ->
+                                    if (!doc.skipped()) {
+                                        res + doc.getDocumentFields()
+                                    } else {
+                                        embeddedSkipped++
+                                    }
+                                }
+                            }
+                            embeddedAll++
+                        } finally {
+                            tmpFile.delete()
+                        }
+                    } catch (_: Exception) {
+                        // Not an embedded OLE Package directory - traverse deeper.
+                        scanEmbeddedFromDirectory(entry)
+                    }
+                }
+            }
+        }
+
         try {
             withContext(Dispatchers.IO) {
                 FileInputStream(file).use { inputStream ->
@@ -49,6 +95,15 @@ object DOCType : FileType(), IFileLocation {
                             }
                         }
                     }
+                }
+
+                // Scan embedded OLE packages (e.g., embedded XLS/DOC) inside DOC.
+                try {
+                    POIFSFileSystem(file).use { fs ->
+                        scanEmbeddedFromDirectory(fs.root)
+                    }
+                } catch (_: Exception) {
+                    // Skip embedded scan errors; main text scan result is still valid.
                 }
             }
         } catch (_: Exception) {
@@ -70,6 +125,15 @@ object DOCType : FileType(), IFileLocation {
                             }
                         }
                     }
+
+                    // Scan embedded OLE packages in fallback path as well.
+                    try {
+                        POIFSFileSystem(file).use { fs ->
+                            scanEmbeddedFromDirectory(fs.root)
+                        }
+                    } catch (_: Exception) {
+                        // Skip embedded scan errors.
+                    }
                 }
             } catch (_: Exception) {
                 res.skip()
@@ -80,6 +144,10 @@ object DOCType : FileType(), IFileLocation {
             engines.forEach { engine ->
                 res + withContext(context) { scan(str.toString(), engine) }
             }
+        }
+        // If we scanned only embedded files and all of them were skipped, mark document skipped.
+        if (embeddedAll > 0 && embeddedAll == embeddedSkipped && res.isEmpty()) {
+            res.skip()
         }
         return res
     }

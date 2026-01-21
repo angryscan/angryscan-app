@@ -366,7 +366,7 @@ fun AttributeLocationWindow(
                                                                             filePath,
                                                                             selectedLocations
                                                                         )
-                                                                    if (maskedCount == selectedLocations.size) {
+                                                                    if (maskedCount > 0) {
                                                                         locations.removeAll(selectedLocations)
                                                                         selectedLocations.clear()
                                                                         coroutineScope.launch {
