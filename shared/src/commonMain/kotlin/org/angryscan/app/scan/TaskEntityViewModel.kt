@@ -391,12 +391,15 @@ class TaskEntityViewModel(
                 delay(1000)
 
             val extensions = database.transaction {
-                dbTask.extensions.map { it.extension }
+                TaskFileExtensions
+                    .select(TaskFileExtensions.extension)
+                    .where { TaskFileExtensions.task.eq(dbTask.id) }
+                    .map { it[TaskFileExtensions.extension] }
             }
+            
             while (_state.value == TaskState.LOADING) {
                 delay(500)
             }
-
 
             if (dbTask.taskState == TaskState.SEARCHING ||
                 (dbTask.taskState != TaskState.PENDING && rescan)

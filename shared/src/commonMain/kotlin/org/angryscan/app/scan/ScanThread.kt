@@ -6,10 +6,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
-import org.angryscan.app.db.models.TaskFileScanResults
-import org.angryscan.app.db.models.TaskFiles
-import org.angryscan.app.db.models.TaskMatchers
-import org.angryscan.app.db.models.TaskState
+import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
@@ -127,7 +124,10 @@ class ScanThread : KoinComponent {
                         .associate { it[TaskMatchers.matcher] to it[TaskMatchers.id].value }
                 }
                 val extensions = database.transaction {
-                    taskEntity.dbTask.extensions.map { it.extension }
+                    TaskFileExtensions
+                        .select(TaskFileExtensions.extension)
+                        .where { TaskFileExtensions.task.eq(taskEntity.dbTask.id) }
+                        .map { it[TaskFileExtensions.extension] }
                 }
                 val engines: MutableList<IScanEngine> = mutableListOf()
                 scanSettings.value.engine.value
