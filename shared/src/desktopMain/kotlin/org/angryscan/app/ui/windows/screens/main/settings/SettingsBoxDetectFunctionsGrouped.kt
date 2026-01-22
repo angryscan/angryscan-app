@@ -84,7 +84,19 @@ fun SettingsBoxDetectFunctionsGrouped(
                     ExecDocNumber,
                     CadastralNumber,
                     MedicareUS,
-                    OSAGOPolicy
+                    OSAGOPolicy,
+                    EIN,
+                    ITIN,
+                    DriverLicenseUS,
+                    VisaNumberUS,
+                    AlienRegistrationNumber,
+                    USCIS,
+                    SEVISID,
+                    DODID,
+                    NSN,
+                    TCN,
+                    NPI,
+                    APOFPODPO
                 )
             ),
             MatchersGroup(
@@ -105,7 +117,8 @@ fun SettingsBoxDetectFunctionsGrouped(
                     MilitaryRank,
                     SecurityAffiliation,
                     Geo,
-                    LegalEntityName
+                    LegalEntityName,
+                    AddressUS
                 )
             ),
             MatchersGroup(
@@ -114,7 +127,8 @@ fun SettingsBoxDetectFunctionsGrouped(
                     CardNumber(),
                     CVV,
                     BankAccount,
-                    BankAccountLE
+                    BankAccountLE,
+                    RTN
                 )
             ),
             MatchersGroup(

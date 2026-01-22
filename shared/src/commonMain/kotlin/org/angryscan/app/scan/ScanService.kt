@@ -40,29 +40,40 @@ class ScanService : KoinComponent {
 
     init {
         DatabaseMigration.migrate()
-
         scanThreads = Array(appSettings.threadCount.value) { ScanThread() }
+        
         CoroutineScope(Dispatchers.IO).launch {
-            database.transaction {
-                Task.all().forEach { task ->
+            // Load all tasks in one transaction first
+            val allTasks = database.transaction {
+                Task.all().toList()
+            }
+            
+            // Process each task in separate transactions to avoid blocking
+            allTasks.forEach { task ->
+                database.transaction {
+                    val foundAttributes = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
+                        .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
+                        .groupBy(TaskMatchers.matcher)
+                        .where { TaskFiles.task.eq(task.id) }
+                        .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
+                        .filter { it.value > 0 }
+                    
+                    val foundFiles = TaskFiles
+                        .innerJoin(TaskFileScanResults)
+                        .select(TaskFiles.id)
+                        .where { TaskFiles.task.eq(task.id) }
+                        .withDistinct()
+                        .count()
+                    
                     val taskEntity = TaskEntityViewModel(
                         dbTask = task,
                         state = task.taskState,
                         totalFiles = task.filesCount,
-                        foundAttributes = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
-                            .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
-                            .groupBy(TaskMatchers.matcher)
-                            .where { TaskFiles.task.eq(task.id) }
-                            .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
-                            .filter { it.value > 0 },
-                        foundFiles = TaskFiles
-                            .innerJoin(TaskFileScanResults)
-                            .select(TaskFiles.id)
-                            .where { TaskFiles.task.eq(task.id) }
-                            .withDistinct()
-                            .count(),
+                        foundAttributes = foundAttributes,
+                        foundFiles = foundFiles,
                         folderSize = task.size
                     )
+                    
                     if (task.taskState == TaskState.SCANNING) {
                         task.pauseDate = task.lastFileDate
 
