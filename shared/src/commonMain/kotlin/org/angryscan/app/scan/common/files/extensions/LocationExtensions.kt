@@ -9,5 +9,5 @@ fun Location.mask(): String {
 }
 
 fun Location.isMaskable(): Boolean {
-    return this.entry.matcher is IMask
+    return this.isMaskable && this.entry.matcher is IMask
 }
