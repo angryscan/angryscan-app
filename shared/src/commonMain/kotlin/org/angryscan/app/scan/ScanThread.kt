@@ -7,7 +7,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
-import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.scan.engine.inappropriateMatchers
