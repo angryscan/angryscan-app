@@ -48,6 +48,10 @@ veryLong/very_long.log	0	    2	    0			0			                0		0			0	0	0			0		   
 veryLong/very_long.pdf	0	    1	    0			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
 veryLong/very_long.txt	0	    1	    0			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
 veryLong/very_long.xls	119998  4	    0			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
+attachments/cards_in_file.doc	0	    0	    40			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
+attachments/cards_in_file_double.doc	0	    0	    40			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
+attachments/cards_in_file.docx	0	    0	    40			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
+attachments/cards_in_file_double.docx	0	    0	    40			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
 veryLong/very_long.xlsx	119998  4	    0			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
 veryLong/very_long.xml	59979   2	    0			0			                0		0			0	0	0			0		    0		0			0	0		    0   	0   
 TestText.rar	        1	    1	    1			1			                1		1			1	1	1			1		    1		1			1	1		    0   	0   

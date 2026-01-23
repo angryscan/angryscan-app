@@ -6,11 +6,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
-import org.angryscan.app.db.models.TaskFileScanResults
-import org.angryscan.app.db.models.TaskFiles
-import org.angryscan.app.db.models.TaskMatchers
-import org.angryscan.app.db.models.TaskState
-import org.angryscan.app.scan.common.files.types.*
+import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.scan.engine.inappropriateMatchers
@@ -127,22 +124,25 @@ class ScanThread : KoinComponent {
                         .associate { it[TaskMatchers.matcher] to it[TaskMatchers.id].value }
                 }
                 val extensions = database.transaction {
-                    taskEntity.dbTask.extensions.map { it.extension }
+                    TaskFileExtensions
+                        .select(TaskFileExtensions.extension)
+                        .where { TaskFileExtensions.task.eq(taskEntity.dbTask.id) }
+                        .map { it[TaskFileExtensions.extension] }
                 }
-                
+
                 // Determine file types early to decide on requireKeywords
                 val fileTypes = IFileType
                     .getFileType(fileObject)
                     .filter { ft ->
                         ft in extensions
                     }
-                
+
                 // Check if file requires requireKeywords = false
-                val requireKeywords = !fileTypes.any { 
-                    it is XLSXType || it is XLSType || it is ODSType || 
+                val requireKeywords = !fileTypes.any {
+                    it is XLSXType || it is XLSType || it is ODSType ||
                     (it is TextType && fileObject.extension.lowercase() == "csv")
                 }
-                
+
                 val engines: MutableList<IScanEngine> = mutableListOf()
                 scanSettings.value.engine.value
                     .getEngine(matchers.map { it.key }, requireKeywords = requireKeywords)

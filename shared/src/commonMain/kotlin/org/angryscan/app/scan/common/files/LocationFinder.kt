@@ -30,6 +30,9 @@ object LocationFinder {
     }
 
     suspend fun maskLocations(filePath: String, locations: List<Location>): Int {
+        if (locations.any { !it.isMaskable }) {
+            return 0
+        }
         val file = File(filePath)
         val type = IFileType.getFileType(file = file).find { it is IMaskFile } ?: throw NotSupportedTypeException
 

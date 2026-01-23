@@ -224,6 +224,8 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                     if (tmp != writeLine) {
                                         writeLine = tmp
                                         locationsMasked++
+                                        if(locationsMasked == locations.count())
+                                            return@withContext
                                     }
                                     locationIndex++
                                     if (locationIndex < sortedLocations.size) {

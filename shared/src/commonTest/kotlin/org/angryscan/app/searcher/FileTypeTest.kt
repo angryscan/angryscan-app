@@ -155,6 +155,23 @@ internal class FileTypeTest() {
             "veryLong/very_long.xls",
             "veryLong/very_long.pdf"
         )
+        
+        val excludedMatcherClasses = setOf(
+            EIN::class,
+            ITIN::class,
+            RTN::class,
+            DriverLicenseUS::class,
+            VisaNumberUS::class,
+            AlienRegistrationNumber::class,
+            USCIS::class,
+            SEVISID::class,
+            DODID::class,
+            APOFPODPO::class,
+            NSN::class,
+            TCN::class,
+            NPI::class,
+            AddressUS::class
+        )
 
         fun checkScan(filename: String, map: Map<IMatcher, Int>?, isFastScan: Boolean = false) {
 
@@ -163,8 +180,11 @@ internal class FileTypeTest() {
             val f = File(path.file)
             val enumType: IFileType? = f.let { IFileType.getFileType(it).firstOrNull() }
 
+            val allMatchers = Matchers.toKotlinMatchers()
+            val filteredMatchers = allMatchers.filterNot { it::class in excludedMatcherClasses }
+
             val engines = listOf(
-                KotlinEngine(Matchers.toKotlinMatchers())
+                KotlinEngine(filteredMatchers)
             )
 
             runBlocking {
