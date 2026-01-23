@@ -8,9 +8,13 @@ import org.angryscan.common.engine.kotlin.KotlinEngine
 import kotlin.reflect.KClass
 
 fun KClass<out IScanEngine>.getEngine(matchers: List<IMatcher>): IScanEngine {
+    return getEngine(matchers, requireKeywords = true)
+}
+
+fun KClass<out IScanEngine>.getEngine(matchers: List<IMatcher>, requireKeywords: Boolean): IScanEngine {
     return when(this) {
-        HyperScanEngine::class -> HyperScanEngine(matchers.toHyperScanMatchers())
-        KotlinEngine::class -> KotlinEngine(matchers.toKotlinMatchers())
+        HyperScanEngine::class -> HyperScanEngine(matchers.toHyperScanMatchers(), requireKeywords = requireKeywords)
+        KotlinEngine::class -> KotlinEngine(matchers.toKotlinMatchers(), requireKeywords = requireKeywords)
         CustomEngine::class -> CustomEngine(matchers.toCustomMatchers())
         else -> throw IllegalArgumentException("Unknown engine")
     }

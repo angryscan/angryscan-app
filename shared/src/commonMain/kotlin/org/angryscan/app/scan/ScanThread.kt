@@ -7,7 +7,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
-import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.scan.engine.inappropriateMatchers
@@ -129,9 +129,23 @@ class ScanThread : KoinComponent {
                         .where { TaskFileExtensions.task.eq(taskEntity.dbTask.id) }
                         .map { it[TaskFileExtensions.extension] }
                 }
+
+                // Determine file types early to decide on requireKeywords
+                val fileTypes = IFileType
+                    .getFileType(fileObject)
+                    .filter { ft ->
+                        ft in extensions
+                    }
+
+                // Check if file requires requireKeywords = false
+                val requireKeywords = !fileTypes.any {
+                    it is XLSXType || it is XLSType || it is ODSType ||
+                    (it is TextType && fileObject.extension.lowercase() == "csv")
+                }
+
                 val engines: MutableList<IScanEngine> = mutableListOf()
                 scanSettings.value.engine.value
-                    .getEngine(matchers.map { it.key })
+                    .getEngine(matchers.map { it.key }, requireKeywords = requireKeywords)
                     .let {
                         if (it.matchers.isNotEmpty())
                             engines.add(it)
@@ -145,7 +159,7 @@ class ScanThread : KoinComponent {
                     var fbe = scanSettings.value.engine.value.fallback()
                     do {
                         val e = fbe
-                            .getEngine(iMatchers)
+                            .getEngine(iMatchers, requireKeywords = requireKeywords)
                         if(e.matchers.isNotEmpty()) {
                             engines.add(e)
                             iMatchers.removeAll(e.matchers)
@@ -158,20 +172,15 @@ class ScanThread : KoinComponent {
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
-
-                    val scanResults = IFileType
-                        .getFileType(fileObject)
-                        .filter { ft ->
-                            ft in extensions
-                        }.map { ft ->
-                            ft.scanFile(
-                                file = fileObject,
-                                context = currentCoroutineContext(),
-                                engines = engines,
-                                fastScan = fastScan,
-                                selectedExtensions = extensions
-                            )
-                        }
+                    val scanResults = fileTypes.map { ft ->
+                        ft.scanFile(
+                            file = fileObject,
+                            context = currentCoroutineContext(),
+                            engines = engines,
+                            fastScan = fastScan,
+                            selectedExtensions = extensions
+                        )
+                    }
 
                     engines.forEach { eng ->
                         eng.close()
