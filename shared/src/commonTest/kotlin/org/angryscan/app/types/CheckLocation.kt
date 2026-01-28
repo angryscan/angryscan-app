@@ -1,14 +1,14 @@
 package org.angryscan.app.types
 
 import kotlinx.coroutines.runBlocking
-import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.app.scan.engine.toKotlinMatchers
 import org.angryscan.app.searcher.Matrix
 import org.angryscan.common.engine.IMask
+import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
+import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.hyperscan.IHyperMatcher
 import org.angryscan.common.engine.kotlin.IKotlinMatcher
 import org.angryscan.common.engine.kotlin.KotlinEngine
@@ -19,7 +19,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 object CheckLocation {
-    fun checkByMap(fileName: String, scanMethod: suspend (String, IScanEngine, IMatcher) -> List<Location>) {
+    fun checkByMap(fileName: String, scanMethod: suspend (String, IScanEngine, List<IMatcher>) -> List<Location>) {
         val map = Matrix.getMap(fileName.replace("/files/", ""))
         assertNotNull(map)
 
@@ -71,24 +71,24 @@ object CheckLocation {
     fun getHyperLocations(
         filePath: String,
         matchers: List<IHyperMatcher>,
-        scanMethod: suspend (String, HyperScanEngine, IMatcher) -> List<Location>
+        scanMethod: suspend (String, HyperScanEngine, List<IMatcher>) -> List<Location>
     ): List<Location> {
         val engine = HyperScanEngine(matchers)
-        return runBlocking { matchers.flatMap { scanMethod(filePath, engine, it) } }
+        return runBlocking { scanMethod(filePath, engine, matchers) }
     }
 
     fun getKotlinLocations(
         filePath: String,
         matchers: List<IKotlinMatcher>,
-        scanMethod: suspend (String, KotlinEngine, IMatcher) -> List<Location>
+        scanMethod: suspend (String, KotlinEngine, List<IMatcher>) -> List<Location>
     ): List<Location> {
         val engine = KotlinEngine(matchers)
-        return runBlocking { matchers.flatMap { scanMethod(filePath, engine, it) } }
+        return runBlocking { scanMethod(filePath, engine, matchers) }
     }
 
     fun maskLocations(
         fileName: String,
-        scanMethod: suspend (String, IScanEngine, IMatcher) -> List<Location>,
+        scanMethod: suspend (String, IScanEngine, List<IMatcher>) -> List<Location>,
         maskMethod: suspend (String, String, List<Location>) -> Int
     ) {
         val map = Matrix

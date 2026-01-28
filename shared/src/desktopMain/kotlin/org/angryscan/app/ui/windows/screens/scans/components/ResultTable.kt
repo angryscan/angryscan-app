@@ -8,11 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.FileOpen
-import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,19 +21,26 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
-import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.stringResource
+import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.OS
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFileResult
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
+import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.files.LocationFinder
 import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.ui.windows.components.MessageBox
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
 import java.io.File
 
@@ -46,7 +49,8 @@ import java.io.File
 fun ResultTable(
     taskFilesViewModel: TaskFilesViewModel,
     task: TaskEntityViewModel,
-    selectedAttributes: List<IMatcher>
+    selectedAttributes: List<IMatcher>,
+    scanSettings: ScanSettings
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -135,6 +139,44 @@ fun ResultTable(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+
+
+    var exportFile by remember { mutableStateOf<String?>(null) }
+    val exportMatchers = remember { mutableStateListOf<IMatcher>() }
+
+    val dialogSettings = createDialogSettings()
+
+    val saveLauncher = rememberFileSaverLauncher(
+        dialogSettings = dialogSettings
+    ) { file ->
+        coroutineScope.launch {
+            try {
+                if (file != null) {
+                    val engine = scanSettings.engine.value.getEngine(exportMatchers)
+                    val rows = LocationFinder.exportRows(
+                        inputFile = exportFile!!,
+                        engine = engine,
+                        matchers = exportMatchers,
+                        outputFile = file.path)
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            getString(
+                                Res.string.LocationWindow_ExportRowsCount,
+                                rows
+                            )
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                snackbarHostState.showSnackbar(
+                    getString(
+                        Res.string.LocationWindow_ExportError
+                    )
+                )
+            }
+        }
+    }
 
 
 
@@ -414,6 +456,7 @@ fun ResultTable(
                         val fileType = IFileType.getFileType(file.path)
                         val locationSupported = fileType.any { LocationFinder.isSupported(it) } &&
                                 task.dbTask.connector is ConnectorFileShare
+                        val exportSupported = fileType.any { LocationFinder.isExportSupported(it) }
                         val exist = filesExists.contains(file.id)
                         var menuExpanded by remember { mutableStateOf(false) }
                         Box(
@@ -501,6 +544,29 @@ fun ResultTable(
                                                 filesDeleted.add(file.id)
                                             }
                                             menuExpanded = false
+                                        }
+                                    )
+                                }
+                                if (exportSupported) {
+                                    DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.SystemUpdateAlt,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        text = {
+                                            Text(stringResource(Res.string.LocationWindow_ExportAllRows))
+                                        },
+                                        onClick = {
+                                            exportFile = file.path
+                                            exportMatchers.clear()
+                                            exportMatchers.addAll(file.foundAttributes.keys)
+                                            saveLauncher.launch(
+                                                suggestedName = "${File(file.path).name}_Rows",
+                                                extension = "csv",
+                                                directory = PlatformFile(AppFiles.UserDirPath)
+                                            )
                                         }
                                     )
                                 }

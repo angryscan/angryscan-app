@@ -37,6 +37,7 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
@@ -64,6 +65,7 @@ fun ScanResultScreen(
 ) {
     val scanService = koinInject<ScanService>()
     val appSettings = koinInject<AppSettings>()
+    val scanSettings = koinInject<ScanSettings>()
     val task = scanService.tasks.tasks.value.firstOrNull { it.id.value == taskId }
 
     if (task == null) {
@@ -603,7 +605,8 @@ fun ScanResultScreen(
             ResultTable(
                 taskFilesViewModel = taskFilesViewModel,
                 task = task,
-                selectedAttributes = selectedAttributes
+                selectedAttributes = selectedAttributes,
+                scanSettings = scanSettings
             )
         }
     }

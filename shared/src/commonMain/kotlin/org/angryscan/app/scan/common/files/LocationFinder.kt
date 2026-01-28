@@ -23,7 +23,18 @@ object LocationFinder {
         val type = IFileType.getFileType(file = file).find{ it is IFileLocation }
 
         if (type is IFileLocation) {
-            return type.findLocation(filePath, engine, matcher)
+            return type.findLocation(filePath, engine, listOf(matcher))
+        } else {
+            throw NotSupportedTypeException
+        }
+    }
+
+    suspend fun findLocations(filePath: String, engine: IScanEngine, matchers: List<IMatcher>): List<Location> {
+        val file = File(filePath)
+        val type = IFileType.getFileType(file = file).find{ it is IFileLocation }
+
+        if (type is IFileLocation) {
+            return type.findLocation(filePath, engine, matchers)
         } else {
             throw NotSupportedTypeException
         }
@@ -74,6 +85,15 @@ object LocationFinder {
         } else {
             throw NotSupportedTypeException
         }
+    }
+
+    suspend fun exportRows(inputFile: String, engine: IScanEngine, matchers: List<IMatcher>, outputFile: String): Int {
+        val locations = findLocations(
+            filePath = inputFile,
+            engine = engine,
+            matchers = matchers
+        )
+        return exportRows(inputFile, locations, outputFile)
     }
 
     val NotSupportedTypeException = Exception("Not supported file type")

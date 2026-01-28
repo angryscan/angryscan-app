@@ -141,7 +141,6 @@ fun AttributeLocationWindow(
                 }
             }
         }
-
     }
 
     DialogWindow(

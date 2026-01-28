@@ -8,7 +8,7 @@ interface IFileLocation {
         filePath: String,
         engine: IScanEngine,
 
-        matcher: IMatcher,
+        matchers: List<IMatcher>,
         fastScan: Boolean = false
     ): List<Location>
 }

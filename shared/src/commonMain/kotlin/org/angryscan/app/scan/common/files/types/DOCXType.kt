@@ -18,6 +18,7 @@ import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.common.files.extensions.mask
+import org.angryscan.app.scan.common.files.locations.BaseLocation
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -272,19 +273,20 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matcher: IMatcher,
+        matchers: List<IMatcher>,
         fastScan: Boolean
-    ): List<Location> {
+    ): List<BaseLocation> {
         var length = 0
         var sample = 0
-        val locations = mutableListOf<Location>()
+        val locations = mutableListOf<BaseLocation>()
+        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
                 var elemPosition = 1
                 FileInputStream(file).use { fileInputStream ->
                     XWPFDocument(fileInputStream).use { document ->
-                        fun attachLocation(source: Location, embeddedName: String): Location {
+                        fun attachLocation(source: BaseLocation, embeddedName: String): BaseLocation {
                             val attachmentLabel = source.attachmentName ?: embeddedName
                             val baseLabel = "Attachment: $attachmentLabel"
                             val locationLabel = if (source.location.isNotBlank()) {
@@ -294,8 +296,7 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                             }
                             return source.copy(
                                 location = locationLabel,
-                                attachmentName = attachmentLabel,
-                                isMaskable = false
+                                attachmentName = attachmentLabel
                             )
                         }
 
@@ -308,13 +309,22 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                     embeddedType.findLocation(
                                         embeddedFile.absolutePath,
                                         engine,
-                                        matcher,
+                                        matchers,
                                         fastScan
                                     )
                                 }.getOrDefault(emptyList())
                                 if (embeddedLocations.isNotEmpty()) {
                                     embeddedLocations.forEach { location ->
-                                        locations.add(attachLocation(location, embeddedName))
+                                        locations.add(
+                                            attachLocation(
+                                                BaseLocation(
+                                                    entry = location.entry,
+                                                    location = location.location,
+                                                    attachmentName = location.attachmentName
+                                                ),
+                                                embeddedName
+                                            )
+                                        )
                                     }
                                     break
                                 }
@@ -338,10 +348,10 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                             }
                             engine
                                 .scan(text)
-                                .filter { it.matcher::class == matcher::class }
+                                .filter { it.matcher::class in matchersClasses }
                                 .forEach {
-                                locations.add(Location(it, "$elemType, Position:$elemPosition"))
-                            }
+                                    locations.add(BaseLocation(it, "$elemType, Position:$elemPosition"))
+                                }
 
                             length += text.length
 
@@ -350,7 +360,7 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                             if (isLengthOverload(length, isActive)) {
                                 length = 0
                                 sample++
-                                if (isSampleOverload(sample, fastScan, isActive)) 
+                                if (isSampleOverload(sample, fastScan, isActive))
                                     return@withContext
                             }
                         }
@@ -414,10 +424,10 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.paragraphText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class == matcher::class }
+                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
-                                        locations.add(Location(it, "Paragraph:$index"))
-                                    }
+                                            locations.add(BaseLocation(it, "Paragraph:$index"))
+                                        }
                                     length += text.length
                                     if (isLengthOverload(length, isActive)) {
                                         length = 0
@@ -429,10 +439,10 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.commentsText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class == matcher::class }
+                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
-                                        locations.add(Location(it, "Comment:$index"))
-                                    }
+                                            locations.add(BaseLocation(it, "Comment:$index"))
+                                        }
                                     length += text.length
                                     if (isLengthOverload(length, isActive)) {
                                         length = 0
@@ -444,10 +454,10 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.footnoteText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class == matcher::class }
+                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
-                                        locations.add(Location(it, "Footnote:$index"))
-                                    }
+                                            locations.add(BaseLocation(it, "Footnote:$index"))
+                                        }
                                     length += text.length
                                     if (isLengthOverload(length, isActive)) {
                                         length = 0
@@ -459,10 +469,10 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.endnoteText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class == matcher::class }
+                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
-                                        locations.add(Location(it, "Endnote:$index"))
-                                    }
+                                            locations.add(BaseLocation(it, "Endnote:$index"))
+                                        }
                                     length += text.length
                                     if (isLengthOverload(length, isActive)) {
                                         length = 0
