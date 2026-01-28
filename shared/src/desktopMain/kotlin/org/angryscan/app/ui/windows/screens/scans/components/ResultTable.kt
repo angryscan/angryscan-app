@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -446,6 +447,25 @@ fun ResultTable(
                                 DropdownMenuItem(
                                     leadingIcon = {
                                         Icon(
+                                            Icons.Outlined.FileOpen,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    text = {
+                                        Text(stringResource(Res.string.openFile))
+                                    },
+                                    onClick = {
+                                        try {
+                                            Desktop.getDesktop().open(File(file.path))
+                                        } catch (_: Exception) {
+                                            filesExists.remove(file.id)
+                                        }
+                                        menuExpanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
                                             Icons.Outlined.Delete,
                                             contentDescription = null
                                         )
@@ -458,7 +478,7 @@ fun ResultTable(
                                             filesExists.remove(file.id)
                                             filesDeleted.add(file.id)
                                         }
-
+                                        menuExpanded = false
                                     }
                                 )
                                 if (OS.currentOS() == OS.WINDOWS) {
@@ -480,7 +500,7 @@ fun ResultTable(
                                                 filesExists.remove(file.id)
                                                 filesDeleted.add(file.id)
                                             }
-
+                                            menuExpanded = false
                                         }
                                     )
                                 }
