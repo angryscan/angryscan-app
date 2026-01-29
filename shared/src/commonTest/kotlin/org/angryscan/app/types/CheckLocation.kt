@@ -6,7 +6,6 @@ import org.angryscan.app.scan.engine.toHyperScanMatchers
 import org.angryscan.app.scan.engine.toKotlinMatchers
 import org.angryscan.app.searcher.Matrix
 import org.angryscan.common.engine.IMask
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.hyperscan.IHyperMatcher
@@ -19,7 +18,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 object CheckLocation {
-    fun checkByMap(fileName: String, scanMethod: suspend (String, IScanEngine, List<IMatcher>) -> List<Location>) {
+    fun checkByMap(fileName: String, scanMethod: suspend (String, IScanEngine) -> List<Location>) {
         val map = Matrix.getMap(fileName.replace("/files/", ""))
         assertNotNull(map)
 
@@ -71,24 +70,24 @@ object CheckLocation {
     fun getHyperLocations(
         filePath: String,
         matchers: List<IHyperMatcher>,
-        scanMethod: suspend (String, HyperScanEngine, List<IMatcher>) -> List<Location>
+        scanMethod: suspend (String, HyperScanEngine) -> List<Location>
     ): List<Location> {
         val engine = HyperScanEngine(matchers)
-        return runBlocking { scanMethod(filePath, engine, matchers) }
+        return runBlocking { scanMethod(filePath, engine) }
     }
 
     fun getKotlinLocations(
         filePath: String,
         matchers: List<IKotlinMatcher>,
-        scanMethod: suspend (String, KotlinEngine, List<IMatcher>) -> List<Location>
+        scanMethod: suspend (String, KotlinEngine) -> List<Location>
     ): List<Location> {
         val engine = KotlinEngine(matchers)
-        return runBlocking { scanMethod(filePath, engine, matchers) }
+        return runBlocking { scanMethod(filePath, engine) }
     }
 
     fun maskLocations(
         fileName: String,
-        scanMethod: suspend (String, IScanEngine, List<IMatcher>) -> List<Location>,
+        scanMethod: suspend (String, IScanEngine) -> List<Location>,
         maskMethod: suspend (String, String, List<Location>) -> Int
     ) {
         val map = Matrix
