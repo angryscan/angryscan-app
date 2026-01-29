@@ -49,11 +49,10 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                 row?.forEach { cell ->
                                     if (cell != null) {
                                         when (cell.cellType) {
-                                            CellType.NUMERIC -> str.append(dataFormatter.formatCellValue(cell))
-                                                .append("\n")
-
-                                            CellType.STRING -> str.append(dataFormatter.formatCellValue(cell))
-                                                .append("\n")
+                                            CellType.NUMERIC, CellType.STRING -> {
+                                                str.append(dataFormatter.formatCellValue(cell))
+                                                    .append("\n")
+                                            }
 
                                             else -> {}
                                         }
@@ -105,9 +104,7 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                 row?.forEach { cell ->
                                     if (cell != null) {
                                         val text = when (cell.cellType) {
-                                            CellType.NUMERIC -> dataFormatter.formatCellValue(cell)
-
-                                            CellType.STRING -> dataFormatter.formatCellValue(cell)
+                                            CellType.NUMERIC, CellType.STRING -> dataFormatter.formatCellValue(cell)
 
                                             else -> ""
                                         }
@@ -164,29 +161,17 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                         sortedLocations[sheetName]!!.forEach { location ->
                             val row = sheet.getRow(location.row)
                             val cell = row.getCell(location.col)
-                            when (cell.cellType) {
-                                CellType.STRING -> {
-                                    val value = cell.stringCellValue
-                                    val replaced = value.replace(location.entry.value, location.mask())
-                                    if (value != replaced) {
-                                        cell.setCellValue(replaced)
-                                        locationsMasked++
-                                    }
-                                }
+                            val value = when (cell.cellType) {
+                                CellType.STRING -> cell.stringCellValue
 
-                                CellType.NUMERIC -> {
-                                    val value = cell.numericCellValue.toString()
-                                    val replaced = value.replace(location.entry.value, location.mask())
-                                    if (value != replaced) {
-                                        cell.setCellValue(replaced)
-                                        cell.cellType = CellType.STRING
-                                        locationsMasked++
-                                    }
-                                }
+                                CellType.NUMERIC -> cell.numericCellValue.toString()
 
-                                else -> {
-
-                                }
+                                else -> { "" }
+                            }
+                            val replaced = value.replace(location.entry.value, location.mask())
+                            if (value != replaced) {
+                                cell.setCellValue(replaced)
+                                locationsMasked++
                             }
                         }
                     }

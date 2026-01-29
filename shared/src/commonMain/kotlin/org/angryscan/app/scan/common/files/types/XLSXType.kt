@@ -154,45 +154,27 @@ object XLSXType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                         sortedLocations[sheetName]!!.forEach { location ->
                             val row = sheet.getRow(location.row)
                             val cell = row.getCell(location.col)
-                            when (cell.cellType) {
+                            val value = when (cell.cellType) {
                                 CellType.STRING -> {
-                                    val value = cell.stringCellValue
-                                    val replaced = value.replace(location.entry.value, location.mask())
-                                    if (value != replaced) {
-                                        cell.setCellValue(replaced)
-                                        locationsMasked++
-                                    }
+                                    cell.stringCellValue
                                 }
 
                                 CellType.NUMERIC -> {
-                                    val value = cell.numericCellValue.toString()
-                                    val replaced = value.replace(location.entry.value, location.mask())
-                                    if (value != replaced) {
-                                        cell.setCellValue(replaced)
-                                        cell.cellType = CellType.STRING
-                                        locationsMasked++
-                                    }
+                                    cell.numericCellValue.toString()
                                 }
 
                                 CellType.BOOLEAN -> {
-                                    val value = cell.booleanCellValue.toString()
-                                    val replaced = value.replace(location.entry.value, location.mask())
-                                    if (value != replaced) {
-                                        cell.setCellValue(replaced)
-                                        cell.cellType = CellType.STRING
-                                        locationsMasked++
-                                    }
+                                    cell.booleanCellValue.toString()
                                 }
 
                                 else -> {
-                                    val value = cell.rawValue
-                                    val replaced = value.replace(location.entry.value, location.mask())
-                                    if (value != replaced) {
-                                        cell.setCellValue(replaced)
-                                        cell.cellType = CellType.STRING
-                                        locationsMasked++
-                                    }
+                                    cell.rawValue
                                 }
+                            }
+                            val replaced = value.replace(location.entry.value, location.mask())
+                            if (value != replaced) {
+                                cell.setCellValue(replaced)
+                                locationsMasked++
                             }
                         }
                     }
