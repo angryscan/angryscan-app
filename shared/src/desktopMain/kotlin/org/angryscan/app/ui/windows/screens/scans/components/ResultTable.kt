@@ -6,11 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,19 +21,27 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
-import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.stringResource
+import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.OS
+import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFileResult
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
+import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.files.LocationFinder
+import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.ui.windows.components.MessageBox
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
 import java.io.File
 
@@ -44,7 +50,8 @@ import java.io.File
 fun ResultTable(
     taskFilesViewModel: TaskFilesViewModel,
     task: TaskEntityViewModel,
-    selectedAttributes: List<IMatcher>
+    selectedAttributes: List<IMatcher>,
+    scanSettings: ScanSettings
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -133,6 +140,47 @@ fun ResultTable(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+
+
+    var exportFile by remember { mutableStateOf<String?>(null) }
+    val exportMatchers = remember { mutableStateListOf<IMatcher>() }
+
+    val dialogSettings = createDialogSettings()
+
+    val saveLauncher = rememberFileSaverLauncher(
+        dialogSettings = dialogSettings
+    ) { file ->
+        coroutineScope.launch {
+            try {
+                if (file != null) {
+                    val requireKeyword = IFileType
+                        .getFileType(file.file)
+                        .requireKeywords(file.file.extension)
+                    val engine = scanSettings.engine.value.getEngine(exportMatchers, requireKeyword)
+                    val rows = LocationFinder.exportRows(
+                        inputFile = exportFile!!,
+                        engine = engine,
+                        outputFile = file.path
+                    )
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            getString(
+                                Res.string.LocationWindow_ExportRowsCount,
+                                rows
+                            )
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                snackbarHostState.showSnackbar(
+                    getString(
+                        Res.string.LocationWindow_ExportError
+                    )
+                )
+            }
+        }
+    }
 
 
 
@@ -412,11 +460,10 @@ fun ResultTable(
                         val fileType = IFileType.getFileType(file.path)
                         val locationSupported = fileType.any { LocationFinder.isSupported(it) } &&
                                 task.dbTask.connector is ConnectorFileShare
+                        val exportSupported = fileType.any { LocationFinder.isExportSupported(it) }
                         val exist = filesExists.contains(file.id)
                         var menuExpanded by remember { mutableStateOf(false) }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        Box(
                             modifier = Modifier
                                 .clip(MaterialTheme.shapes.medium)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -436,12 +483,33 @@ fun ResultTable(
                                 }
                                 .padding(4.dp)
                         ) {
-                            DropdownMenu(
+                            CursorDropdownMenu(
                                 expanded = menuExpanded,
                                 onDismissRequest = {
                                     menuExpanded = false
                                 },
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.surface)
                             ) {
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Outlined.FileOpen,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    text = {
+                                        Text(stringResource(Res.string.openFile))
+                                    },
+                                    onClick = {
+                                        try {
+                                            Desktop.getDesktop().open(File(file.path))
+                                        } catch (_: Exception) {
+                                            filesExists.remove(file.id)
+                                        }
+                                        menuExpanded = false
+                                    }
+                                )
                                 DropdownMenuItem(
                                     leadingIcon = {
                                         Icon(
@@ -457,7 +525,7 @@ fun ResultTable(
                                             filesExists.remove(file.id)
                                             filesDeleted.add(file.id)
                                         }
-
+                                        menuExpanded = false
                                     }
                                 )
                                 if (OS.currentOS() == OS.WINDOWS) {
@@ -479,83 +547,112 @@ fun ResultTable(
                                                 filesExists.remove(file.id)
                                                 filesDeleted.add(file.id)
                                             }
-
+                                            menuExpanded = false
+                                        }
+                                    )
+                                }
+                                if (exportSupported) {
+                                    DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.SystemUpdateAlt,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        text = {
+                                            Text(stringResource(Res.string.LocationWindow_ExportAllRows))
+                                        },
+                                        onClick = {
+                                            exportFile = file.path
+                                            exportMatchers.clear()
+                                            exportMatchers.addAll(file.foundAttributes.keys)
+                                            saveLauncher.launch(
+                                                suggestedName = "${File(file.path).name}_Rows",
+                                                extension = "csv",
+                                                directory = PlatformFile(AppFiles.UserDirPath)
+                                            )
                                         }
                                     )
                                 }
                             }
-                            Checkbox(
-                                checked = selectedFiles.contains(file.id),
-                                onCheckedChange = { checkState ->
-                                    if (checkState) {
-                                        selectedFiles.add(file.id)
-                                    } else {
-                                        selectedFiles.remove(file.id)
-                                    }
-                                },
-                                modifier = Modifier.size(40.dp),
-                                colors = CheckboxDefaults.colors().copy(
-                                    checkedBorderColor = MaterialTheme.colorScheme.primary,
-                                    uncheckedBorderColor = MaterialTheme.colorScheme.primary
-                                ),
-                                enabled = exist
-                            )
-                            Text(
-                                text = file.path
-                                    .replace(task.path.value, "")
-                                    .removePrefix("/")
-                                    .removePrefix("\\")
-                                    .ifEmpty {
-                                        file.path
-                                            .substringAfterLast("/")
-                                            .substringAfterLast("\\")
-                                    },
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                letterSpacing = 0.1.sp,
-                                fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
-                                modifier = Modifier.weight(0.5f),
-                            )
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier
-                                    .weight(0.5f)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
-                                    AttributeCard(
-                                        attribute = attr.first,
-                                        count = attr.second,
-                                        onClick = {
-                                            attributeSelected = attr.first
-                                            fileSelected = file
-                                            longScanMessageBoxVisible = true
+
+                                Checkbox(
+                                    checked = selectedFiles.contains(file.id),
+                                    onCheckedChange = { checkState ->
+                                        if (checkState) {
+                                            selectedFiles.add(file.id)
+                                        } else {
+                                            selectedFiles.remove(file.id)
+                                        }
+                                    },
+                                    modifier = Modifier.size(40.dp),
+                                    colors = CheckboxDefaults.colors().copy(
+                                        checkedBorderColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedBorderColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    enabled = exist
+                                )
+                                Text(
+                                    text = file.path
+                                        .replace(task.path.value, "")
+                                        .removePrefix("/")
+                                        .removePrefix("\\")
+                                        .ifEmpty {
+                                            file.path
+                                                .substringAfterLast("/")
+                                                .substringAfterLast("\\")
                                         },
-                                        enabled = locationSupported && exist
-                                    )
+                                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
+                                    letterSpacing = 0.1.sp,
+                                    fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
+                                    modifier = Modifier.weight(0.5f),
+                                )
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier
+                                        .weight(0.5f)
+                                ) {
+                                    file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
+                                        AttributeCard(
+                                            attribute = attr.first,
+                                            count = attr.second,
+                                            onClick = {
+                                                attributeSelected = attr.first
+                                                fileSelected = file
+                                                longScanMessageBoxVisible = true
+                                            },
+                                            enabled = locationSupported && exist
+                                        )
+                                    }
                                 }
+                                Text(
+                                    text = file.score.toString(),
+                                    modifier = Modifier.weight(0.1f),
+                                    fontSize = 14.sp,
+                                    letterSpacing = 0.1.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = file.count.toString(),
+                                    modifier = Modifier.weight(0.1f),
+                                    fontSize = 14.sp,
+                                    letterSpacing = 0.1.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = file.size.toString(),
+                                    modifier = Modifier.weight(0.1f),
+                                    fontSize = 14.sp,
+                                    letterSpacing = 0.1.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
-                            Text(
-                                text = file.score.toString(),
-                                modifier = Modifier.weight(0.1f),
-                                fontSize = 14.sp,
-                                letterSpacing = 0.1.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = file.count.toString(),
-                                modifier = Modifier.weight(0.1f),
-                                fontSize = 14.sp,
-                                letterSpacing = 0.1.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = file.size.toString(),
-                                modifier = Modifier.weight(0.1f),
-                                fontSize = 14.sp,
-                                letterSpacing = 0.1.sp,
-                                textAlign = TextAlign.Center
-                            )
                         }
                     }
                 }

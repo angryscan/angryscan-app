@@ -334,6 +334,8 @@
     <string name="LocationWindow-SelectAllButton">Select all</string>
     <string name="LocationWindow-ExportRows">Export rows</string>
     <string name="LocationWindow-ExportRowsCount">Rows exported: %1$d</string>
+    <string name="LocationWindow-ExportError">Failed to export rows</string>
+    <string name="LocationWindow-ExportAllRows">Export all rows</string>
     <string name="Location-LongScanTitle">Attribute location deep search</string>
     <string name="Location-LongScanText">Searching for attribute location takes a long time to scan. Are you sure you want to scan it?</string>
     <string name="Location-LineNumber">Line %1$d</string>

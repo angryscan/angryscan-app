@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hwpf.HWPFDocument
 import org.apache.poi.hwpf.HWPFOldDocument
@@ -21,6 +20,7 @@ import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.common.files.extensions.mask
+import org.angryscan.app.scan.common.files.locations.BaseLocation
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -207,19 +207,18 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matcher: IMatcher,
         fastScan: Boolean
-    ): List<Location> {
+    ): List<BaseLocation> {
         var length = 0
         var sample = 0
-        val locations = mutableListOf<Location>()
+        val locations = mutableListOf<BaseLocation>()
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
                 val embeddedNames = mutableListOf<String>()
                 var fallbackText: String? = null
                 var hasEmbeddedObjects = false
-                fun attachLocation(source: Location, embeddedName: String): Location {
+                fun attachLocation(source: BaseLocation, embeddedName: String): BaseLocation {
                     val attachmentLabel = source.attachmentName ?: embeddedName
                     val baseLabel = "Attachment: $attachmentLabel"
                     val locationLabel = if (source.location.isNotBlank()) {
@@ -229,8 +228,7 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                     }
                     return source.copy(
                         location = locationLabel,
-                        attachmentName = attachmentLabel,
-                        isMaskable = false
+                        attachmentName = attachmentLabel
                     )
                 }
 
@@ -264,13 +262,20 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                             embeddedType.findLocation(
                                                 tmpFile.absolutePath,
                                                 engine,
-                                                matcher,
                                                 fastScan
                                             )
                                         }.getOrDefault(emptyList())
                                         if (embeddedLocations.isNotEmpty()) {
                                             embeddedLocations.forEach { location ->
-                                                locations.add(attachLocation(location, realName))
+                                                locations.add(
+                                                    attachLocation(
+                                                        BaseLocation(
+                                                            entry = location.entry,
+                                                            location = location.location,
+                                                            attachmentName = location.attachmentName
+                                                        ), realName
+                                                    )
+                                                )
                                             }
                                             break
                                         }
@@ -297,9 +302,8 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                     .replace("\u000B", "\n")
                                 engine
                                     .scan(text)
-                                    .filter { it.matcher::class == matcher::class }
                                     .forEach {
-                                        locations.add(Location(it, "$typeLabel:$index"))
+                                        locations.add(BaseLocation(it, "$typeLabel:$index"))
                                     }
                                 length += text.length
                                 if (isLengthOverload(length, isActive)) {
@@ -346,7 +350,6 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                     }
                     engine
                         .scan(fallbackText)
-                        .filter { it.matcher::class == matcher::class }
                         .forEach { match ->
                             val locationLabel = if (attachmentName != null) {
                                 "Attachment: $attachmentName, Text"
@@ -354,11 +357,10 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                 "Text"
                             }
                             locations.add(
-                                Location(
+                                BaseLocation(
                                     match,
                                     locationLabel,
-                                    attachmentName = attachmentName,
-                                    isMaskable = attachmentName == null
+                                    attachmentName = attachmentName
                                 )
                             )
                         }
@@ -376,10 +378,9 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                 if (isLengthOverload(str.length, isActive)) {
                                     engine
                                         .scan(str.toString())
-                                        .filter { it.matcher::class == matcher::class }
                                         .forEach {
-                                        locations.add(Location(it, ""))
-                                    }
+                                            locations.add(BaseLocation(it, ""))
+                                        }
                                     str.clear()
                                     sample++
                                     if (isSampleOverload(sample, fastScan, isActive))
@@ -414,9 +415,10 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                                         embeddedType.findLocation(
                                                             tmpFile.absolutePath,
                                                             engine,
-                                                            matcher,
                                                             fastScan
-                                                        )
+                                                        ).map {
+                                                            it as BaseLocation
+                                                        }
                                                     }.getOrDefault(emptyList())
                                                     if (embeddedLocations.isNotEmpty()) {
                                                         embeddedLocations.forEach { location ->
@@ -430,8 +432,7 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                                             locations.add(
                                                                 location.copy(
                                                                     location = locationLabel,
-                                                                    attachmentName = attachmentLabel,
-                                                                    isMaskable = false
+                                                                    attachmentName = attachmentLabel
                                                                 )
                                                             )
                                                         }

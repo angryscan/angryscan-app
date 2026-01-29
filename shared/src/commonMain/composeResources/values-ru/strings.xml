@@ -328,6 +328,8 @@
     <string name="LocationWindow-SelectAllButton">Выбрать всё</string>
     <string name="LocationWindow-ExportRows">Экспортировать строки</string>
     <string name="LocationWindow-ExportRowsCount">Строк экспортировано: %1$d</string>
+    <string name="LocationWindow-ExportError">Ошибка при экспортировании строк</string>
+    <string name="LocationWindow-ExportAllRows">Экспортировать все строки</string>
     <string name="Location-LongScanTitle">Глубокий поиск местонахождения атрибутов</string>
     <string name="Location-LongScanText">Поиск местонахождения атрибутов занимает много времени. Вы уверены, что хотите продолжить?</string>
     <string name="Location-LineNumber">Строка %1$d</string>

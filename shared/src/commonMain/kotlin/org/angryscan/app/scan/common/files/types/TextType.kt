@@ -12,7 +12,8 @@ import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.common.files.extensions.mask
-import org.angryscan.common.engine.IMatcher
+import org.angryscan.app.scan.common.files.locations.TextLocation
+import org.angryscan.app.ui.strings.readableName
 import org.angryscan.common.engine.IScanEngine
 import org.mozilla.universalchardet.UniversalDetector
 import java.io.File
@@ -145,13 +146,12 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matcher: IMatcher,
         fastScan: Boolean
-    ): List<Location> {
+    ): List<TextLocation> {
         var length = 0
         var sample = 0
         var lineNumber = 1
-        val locations = mutableListOf<Location>()
+        val locations = mutableListOf<TextLocation>()
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -160,10 +160,13 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                     var line = reader.readLine()
                     while (line != null) {
                         engine
-                            .scan(line)
-                            .filter { it.matcher::class == matcher::class }
+                            .scan(line + "\n")
                             .forEach {
-                                locations.add(Location(it, "N $lineNumber"))
+                                locations.add(TextLocation(
+                                    entry = it,
+                                    line = lineNumber,
+                                    position = it.startPosition
+                                ))
                             }
 
                         length += line.length
@@ -190,14 +193,12 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
         locations: List<Location>
     ): Int {
         val sortedLocations = locations
+            .map { it as TextLocation }
             .filter { it.isMaskable() }
-            .sortedBy { it.location.substring(2).toInt() }
-        var lineNumber = 1
+            .sortedBy { it.line }
+        var currentLine = 1
         var locationIndex = 0
-        var locationRowIndex = sortedLocations[locationIndex]
-            .location
-            .substring(2)
-            .toInt()
+        var locationLine = sortedLocations[locationIndex].line
         var locationsMasked = 0
 
         withContext(Dispatchers.IO) {
@@ -215,7 +216,7 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                             while (line != null) {
                                 var writeLine = line
 
-                                while (lineNumber == locationRowIndex) {
+                                while (currentLine == locationLine) {
                                     val tmp = writeLine
                                         .replaceFirst(
                                             sortedLocations[locationIndex].entry.value,
@@ -229,18 +230,18 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                     }
                                     locationIndex++
                                     if (locationIndex < sortedLocations.size) {
-                                        locationRowIndex = sortedLocations[locationIndex]
+                                        locationLine = sortedLocations[locationIndex]
                                             .location
                                             .substring(2)
                                             .toInt()
                                     } else {
-                                        locationRowIndex = -1
+                                        locationLine = -1
                                     }
                                 }
                                 writer.write(writeLine)
                                 writer.newLine()
 
-                                lineNumber++
+                                currentLine++
                                 line = reader.readLine()
                             }
                         }
@@ -255,10 +256,12 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
         outputFile: String
     ): Int {
         val rows = locations
-            .groupBy { it.location.substring(2).toInt() }
-            .map { it.key }
-            .sorted()
-        var lineNumber = 1
+            .map { it as TextLocation }
+            .groupBy { it.line }
+            .map { it.key to it.value }
+            .sortedBy { it.first }
+
+        var currentLine = 1
         var rowIndex = 0
         var rowsExported = 0
 
@@ -275,14 +278,17 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                         .use { reader ->
                             var line = reader.readLine()
                             while (line != null && rowIndex < rows.size) {
-                                if (lineNumber == rows[rowIndex]) {
+                                if (currentLine == rows[rowIndex].first) {
+                                    //Write matchers names
+                                    writer.write(rows[rowIndex].second.map { it.entry.matcher.readableName() }.joinToString(", ") + ";")
+                                    //Write row
                                     writer.write(line)
                                     writer.newLine()
                                     rowIndex++
                                     rowsExported++
                                 }
 
-                                lineNumber++
+                                currentLine++
                                 line = reader.readLine()
                             }
                         }
