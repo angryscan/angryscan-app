@@ -27,6 +27,7 @@ import org.angryscan.app.resources.*
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.files.Location
 import org.angryscan.app.scan.common.files.LocationFinder
+import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
@@ -61,19 +62,21 @@ fun AttributeLocationWindow(
 
     val selectedLocations = remember { mutableStateListOf<Location>() }
 
-    val fileType = IFileType.getFileType(filePath)
-    val maskingSupported = fileType.any { ft ->
+    val fileTypes = IFileType.getFileType(filePath)
+    val maskingSupported = fileTypes.any { ft ->
         LocationFinder.isMaskSupported(ft) && attribute is IMask
     }
-    val exportSupported = fileType.any { ft ->
+    val exportSupported = fileTypes.any { ft ->
         LocationFinder.isExportSupported(ft)
     }
 
+    val requireKeywords = fileTypes.requireKeywords(File(filePath).extension)
+
     coroutineScope.launch {
         searching = true
-        var engine = scanSettings.engine.value.getEngine(listOf(attribute))
+        var engine = scanSettings.engine.value.getEngine(listOf(attribute), requireKeywords)
         while (engine.matchers.isEmpty()) {
-            engine = engine.fallback().getEngine(listOf(attribute))
+            engine = engine.fallback().getEngine(listOf(attribute), requireKeywords)
 
             if (engine::class == scanSettings.engine) {
                 onClose(false)
@@ -87,8 +90,7 @@ fun AttributeLocationWindow(
             locations.addAll(
                 LocationFinder.findLocations(
                     filePath,
-                    engine,
-                    attribute
+                    engine
                 )
             )
             selectedLocations.addAll(

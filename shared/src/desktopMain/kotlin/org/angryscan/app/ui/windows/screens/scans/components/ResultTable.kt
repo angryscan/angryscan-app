@@ -35,6 +35,7 @@ import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.files.LocationFinder
+import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.ui.windows.components.MessageBox
@@ -153,12 +154,15 @@ fun ResultTable(
         coroutineScope.launch {
             try {
                 if (file != null) {
-                    val engine = scanSettings.engine.value.getEngine(exportMatchers)
+                    val requireKeyword = IFileType
+                        .getFileType(file.file)
+                        .requireKeywords(file.file.extension)
+                    val engine = scanSettings.engine.value.getEngine(exportMatchers, requireKeyword)
                     val rows = LocationFinder.exportRows(
                         inputFile = exportFile!!,
                         engine = engine,
-                        matchers = exportMatchers,
-                        outputFile = file.path)
+                        outputFile = file.path
+                    )
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
                             getString(

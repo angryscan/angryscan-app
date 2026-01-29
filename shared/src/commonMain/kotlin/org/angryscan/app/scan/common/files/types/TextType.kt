@@ -14,7 +14,6 @@ import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.common.files.extensions.mask
 import org.angryscan.app.scan.common.files.locations.TextLocation
 import org.angryscan.app.ui.strings.readableName
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.mozilla.universalchardet.UniversalDetector
 import java.io.File
@@ -147,14 +146,12 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matchers: List<IMatcher>,
         fastScan: Boolean
     ): List<TextLocation> {
         var length = 0
         var sample = 0
         var lineNumber = 1
         val locations = mutableListOf<TextLocation>()
-        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -163,8 +160,7 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                     var line = reader.readLine()
                     while (line != null) {
                         engine
-                            .scan(line)
-                            .filter { it.matcher::class in matchersClasses }
+                            .scan(line + "\n")
                             .forEach {
                                 locations.add(TextLocation(
                                     entry = it,

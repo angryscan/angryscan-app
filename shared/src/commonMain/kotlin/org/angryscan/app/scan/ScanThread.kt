@@ -7,6 +7,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
@@ -138,10 +139,7 @@ class ScanThread : KoinComponent {
                     }
 
                 // Check if file requires requireKeywords = false
-                val requireKeywords = !fileTypes.any {
-                    it is XLSXType || it is XLSType || it is ODSType ||
-                    (it is TextType && fileObject.extension.lowercase() == "csv")
-                }
+                val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
 
                 val engines: MutableList<IScanEngine> = mutableListOf()
                 scanSettings.value.engine.value
@@ -150,7 +148,7 @@ class ScanThread : KoinComponent {
                         if (it.matchers.isNotEmpty())
                             engines.add(it)
                     }
-                val iMatchers = if(engines.isNotEmpty())
+                val iMatchers = if (engines.isNotEmpty())
                     engines[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
                 else
                     matchers.map { it.key }.toMutableList()
@@ -160,12 +158,12 @@ class ScanThread : KoinComponent {
                     do {
                         val e = fbe
                             .getEngine(iMatchers, requireKeywords = requireKeywords)
-                        if(e.matchers.isNotEmpty()) {
+                        if (e.matchers.isNotEmpty()) {
                             engines.add(e)
                             iMatchers.removeAll(e.matchers)
                         }
                         fbe = e.fallback()
-                    } while(iMatchers.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
+                    } while (iMatchers.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
                 }
 
 

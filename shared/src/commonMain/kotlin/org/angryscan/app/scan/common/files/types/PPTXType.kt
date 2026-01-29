@@ -8,7 +8,6 @@ import org.angryscan.app.scan.common.Document
 import org.angryscan.app.scan.common.files.IFileLocation
 import org.angryscan.app.scan.common.files.LocationFinder.ScanException
 import org.angryscan.app.scan.common.files.locations.BaseLocation
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.xslf.usermodel.XMLSlideShow
 import org.apache.poi.xslf.usermodel.XSLFTable
@@ -110,13 +109,11 @@ object PPTXType : FileType(), IFileLocation {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matchers: List<IMatcher>,
         fastScan: Boolean
     ): List<BaseLocation> {
         var length = 0
         var sample = 0
         val locations = mutableListOf<BaseLocation>()
-        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -126,7 +123,6 @@ object PPTXType : FileType(), IFileLocation {
                             if (slide.slideName != null) {
                                 engine
                                     .scan(slide.slideName)
-                                    .filter { it.matcher::class in matchersClasses }
                                     .forEach {
                                         locations.add(
                                             BaseLocation(
@@ -141,7 +137,6 @@ object PPTXType : FileType(), IFileLocation {
                             if (slide.title != null) {
                                 engine
                                     .scan(slide.title)
-                                    .filter { it.matcher::class in matchersClasses }
                                     .forEach {
                                         locations.add(
                                             BaseLocation(
@@ -159,7 +154,6 @@ object PPTXType : FileType(), IFileLocation {
                                     is XSLFTextBox -> {
                                         engine
                                             .scan(shape.text)
-                                            .filter { it.matcher::class in matchersClasses }
                                             .forEach {
                                                 locations.add(
                                                     BaseLocation(
@@ -182,7 +176,6 @@ object PPTXType : FileType(), IFileLocation {
                                             row.cells.forEach { cell ->
                                                 engine
                                                     .scan(cell.text)
-                                                    .filter { it.matcher::class in matchersClasses }
                                                     .forEach {
                                                         locations.add(
                                                             BaseLocation(
@@ -206,7 +199,6 @@ object PPTXType : FileType(), IFileLocation {
                             slide.comments.forEach { comment ->
                                 engine
                                     .scan(comment.text)
-                                    .filter { it.matcher::class in matchersClasses }
                                     .forEach {
                                         locations.add(
                                             BaseLocation(

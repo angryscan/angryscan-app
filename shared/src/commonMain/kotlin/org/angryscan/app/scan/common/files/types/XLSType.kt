@@ -14,7 +14,6 @@ import org.angryscan.app.scan.common.files.extensions.isMaskable
 import org.angryscan.app.scan.common.files.extensions.mask
 import org.angryscan.app.scan.common.files.locations.XLSLocation
 import org.angryscan.app.ui.strings.readableName
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.CellType
@@ -89,13 +88,11 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matchers: List<IMatcher>,
         fastScan: Boolean
     ): List<XLSLocation> {
         var length = 0
         var sample = 0
         val locations = mutableListOf<XLSLocation>()
-        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -117,7 +114,6 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
 
                                         engine
                                             .scan(text)
-                                            .filter { it.matcher::class in matchersClasses }
                                             .forEach {
                                                 locations.add(
                                                     XLSLocation(

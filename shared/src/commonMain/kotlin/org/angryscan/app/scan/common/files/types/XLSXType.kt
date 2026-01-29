@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.dhatim.fastexcel.reader.ReadableWorkbook
 import org.angryscan.app.scan.common.Document
@@ -84,13 +83,11 @@ object XLSXType : FileType(), IMaskFile, IFileLocation, IExportLocations {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matchers: List<IMatcher>,
         fastScan: Boolean
     ): List<XLSLocation> {
         var length = 0
         var sample = 0
         val locations = mutableListOf<XLSLocation>()
-        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -106,7 +103,6 @@ object XLSXType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                             if (cell != null) {
                                                 engine
                                                     .scan(cell.text)
-                                                    .filter { it.matcher::class in matchersClasses }
                                                     .forEach {
                                                         locations.add(XLSLocation(
                                                             entry = it,

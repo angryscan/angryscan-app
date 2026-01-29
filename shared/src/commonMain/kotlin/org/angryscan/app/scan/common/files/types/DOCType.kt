@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hwpf.HWPFDocument
 import org.apache.poi.hwpf.HWPFOldDocument
@@ -208,13 +207,11 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matchers: List<IMatcher>,
         fastScan: Boolean
     ): List<BaseLocation> {
         var length = 0
         var sample = 0
         val locations = mutableListOf<BaseLocation>()
-        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -265,7 +262,6 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                             embeddedType.findLocation(
                                                 tmpFile.absolutePath,
                                                 engine,
-                                                matchers,
                                                 fastScan
                                             )
                                         }.getOrDefault(emptyList())
@@ -306,7 +302,6 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                     .replace("\u000B", "\n")
                                 engine
                                     .scan(text)
-                                    .filter { it.matcher::class in matchersClasses }
                                     .forEach {
                                         locations.add(BaseLocation(it, "$typeLabel:$index"))
                                     }
@@ -355,7 +350,6 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                     }
                     engine
                         .scan(fallbackText)
-                        .filter { it.matcher::class in matchersClasses }
                         .forEach { match ->
                             val locationLabel = if (attachmentName != null) {
                                 "Attachment: $attachmentName, Text"
@@ -384,7 +378,6 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                 if (isLengthOverload(str.length, isActive)) {
                                     engine
                                         .scan(str.toString())
-                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
                                             locations.add(BaseLocation(it, ""))
                                         }
@@ -422,7 +415,6 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                                         embeddedType.findLocation(
                                                             tmpFile.absolutePath,
                                                             engine,
-                                                            matchers,
                                                             fastScan
                                                         ).map {
                                                             it as BaseLocation

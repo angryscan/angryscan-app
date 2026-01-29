@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.apache.poi.hwpf.HWPFDocument
 import org.apache.poi.hwpf.extractor.WordExtractor
@@ -273,13 +272,11 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
     override suspend fun findLocation(
         filePath: String,
         engine: IScanEngine,
-        matchers: List<IMatcher>,
         fastScan: Boolean
     ): List<BaseLocation> {
         var length = 0
         var sample = 0
         val locations = mutableListOf<BaseLocation>()
-        val matchersClasses = matchers.map { it::class }
         try {
             withContext(Dispatchers.IO) {
                 val file = File(filePath)
@@ -309,7 +306,6 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                     embeddedType.findLocation(
                                         embeddedFile.absolutePath,
                                         engine,
-                                        matchers,
                                         fastScan
                                     )
                                 }.getOrDefault(emptyList())
@@ -348,7 +344,6 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                             }
                             engine
                                 .scan(text)
-                                .filter { it.matcher::class in matchersClasses }
                                 .forEach {
                                     locations.add(BaseLocation(it, "$elemType, Position:$elemPosition"))
                                 }
@@ -424,7 +419,6 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.paragraphText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
                                             locations.add(BaseLocation(it, "Paragraph:$index"))
                                         }
@@ -439,7 +433,6 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.commentsText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
                                             locations.add(BaseLocation(it, "Comment:$index"))
                                         }
@@ -454,7 +447,6 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.footnoteText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
                                             locations.add(BaseLocation(it, "Footnote:$index"))
                                         }
@@ -469,7 +461,6 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                 extractor.endnoteText.forEachIndexed { index, text ->
                                     engine
                                         .scan(text)
-                                        .filter { it.matcher::class in matchersClasses }
                                         .forEach {
                                             locations.add(BaseLocation(it, "Endnote:$index"))
                                         }
