@@ -25,6 +25,8 @@ import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.OS
 import org.angryscan.app.common.ScanSettings
@@ -38,14 +40,17 @@ import org.angryscan.app.scan.common.files.LocationFinder
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.getEngine
+import org.angryscan.app.ui.extensions.fileDateFormat
 import org.angryscan.app.ui.windows.components.MessageBox
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
 import java.io.File
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
 @Composable
 fun ResultTable(
     taskFilesViewModel: TaskFilesViewModel,
@@ -566,8 +571,9 @@ fun ResultTable(
                                             exportFile = file.path
                                             exportMatchers.clear()
                                             exportMatchers.addAll(file.foundAttributes.keys)
+                                            val time = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                                             saveLauncher.launch(
-                                                suggestedName = "${File(file.path).name}_Rows",
+                                                suggestedName = "${File(file.path).name}_Rows_${fileDateFormat.format(time)}",
                                                 extension = "csv",
                                                 directory = PlatformFile(AppFiles.UserDirPath)
                                             )

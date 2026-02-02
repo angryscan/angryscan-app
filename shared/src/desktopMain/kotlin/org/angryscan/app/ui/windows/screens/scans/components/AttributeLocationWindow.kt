@@ -21,6 +21,8 @@ import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.*
@@ -31,6 +33,7 @@ import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
+import org.angryscan.app.ui.extensions.fileDateFormat
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DesktopWindowShapes
 import org.angryscan.app.ui.windows.components.TitleBar
@@ -41,7 +44,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import java.awt.Desktop
 import java.io.File
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun AttributeLocationWindow(
     filePath: String,
@@ -324,8 +330,9 @@ fun AttributeLocationWindow(
                                                         .clickable {
                                                             if (!working) {
                                                                 working = true
+                                                                val time = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                                                                 saveLauncher.launch(
-                                                                    suggestedName = "${File(filePath).name}_Rows",
+                                                                    suggestedName = "${File(filePath).name}_Rows_${fileDateFormat.format(time)}",
                                                                     extension = "csv",
                                                                     directory = PlatformFile(AppFiles.UserDirPath)
                                                                 )

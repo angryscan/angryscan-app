@@ -25,16 +25,8 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
-import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.ScanSettings
@@ -47,10 +39,17 @@ import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.ui.dialogs.DesktopAlertDialog
 import org.angryscan.app.ui.extensions.color
+import org.angryscan.app.ui.extensions.fileDateFormat
 import org.angryscan.app.ui.extensions.icon
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
 import org.angryscan.app.ui.windows.screens.scans.components.*
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import java.awt.datatransfer.StringSelection
 import kotlin.time.Clock
 import kotlin.time.DurationUnit
@@ -168,20 +167,6 @@ fun ScanResultScreen(
         targetValue = if (selectedFiles > 0) (scanned + skipped).toFloat() / selectedFiles else 0f,
         animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
     )
-
-    val fileDateFormat = LocalDateTime.Format {
-        year()
-        char('-')
-        monthNumber()
-        char('-')
-        day()
-        char('_')
-        hour()
-        char('-')
-        minute()
-        char('-')
-        second()
-    }
 
     val dialogSettings = createDialogSettings()
 
