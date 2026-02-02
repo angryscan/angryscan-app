@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -22,6 +23,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger { }
 
 @Serializable
 object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
@@ -72,7 +75,8 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Filed to scan XLS file ${file.absolutePath}: ${e.message}" }
             res.skip()
             return res
         }
@@ -101,20 +105,52 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                         dataFormatter.isEmulateCSV = true
                         workbook.forEach workbook@{ sheet ->
                             sheet?.forEach { row ->
+                                var before = ""
                                 row?.forEach { cell ->
                                     if (cell != null) {
                                         val text = when (cell.cellType) {
                                             CellType.NUMERIC, CellType.STRING -> dataFormatter.formatCellValue(cell)
-
                                             else -> ""
                                         }
 
+                                        var after = ""
+
                                         engine
                                             .scan(text)
+                                            .also { r ->
+                                                if (r.isNotEmpty() && cell.address.column < row.count()) {
+                                                    var i = 1
+                                                    while (cell.address.column + i < row.count()) {
+                                                        val c = row.getCell(cell.address.column + i)
+                                                        if (c != null) {
+                                                            after = when (c.cellType) {
+                                                                CellType.NUMERIC, CellType.STRING -> dataFormatter.formatCellValue(
+                                                                    c
+                                                                )
+
+                                                                else -> ""
+                                                            }.let {
+                                                                it.substring(
+                                                                    startIndex = 0,
+                                                                    endIndex = (it.length - 1).coerceAtMost(
+                                                                        19
+                                                                    )
+                                                                )
+                                                            }
+                                                            break
+                                                        }
+                                                        i++
+                                                    }
+
+                                                }
+                                            }
                                             .forEach {
                                                 locations.add(
                                                     XLSLocation(
-                                                        entry = it,
+                                                        entry = it.copy(
+                                                            after = after,
+                                                            before = before
+                                                        ),
                                                         sheet = sheet.sheetName,
                                                         col = cell.address.column,
                                                         row = cell.address.row,
@@ -129,6 +165,10 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                             if (isSampleOverload(sample, fastScan, isActive))
                                                 return@withContext
                                         }
+                                        before = text
+                                            .substring(
+                                                (text.length - 20).coerceAtLeast(0)
+                                            )
                                     }
                                 }
                             }
@@ -136,7 +176,8 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Failed to find locations in XLS file ${filePath}: ${e.message}" }
             throw ScanException
         }
         return locations
@@ -166,7 +207,9 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
 
                                 CellType.NUMERIC -> cell.numericCellValue.toString()
 
-                                else -> { "" }
+                                else -> {
+                                    ""
+                                }
                             }
                             val replaced = value.replace(location.entry.value, location.mask())
                             if (value != replaced) {
@@ -205,7 +248,8 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                 val rows = sortedLocations[sheetName]!!.groupBy { it.row }
                                 rows.keys.forEach { rowNum ->
                                     val row = sheet.getRow(rowNum)
-                                    writer.write(rows[rowNum]!!.map { it.entry.matcher.readableName() }.joinToString(", ") + ";")
+                                    writer.write(rows[rowNum]!!.map { it.entry.matcher.readableName() }
+                                        .joinToString(", ") + ";")
                                     val writeRow = row.joinToString(";") { cell ->
                                         try {
                                             when (cell.cellType) {
@@ -229,7 +273,8 @@ object XLSType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                                                     cell.stringCellValue
                                                 }
                                             }
-                                        } catch (_: Exception) {
+                                        } catch (e: Exception) {
+                                            logger.error { "Failed to export row ${rowNum} in sheet $sheetName: ${e.message}" }
                                             ""
                                         }
                                     }

@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -20,6 +21,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger {  }
 
 @Serializable
 object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
@@ -131,7 +134,8 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Filed to scan Text file ${file.absolutePath}: ${e.message}" }
             res.skip()
             return res
         }
@@ -181,7 +185,8 @@ object TextType : FileType(), IMaskFile, IFileLocation, IExportLocations {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Filed to find locations in Text file ${filePath}: ${e.message}" }
             throw ScanException
         }
         return locations

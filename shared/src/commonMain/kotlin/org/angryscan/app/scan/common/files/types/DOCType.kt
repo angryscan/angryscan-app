@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -25,6 +26,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger {  }
 
 @Serializable
 object DOCType : FileType(), IMaskFile, IFileLocation {
@@ -77,8 +80,8 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                         } finally {
                             tmpFile.delete()
                         }
-                    } catch (_: Exception) {
-                        // Not an embedded OLE Package directory - traverse deeper.
+                    } catch (e: Exception) {
+                        logger.debug { "Not an embedded OLE Package directory - traverse deeper. ${file.absolutePath}. ${e.message}" }
                         scanEmbeddedFromDirectory(entry)
                     }
                 }
@@ -109,11 +112,12 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                     POIFSFileSystem(file).use { fs ->
                         scanEmbeddedFromDirectory(fs.root)
                     }
-                } catch (_: Exception) {
-                    // Skip embedded scan errors; main text scan result is still valid.
+                } catch (e: Exception) {
+                    logger.error { "Failed to scan embedded OLE packages inside DOC. ${file.absolutePath}. ${e.message}" }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.debug { "Filed to scan DOC with WordExtractor. ${file.absolutePath}. ${e.message}" }
             try {
                 withContext(Dispatchers.IO) {
                     POIFSFileSystem(file).use { inputStream ->
@@ -138,11 +142,12 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                         POIFSFileSystem(file).use { fs ->
                             scanEmbeddedFromDirectory(fs.root)
                         }
-                    } catch (_: Exception) {
-                        // Skip embedded scan errors.
+                    } catch (e: Exception) {
+                        logger.error { "Failed to scan embedded OLE packages in fallback path inside DOC. ${file.absolutePath}. ${e.message}" }
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error { "Filed to scan DOC with HWPFOldDocument. ${file.absolutePath}. ${e.message}" }
                 res.skip()
                 return res
             }
@@ -283,7 +288,8 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                 } finally {
                                     tmpFile.delete()
                                 }
-                            } catch (_: Exception) {
+                            } catch (e: Exception) {
+                                logger.debug { "Failed to scan embedded file ${entry.name}: ${e.message}" }
                                 if (entry.name.isNotBlank()) {
                                     embeddedNames.add(entry.name)
                                 }
@@ -338,8 +344,8 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                     POIFSFileSystem(file).use { fs ->
                         scanEmbeddedFromDirectory(fs.root)
                     }
-                } catch (_: Exception) {
-                    // Skip embedded scan errors.
+                } catch (e: Exception) {
+                    logger.error { "Failed to scan embedded files in ${file.absolutePath}: ${e.message}" }
                 }
 
                 if (locations.isEmpty() && !fallbackText.isNullOrBlank()) {
@@ -366,7 +372,8 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                         }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.debug { "Failed to scan DOC file as HWPF ${filePath}: ${e.message}" }
             try {
                 withContext(Dispatchers.IO) {
                     val file = File(filePath)
@@ -442,7 +449,8 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
                                             } finally {
                                                 tmpFile.delete()
                                             }
-                                        } catch (_: Exception) {
+                                        } catch (e: Exception) {
+                                            logger.error { "Failed to scan embedded file ${entry.name}: ${e.message}" }
                                             scanEmbeddedFromDirectory(entry)
                                         }
                                     }
@@ -451,11 +459,12 @@ object DOCType : FileType(), IMaskFile, IFileLocation {
 
                             scanEmbeddedFromDirectory(fs.root)
                         }
-                    } catch (_: Exception) {
-                        // Skip embedded scan errors.
+                    } catch (e: Exception) {
+                        logger.error { "Failed to scan embedded file ${file.absolutePath}: ${e.message}" }
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error { "Failed to find locations in DOC file ${filePath}: ${e.message}" }
                 throw ScanException
             }
         }

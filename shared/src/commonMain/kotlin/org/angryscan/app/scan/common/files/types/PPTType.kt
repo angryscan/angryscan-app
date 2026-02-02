@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -15,6 +16,8 @@ import org.apache.poi.hslf.usermodel.HSLFTextBox
 import java.io.File
 import java.io.FileInputStream
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger { }
 
 @Serializable
 object PPTType : FileType(), IFileLocation {
@@ -93,7 +96,8 @@ object PPTType : FileType(), IFileLocation {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Error while scanning ppt ${file.absolutePath}: ${e.message}" }
             res.skip()
             return res
         }
@@ -216,7 +220,8 @@ object PPTType : FileType(), IFileLocation {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Error while finding locations in ppt ${filePath}: ${e.message}" }
             throw ScanException
         }
         return locations

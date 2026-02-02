@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -15,6 +16,8 @@ import org.apache.poi.xslf.usermodel.XSLFTextBox
 import java.io.File
 import java.io.FileInputStream
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger {  }
 
 @Serializable
 object PPTXType : FileType(), IFileLocation {
@@ -93,7 +96,8 @@ object PPTXType : FileType(), IFileLocation {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Failed to scan PPTX file ${file.absolutePath}: ${e.message}" }
             res.skip()
             return res
         }
@@ -217,7 +221,8 @@ object PPTXType : FileType(), IFileLocation {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Failed to find locations in PPTX file ${filePath}: ${e.message}" }
             throw ScanException
         }
         return locations
