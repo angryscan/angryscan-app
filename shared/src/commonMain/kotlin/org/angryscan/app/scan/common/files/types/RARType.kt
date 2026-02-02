@@ -1,6 +1,7 @@
 package org.angryscan.app.scan.common.files.types
 
 import com.github.junrar.Archive
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -9,6 +10,8 @@ import org.angryscan.common.engine.IScanEngine
 import java.io.File
 import java.io.IOException
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger { }
 
 @Serializable
 object RARType: FileType() {
@@ -58,7 +61,8 @@ object RARType: FileType() {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Error while scanning rar ${file.absolutePath}: ${e.message}" }
             if (res.isEmpty()) {
                 res.skip()
                 return res

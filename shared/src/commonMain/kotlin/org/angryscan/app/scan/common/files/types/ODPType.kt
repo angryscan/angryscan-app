@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -9,6 +10,8 @@ import org.angryscan.common.engine.IScanEngine
 import org.odftoolkit.simple.PresentationDocument
 import java.io.File
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger {  }
 
 @Serializable
 @Suppress("unused")
@@ -103,7 +106,8 @@ object ODPType: FileType() {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Filed to scan ODP file ${file.absolutePath}: ${e.message}" }
             res.skip()
             return res
         }

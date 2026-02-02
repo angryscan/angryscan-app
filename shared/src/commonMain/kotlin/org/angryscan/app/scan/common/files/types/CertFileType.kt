@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -12,6 +13,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.security.cert.CertificateFactory
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger { }
 
 @Serializable
 enum class CertFileType: IFileType {
@@ -100,7 +103,8 @@ enum class CertFileType: IFileType {
                     ).getDocumentFields()
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Error while scanning pkcs ${file.absolutePath}: ${e.message}" }
             res + scanASCII(
                 file,
                 context,
