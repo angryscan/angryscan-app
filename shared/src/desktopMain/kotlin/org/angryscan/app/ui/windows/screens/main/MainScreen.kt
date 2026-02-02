@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.subscreens.AIModelsScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
@@ -100,6 +101,24 @@ fun MainScreen(
                 }
                 composable<MainScreenConnector.HTTP> {
                     HTTPScreen(
+                        navController = navController,
+                        settingsExpanded = settingsExpanded,
+                        expandSettings = {
+                            if (scanStateExpanded)
+                                scanStateExpanded = false
+                            settingsExpandedState.value = true
+                        },
+                        hideSettings = {
+                            settingsExpandedState.value = false
+                        },
+                        expandScanState = { taskId ->
+                            scanStateExpanded = false
+                            showScan(taskId)
+                        }
+                    )
+                }
+                composable<MainScreenConnector.AIModels> {
+                    AIModelsScreen(
                         navController = navController,
                         settingsExpanded = settingsExpanded,
                         expandSettings = {

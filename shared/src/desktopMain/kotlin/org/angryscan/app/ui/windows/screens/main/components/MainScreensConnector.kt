@@ -7,4 +7,5 @@ sealed class MainScreenConnector{
     @Serializable object FileShare
     @Serializable object S3
     @Serializable object HTTP
+    @Serializable object AIModels
 }

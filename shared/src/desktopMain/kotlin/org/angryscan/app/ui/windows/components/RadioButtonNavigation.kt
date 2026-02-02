@@ -40,13 +40,15 @@ fun RadioButtonNavigation(
         destination?.hasRoute(MainScreenConnector.FileShare::class) == true -> MainScreenConnector.FileShare
         destination?.hasRoute(MainScreenConnector.S3::class) == true -> MainScreenConnector.S3
         destination?.hasRoute(MainScreenConnector.HTTP::class) == true -> MainScreenConnector.HTTP
+        destination?.hasRoute(MainScreenConnector.AIModels::class) == true -> MainScreenConnector.AIModels
         else -> MainScreenConnector.FileShare
     }
     
     val routes = listOf(
         MainScreenConnector.FileShare,
         MainScreenConnector.S3,
-        MainScreenConnector.HTTP
+        MainScreenConnector.HTTP,
+        MainScreenConnector.AIModels
     )
     
     Row(
@@ -62,6 +64,7 @@ fun RadioButtonNavigation(
                     MainScreenConnector.FileShare -> "File Share"
                     MainScreenConnector.S3 -> "AWS S3"
                     MainScreenConnector.HTTP -> "HTTP"
+                    MainScreenConnector.AIModels -> "AI Models"
                     else -> "Unknown"
                 },
                 onClick = { 

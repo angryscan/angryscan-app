@@ -71,9 +71,15 @@ class ScreenStateSettings : KoinComponent {
         var fastScan: MutableState<Boolean> = mutableStateOf(false)
     )
 
+    @Serializable
+    data class AIModelsScreenState(
+        var path: String = ""
+    )
+
     var fileShareScreenState = FileShareScreenState()
     var s3ScreenState = S3ScreenState()
     var httpScreenState = HTTPScreenState()
+    var aimodelsScreenState = AIModelsScreenState()
 
     constructor() {
         val userSignatureSettings by inject<UserSignatureSettings>()
@@ -122,6 +128,9 @@ class ScreenStateSettings : KoinComponent {
                     prop.httpScreenState.userSignatures.filter { it in userSignatureSettings.userSignatures }
                 )
                 this.httpScreenState.fastScan = prop.httpScreenState.fastScan
+
+                // Restore AIModelsScreen state
+                this.aimodelsScreenState.path = prop.aimodelsScreenState.path
             }
         } catch (e: Exception) {
             logger.error(e) {
