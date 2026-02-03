@@ -159,6 +159,11 @@ fun ResultTable(
         coroutineScope.launch {
             try {
                 if (file != null) {
+                    snackbarHostState.showSnackbar(
+                        getString(
+                            Res.string.LocationWindow_ExportRowsStarted
+                        )
+                    )
                     val requireKeyword = IFileType
                         .getFileType(file.file)
                         .requireKeywords(file.file.extension)
@@ -173,8 +178,13 @@ fun ResultTable(
                             getString(
                                 Res.string.LocationWindow_ExportRowsCount,
                                 rows
-                            )
-                        )
+                            ),
+                            actionLabel = getString(Res.string.openFile)
+                        ).run {
+                            if(this == SnackbarResult.ActionPerformed) {
+                                Desktop.getDesktop().open(File(file.path))
+                            }
+                        }
                     }
                 }
             } catch (_: Exception) {
@@ -577,6 +587,7 @@ fun ResultTable(
                                                 extension = "csv",
                                                 directory = PlatformFile(AppFiles.UserDirPath)
                                             )
+                                            menuExpanded = false
                                         }
                                     )
                                 }
