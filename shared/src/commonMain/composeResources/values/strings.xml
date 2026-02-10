@@ -282,10 +282,14 @@
     <string name="Task-Progress">Progress: %1$s%</string>
     <string name="Task-TotalFiles">Total files</string>
     <string name="Task-SelectedFiles">Selected files</string>
+    <string name="Task-FilesScanned">Files scanned</string>
+    <string name="Task-Failed">Failed</string>
     <string name="Task-FoundFiles">Found files</string>
     <string name="Task-FolderSize">Folder size</string>
     <string name="Task-FoundAttributes">Found attributes:</string>
     <string name="Task-ScanTime">Scan time</string>
+
+    <string name="Connector-AIModels">AI Models</string>
 
     <string name="TaskStateChipFilter-Active">Active</string>
     <string name="TaskStateChipFilter-Paused">Paused</string>

@@ -1,15 +1,12 @@
 package org.angryscan.app.scan
 
+import MigrationUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.runBlocking
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.db.DatabaseConnector
-import org.angryscan.app.db.models.TaskFileExtensions
-import org.angryscan.app.db.models.TaskFileScanResults
-import org.angryscan.app.db.models.TaskFiles
-import org.angryscan.app.db.models.TaskMatchers
-import org.angryscan.app.db.models.Tasks
+import org.angryscan.app.db.models.*
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.exception.FlywayValidateException
 import org.jetbrains.exposed.sql.ExperimentalDatabaseMigrationApi
@@ -18,7 +15,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
-import kotlin.getValue
 import kotlin.io.path.absolutePathString
 
 object DatabaseMigration: KoinComponent {
@@ -53,6 +49,14 @@ object DatabaseMigration: KoinComponent {
                 TaskFileScanResults
             )
 
+            try {
+                exec("ALTER TABLE Tasks ADD COLUMN result_json TEXT")
+                logger.info { "Added result_json column to Tasks" }
+            } catch (e: Exception) {
+                if (!e.message.orEmpty().contains("duplicate column", ignoreCase = true)) {
+                    logger.debug { "result_json column: ${e.message}" }
+                }
+            }
 
             val statements = MigrationUtils.statementsRequiredForDatabaseMigration(Tasks, withLogs = false)
             if (statements.isNotEmpty()) {

@@ -4,10 +4,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Search
@@ -25,10 +22,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.path
 import io.modelaudit.scanFolder
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.*
+import org.angryscan.app.db.models.TaskState
+import org.angryscan.app.resources.MainScreen_FolderPickerTitle
+import org.angryscan.app.resources.MainScreen_ScanStartButton
+import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
+import org.angryscan.app.resources.Res
+import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.TaskEntityViewModel
+import org.angryscan.app.scan.common.connectors.ConnectorAIModels
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.windows.components.RadioButtonNavigation
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
@@ -46,6 +49,7 @@ fun AIModelsScreen(
     hideSettings: () -> Unit,
     expandScanState: (Int) -> Unit
 ) {
+    val scanService = koinInject<ScanService>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
     var path by remember { mutableStateOf(screenStateSettings.aimodelsScreenState.path) }
 
@@ -67,7 +71,6 @@ fun AIModelsScreen(
     var selectPathError by remember { mutableStateOf(false) }
     var scanNotCorrectPath by remember { mutableStateOf(false) }
     var scanInProgress by remember { mutableStateOf(false) }
-    var scanResult by remember { mutableStateOf<String?>(null) }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val isOnAIModelsScreen = backStackEntry?.destination?.hasRoute(MainScreenConnector.AIModels::class) == true
@@ -107,8 +110,10 @@ fun AIModelsScreen(
         title = stringResource(Res.string.MainScreen_FolderPickerTitle)
     ) { dir ->
         if (dir != null) {
-            path = dir.path
-            saveScreenState()
+            val selectedPath = (dir as? java.io.File)?.absolutePath ?: dir.path
+            path = selectedPath
+            screenStateSettings.aimodelsScreenState.path = selectedPath
+            screenStateSettings.save()
         }
     }
 
@@ -150,25 +155,23 @@ fun AIModelsScreen(
                 }
             },
             trailingIcon = {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(
-                            MaterialTheme.shapes.large.copy(
-                                topEnd = CornerSize(0.dp),
-                                bottomEnd = CornerSize(0.dp)
-                            )
+                Row {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(MaterialTheme.colorScheme.onBackground)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { folderPicker.launch() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.background
                         )
-                        .background(MaterialTheme.colorScheme.onBackground)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable { folderPicker.launch() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.FolderOpen,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.background
-                    )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
                 }
             }
         )
@@ -195,12 +198,26 @@ fun AIModelsScreen(
                     }
                     saveScreenState()
                     scanInProgress = true
-                    scanResult = null
+                    val pathToScan = path
                     coroutineScope.launch {
                         try {
-                            val result = scanFolder(path)
-                            scanResult = result
-                        } finally {
+                            val task = scanService.createTask(
+                                name = null,
+                                path = pathToScan,
+                                extensions = emptyList(),
+                                matchers = emptyList(),
+                                fastScan = false,
+                                connector = ConnectorAIModels()
+                            )
+                            task.setState(TaskState.SCANNING)
+                            task.id.value?.let { taskId ->
+                                expandScanState(taskId)
+                            }
+                            scanInProgress = false
+                            GlobalScope.launch(Dispatchers.Default) {
+                                runAIModelScan(scanService, task, pathToScan)
+                            }
+                        } catch (e: Exception) {
                             scanInProgress = false
                         }
                     }
@@ -239,29 +256,21 @@ fun AIModelsScreen(
             SettingsBox(transition = settingsBoxTransition)
         }
     }
+}
 
-    scanResult?.let { result ->
-        AlertDialog(
-            onDismissRequest = { scanResult = null },
-            title = { Text("AI Models scan result") },
-            text = {
-                Box(modifier = Modifier.heightIn(max = 400.dp)) {
-                    SelectionContainer {
-                        Text(
-                            text = result,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { scanResult = null }) {
-                    Text(stringResource(Res.string.close))
-                }
-            }
-        )
+private suspend fun runAIModelScan(
+    scanService: ScanService,
+    task: TaskEntityViewModel,
+    path: String
+) {
+    try {
+        val result = withContext(Dispatchers.IO) { scanFolder(path) }
+        withContext(Dispatchers.Default) {
+            scanService.completeAIModelTask(task, result.toString())
+        }
+    } catch (e: Exception) {
+        withContext<Unit>(Dispatchers.Default) {
+            task.setState(TaskState.FAILED)
+        }
     }
 }

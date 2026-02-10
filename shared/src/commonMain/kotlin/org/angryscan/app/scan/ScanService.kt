@@ -2,6 +2,12 @@ package org.angryscan.app.scan
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.ScanSettings
@@ -20,6 +26,10 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Clock
+import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.toDuration
 
 private val logger = KotlinLogging.logger {}
 
@@ -254,6 +264,39 @@ class ScanService : KoinComponent {
         }
         task.start {
             this.start()
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun completeAIModelTask(task: TaskEntityViewModel, resultJson: String) {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val root = runCatching {
+            Json.parseToJsonElement(resultJson) as? JsonObject
+        }.getOrNull()
+        val filesScanned = root?.get("files_scanned")?.jsonPrimitive?.content?.toLongOrNull() ?: 1L
+        val duration = root?.get("duration")?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
+        val durationCeilSeconds = kotlin.math.ceil(duration).toLong().coerceAtLeast(0L)
+        val failedChecks = root?.get("failed_checks")?.jsonPrimitive?.content?.toLongOrNull() ?: 0L
+        val issuesArray = root?.get("issues") as? JsonArray
+        val foundFilesWithIssues = if (issuesArray != null) {
+            issuesArray
+                .mapNotNull { (it as? JsonObject)?.get("location")?.jsonPrimitive?.content }
+                .map { loc -> loc.substringBefore(":").trim().ifEmpty { loc } }
+                .toSet().size.toLong()
+        } else 0L
+        val startedAt = (Clock.System.now() - durationCeilSeconds.toDuration(DurationUnit.SECONDS))
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+        database.transaction {
+            task.dbTask.resultJson = resultJson
+            task.dbTask.startedAt = startedAt
+            task.dbTask.finishedAt = now
+            task.dbTask.filesCount = filesScanned
+        }
+        task.setAIModelResultData(resultJson, startedAt, now, filesScanned, foundFilesWithIssues, failedChecks)
+        kotlinx.coroutines.delay(500)
+        task.setState(TaskState.COMPLETED)
+        logger.info(throwable = null, LogMarkers.UserAction) {
+            "AI Model scan completed. ID: ${task.id.value}. Path: \"${task.path.value}\""
         }
     }
 

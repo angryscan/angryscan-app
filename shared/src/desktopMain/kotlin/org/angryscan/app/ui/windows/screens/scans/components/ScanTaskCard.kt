@@ -4,10 +4,12 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Http
 import androidx.compose.material.icons.outlined.RocketLaunch
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,6 +32,7 @@ import org.angryscan.app.resources.Task_FoundAttributes
 import org.angryscan.app.resources.aws_s3
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.common.connectors.ConnectorAIModels
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
@@ -77,6 +80,7 @@ fun ScanTaskCard(
 
     val taskFilesViewModel = koinInject<TaskFilesViewModel> { parametersOf(taskEntity.dbTask) }
     val scoreSum by taskFilesViewModel.scoreSum.collectAsState()
+    val aimFailedChecks by taskEntity.aimFailedChecks.collectAsState()
 
     val scanTime = if (startedAt != null) {
         when (state) {
@@ -206,6 +210,14 @@ fun ScanTaskCard(
                                     .size(32.dp)
                             )
                         }
+                        is ConnectorAIModels -> {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
 
                     Box(
@@ -254,8 +266,10 @@ fun ScanTaskCard(
                     selectedFilesSize = selectedFilesSize,
                     foundFilesSize = foundFilesSize,
                     scanTime = scanTime,
-                    scoreSum = scoreSum,
-                    onClick = onClick
+                    scoreSum = if (taskEntity.dbTask.connector is ConnectorAIModels && aimFailedChecks != null) aimFailedChecks!! else scoreSum,
+                    onClick = onClick,
+                    selectedFilesLabel = if (taskEntity.dbTask.connector is ConnectorAIModels) "Files scanned" else null,
+                    scoreLabel = if (taskEntity.dbTask.connector is ConnectorAIModels) "Failed" else null
                 )
             }
 
@@ -278,6 +292,24 @@ fun ScanTaskCard(
                         }
                     }
                 }
+            }
+        }
+
+        if (taskEntity.dbTask.connector is ConnectorAIModels) {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 0.dp, end = 0.dp)
+            ) {
+                Text(
+                    text = "AI Models",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    fontSize = 11.sp,
+                    fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
     }

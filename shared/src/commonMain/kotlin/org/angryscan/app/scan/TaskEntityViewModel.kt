@@ -12,10 +12,15 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.connectors.ConnectorAIModels
 import org.angryscan.app.scan.common.connectors.FoundedFile
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.common.engine.IMatcher
@@ -108,6 +113,14 @@ class TaskEntityViewModel(
     val folderSize
         get() = _folderSize.asStateFlow()
 
+    private var _resultJson = MutableStateFlow<String?>(null)
+    val resultJson
+        get() = _resultJson.asStateFlow()
+
+    private var _aimFailedChecks = MutableStateFlow<Long?>(null)
+    val aimFailedChecks
+        get() = _aimFailedChecks.asStateFlow()
+
     private var _selectedFilesSize = MutableStateFlow(0L)
     val selectedFilesSize
         get() = _selectedFilesSize.asStateFlow()
@@ -149,6 +162,21 @@ class TaskEntityViewModel(
                 _deltaSeconds.value = dbTask.delta
                 _finishedAt.value = dbTask.finishedAt
                 _totalFiles.value = dbTask.filesCount ?: 0L
+                _resultJson.value = dbTask.resultJson
+                if (dbTask.connector is ConnectorAIModels && dbTask.resultJson != null) {
+                    runCatching {
+                        val root = Json.parseToJsonElement(dbTask.resultJson!!) as? JsonObject ?: return@runCatching
+                        _selectedFiles.value = root["files_scanned"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L
+                        _aimFailedChecks.value = root["failed_checks"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L
+                        val issuesArray = root["issues"] as? JsonArray
+                        _foundFiles.value = if (issuesArray != null) {
+                            issuesArray
+                                .mapNotNull { (it as? JsonObject)?.get("location")?.jsonPrimitive?.content }
+                                .map { loc -> loc.substringBefore(":").trim().ifEmpty { loc } }
+                                .toSet().size.toLong()
+                        } else 0L
+                    }
+                }
 
                 _foundAttributes.value =
                     (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
@@ -201,6 +229,10 @@ class TaskEntityViewModel(
     suspend fun checkProgress() {
         while (_state.value == TaskState.LOADING) {
             delay(500)
+        }
+        if (dbTask.connector is ConnectorAIModels) {
+            _busy.value = false
+            return
         }
         if (_state.value != TaskState.PENDING && _state.value != TaskState.SEARCHING) {
             database.transaction {
@@ -370,6 +402,37 @@ class TaskEntityViewModel(
     fun stop() {
         if (_state.value != TaskState.COMPLETED)
             setState(TaskState.STOPPED)
+    }
+
+    fun setAIModelResult(
+        resultJson: String,
+        startedAt: LocalDateTime,
+        finishedAt: LocalDateTime,
+        filesScanned: Long
+    ) {
+        _resultJson.value = resultJson
+        _state.value = TaskState.COMPLETED
+        _startedAt.value = startedAt
+        _finishedAt.value = finishedAt
+        _totalFiles.value = filesScanned
+    }
+
+    /** Sets only result data (table can render); call [setState](TaskState.COMPLETED) after table is shown. */
+    fun setAIModelResultData(
+        resultJson: String,
+        startedAt: LocalDateTime,
+        finishedAt: LocalDateTime,
+        filesScanned: Long,
+        foundFilesWithIssues: Long,
+        failedChecks: Long
+    ) {
+        _resultJson.value = resultJson
+        _startedAt.value = startedAt
+        _finishedAt.value = finishedAt
+        _totalFiles.value = filesScanned
+        _selectedFiles.value = filesScanned
+        _foundFiles.value = foundFilesWithIssues
+        _aimFailedChecks.value = failedChecks
     }
 
     fun resume(taskStarted: () -> Unit = {}) {

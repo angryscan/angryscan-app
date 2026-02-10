@@ -1,14 +1,14 @@
 package org.angryscan.app.db.models
 
+import org.angryscan.app.scan.common.connectors.ConnectorFileShare
+import org.angryscan.app.scan.common.connectors.IConnector
+import org.angryscan.app.serializers.PolymorphicFormatter
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.json.json
 import org.jetbrains.exposed.sql.kotlin.datetime.datetime
-import org.angryscan.app.scan.common.connectors.ConnectorFileShare
-import org.angryscan.app.scan.common.connectors.IConnector
-import org.angryscan.app.serializers.PolymorphicFormatter
 
 object Tasks : IntIdTable() {
     val name = text("name").nullable()
@@ -24,6 +24,7 @@ object Tasks : IntIdTable() {
     val delta = long("delta").nullable()
     val connector = json<IConnector>("matcher", PolymorphicFormatter)
         .default(ConnectorFileShare())
+    val resultJson = text("result_json").nullable().default(null)
 }
 
 class Task(id: EntityID<Int>) : IntEntity(id) {
@@ -41,6 +42,7 @@ class Task(id: EntityID<Int>) : IntEntity(id) {
     var lastFileDate by Tasks.lastFileDate
     var delta by Tasks.delta
     var connector by Tasks.connector
+    var resultJson by Tasks.resultJson
 
     val files by TaskFile referrersOn TaskFiles.task
     val extensions by TaskFileExtension referrersOn TaskFileExtensions.task

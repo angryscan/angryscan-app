@@ -276,10 +276,14 @@
     <string name="Task-Progress">Прогресс: %1$s%</string>
     <string name="Task-TotalFiles">Всего файлов</string>
     <string name="Task-SelectedFiles">Выбрано файлов</string>
+    <string name="Task-FilesScanned">Файлов просканировано</string>
+    <string name="Task-Failed">Провалено</string>
     <string name="Task-FoundFiles">Найдено файлов</string>
     <string name="Task-FolderSize">Размер папки</string>
     <string name="Task-FoundAttributes">Что найдено:</string>
     <string name="Task-ScanTime">Время сканирования</string>
+
+    <string name="Connector-AIModels">AI Models</string>
 
     <string name="TaskStateChipFilter-Active">Активные</string>
     <string name="TaskStateChipFilter-Paused">На паузе</string>

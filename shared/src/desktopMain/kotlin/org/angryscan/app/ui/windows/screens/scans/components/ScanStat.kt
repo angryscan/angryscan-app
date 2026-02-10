@@ -18,7 +18,9 @@ fun ScanStat(
     foundFilesSize: Long,
     scanTime: String,
     scoreSum: Long,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    selectedFilesLabel: String? = null,
+    scoreLabel: String? = null
 ) {
     // Total files count
     ScanStatItem(
@@ -35,9 +37,9 @@ fun ScanStat(
         color = MaterialTheme.colorScheme.primary
     )
 
-    //Selected files count
+    //Selected files count (or "Files scanned" for AI Models)
     ScanStatItem(
-        title = stringResource(Res.string.Task_SelectedFiles),
+        title = selectedFilesLabel ?: stringResource(Res.string.Task_SelectedFiles),
         text = if (selectedFiles > 0 && selectedFilesSize > 0) {
             "$selectedFiles (${selectedFilesSize.toHumanReadable()})"
         } else {
@@ -78,9 +80,9 @@ fun ScanStat(
         color = MaterialTheme.colorScheme.primary
     )
 
-    //Score sum of all found files
+    //Score sum of all found files (or "Failed" for AI Models)
     ScanStatItem(
-        title = stringResource(Res.string.Result_ColumnScore),
+        title = scoreLabel ?: stringResource(Res.string.Result_ColumnScore),
         text = scoreSum.toString()
     )
 }

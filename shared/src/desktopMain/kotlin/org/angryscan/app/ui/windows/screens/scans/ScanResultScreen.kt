@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -29,12 +30,6 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
-import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.ScanSettings
@@ -42,15 +37,24 @@ import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.common.connectors.ConnectorAIModels
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.scan.common.createDialogSettings
+import org.angryscan.app.scan.common.writer.AIModelResultWriter
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.ui.dialogs.DesktopAlertDialog
 import org.angryscan.app.ui.extensions.color
 import org.angryscan.app.ui.extensions.icon
+import org.angryscan.app.ui.extensions.text
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
 import org.angryscan.app.ui.windows.screens.scans.components.*
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import java.awt.datatransfer.StringSelection
 import kotlin.time.Clock
 import kotlin.time.DurationUnit
@@ -75,8 +79,9 @@ fun ScanResultScreen(
 
     val taskFilesViewModel = koinInject<TaskFilesViewModel> { parametersOf(task.dbTask) }
     val taskFiles by taskFilesViewModel.taskFiles.collectAsState()
+    val aimFailedChecks by task.aimFailedChecks.collectAsState()
 
-    val scoreSum = taskFiles.sumOf { it.score }
+    val scoreSum = if (task.dbTask.connector is ConnectorAIModels && aimFailedChecks != null) aimFailedChecks!! else taskFiles.sumOf { it.score }
 
     val clipboard = LocalClipboard.current
 
@@ -85,6 +90,7 @@ fun ScanResultScreen(
     val state by task.state.collectAsState()
     val path by task.path.collectAsState()
     val name by task.name.collectAsState()
+    val resultJson by task.resultJson.collectAsState()
     val fastScan by task.fastScan.collectAsState()
     val startedAt by task.startedAt.collectAsState()
     val finishedAt by task.finishedAt.collectAsState()
@@ -205,7 +211,23 @@ fun ScanResultScreen(
                 )
             }
         }
+    }
 
+    val aimModelSaveLauncher = rememberFileSaverLauncher(
+        dialogSettings = dialogSettings
+    ) { file ->
+        if (file != null) {
+            val json = resultJson
+            if (!json.isNullOrBlank()) {
+                coroutineScope.launch {
+                    AIModelResultWriter.saveAIModelResult(
+                        file.path,
+                        json,
+                        onSaveError = { errorDialogVisible = true }
+                    )
+                }
+            }
+        }
     }
 
     if (errorDialogVisible) {
@@ -242,6 +264,7 @@ fun ScanResultScreen(
         }
     ) {
         Column(
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Column {
@@ -273,6 +296,31 @@ fun ScanResultScreen(
                                     modifier = Modifier
                                         .size(32.dp)
                                 )
+                            }
+                            is ConnectorAIModels -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Search,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                                    ) {
+                                        Text(
+                                            text = "AI Models",
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                            fontSize = 12.sp,
+                                            fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -321,7 +369,8 @@ fun ScanResultScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AnimatedVisibility(
-                            visible = state == TaskState.COMPLETED,
+                            visible = (task.dbTask.connector is ConnectorAIModels && (resultJson?.isNotBlank() == true)) ||
+                                    (task.dbTask.connector !is ConnectorAIModels && state == TaskState.COMPLETED),
                         ) {
                             Row {
 
@@ -337,11 +386,20 @@ fun ScanResultScreen(
                                         )
                                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                                         .clickable {
-                                            saveLauncher.launch(
-                                                suggestedName = "ADS_${fileDateFormat.format(finishedAt!!)}",
-                                                extension = reportExtension.extension,
-                                                directory = PlatformFile(AppFiles.UserDirPath)
-                                            )
+                                            if (task.dbTask.connector is ConnectorAIModels) {
+                                                val aimDate = finishedAt ?: startedAt
+                                                aimModelSaveLauncher.launch(
+                                                    suggestedName = if (aimDate != null) "ADS_AI_${fileDateFormat.format(aimDate)}" else "ADS_AI_report",
+                                                    extension = reportExtension.extension,
+                                                    directory = PlatformFile(AppFiles.UserDirPath)
+                                                )
+                                            } else {
+                                                saveLauncher.launch(
+                                                    suggestedName = "ADS_${fileDateFormat.format(finishedAt!!)}",
+                                                    extension = reportExtension.extension,
+                                                    directory = PlatformFile(AppFiles.UserDirPath)
+                                                )
+                                            }
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -419,6 +477,36 @@ fun ScanResultScreen(
                 }
             }
 
+            when (task.dbTask.connector) {
+                is ConnectorAIModels -> {
+                    if (resultJson.isNullOrBlank()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Text(
+                                text = state.text(),
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        ) {
+                            AIModelResultTable(resultJson)
+                        }
+                    }
+                }
+                else -> {
             if (state != TaskState.COMPLETED) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -551,7 +639,9 @@ fun ScanResultScreen(
                     selectedFilesSize = selectedFilesSize,
                     foundFilesSize = foundFilesSize,
                     scanTime = scanTime,
-                    scoreSum = scoreSum
+                    scoreSum = scoreSum,
+                    selectedFilesLabel = if (task.dbTask.connector is ConnectorAIModels) "Files scanned" else null,
+                    scoreLabel = if (task.dbTask.connector is ConnectorAIModels) "Failed" else null
                 )
             }
 
@@ -608,6 +698,8 @@ fun ScanResultScreen(
                 selectedAttributes = selectedAttributes,
                 scanSettings = scanSettings
             )
+                }
+            }
         }
     }
 }

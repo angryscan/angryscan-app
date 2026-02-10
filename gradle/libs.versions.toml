@@ -19,6 +19,7 @@ mordant = "3.0.2"
 #Angryscan libraries
 gitleaks = "0.1.1"
 core = "1.4.8"
+gammmaaaa = "0.1.1"
 
 [libraries]
 #Hyperscan
@@ -88,6 +89,7 @@ jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
 #Angryscan libraries
 angryscan-core = { module = "org.angryscan:core", version.ref = "core" }
 angryscan-gitleaks = { module = "org.angryscan:gitleaks", version.ref = "gitleaks" }
+gammmaaaa = { module = "io.github.gammmaaaa:modelaudit-kotlin", version.ref = "gammmaaaa" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
