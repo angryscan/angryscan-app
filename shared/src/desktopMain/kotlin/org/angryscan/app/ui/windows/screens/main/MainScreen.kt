@@ -15,11 +15,25 @@ import androidx.navigation.compose.rememberNavController
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.SourceSelector
+import org.angryscan.app.ui.windows.screens.main.components.SourceSelectorTabs
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
 import org.koin.compose.koinInject
 
+/**
+ * Вариант селектора источника данных.
+ * Место переключения: измените значение ниже, затем Stop → Run.
+ *
+ * - [SourceSelectorVariant.FloatingIcons] — плавающая панель с иконками (tooltip при hover)
+ * - [SourceSelectorVariant.Tabs] — табы с иконками и подписями (File Share, AWS S3, HTTP)
+ */
+private val SOURCE_SELECTOR_VARIANT = SourceSelectorVariant.Tabs  // по умолчанию табы сверху
+
+private enum class SourceSelectorVariant {
+    FloatingIcons,
+    Tabs
+}
 
 @Composable
 fun MainScreen(
@@ -43,17 +57,19 @@ fun MainScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SourceSelector(
-                navController = navController,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 700.dp)
-                    .padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Tabs) {
+                Spacer(modifier = Modifier.height(16.dp))
+                SourceSelectorTabs(
+                    navController = navController,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 700.dp)
+                        .padding(horizontal = 16.dp)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             NavHost(
                 modifier = Modifier.weight(1f),
@@ -127,6 +143,15 @@ fun MainScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.FloatingIcons) {
+            SourceSelector(
+                navController = navController,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 28.dp)
+            )
         }
     }
 }
