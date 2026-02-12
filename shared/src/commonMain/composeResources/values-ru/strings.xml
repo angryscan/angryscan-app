@@ -86,6 +86,19 @@
     <string name="MainScreen-FilePickerTitle">Выберите файл(ы)</string>
     <string name="MainScreen-FolderPickerTitle">Выберите папку</string>
     <string name="MainScreen-FileWithPathsPickerTitle">Выберите файл с путями</string>
+    <string name="MainScreen-SourceType-FileShare">Файловая система</string>
+    <string name="MainScreen-SourceType-S3">AWS S3</string>
+    <string name="MainScreen-SourceType-HTTP">HTTP</string>
+    <string name="MainScreen-Placeholder-HTTP">Введите URL через пробел или точку с запятой (;)</string>
+    <string name="MainScreen-Hint-FileShare">Папка, файлы или txt/csv с путями</string>
+    <string name="MainScreen-Hint-S3">Путь внутри bucket (например folder/subfolder/)</string>
+    <string name="MainScreen-Hint-HTTP">Один или несколько URL (http:// или https://)</string>
+    <string name="MainScreen-QuickStart-Title">Быстрый старт</string>
+    <string name="MainScreen-QuickStart-Step1">1. Выберите тип источника</string>
+    <string name="MainScreen-QuickStart-Step2">2. Укажите путь или URL</string>
+    <string name="MainScreen-QuickStart-Step3">3. Настройте и запустите сканирование</string>
+    <string name="MainScreen-RecentScans-Title">Недавние сканирования</string>
+    <string name="MainScreen-RecentScans-Empty">Пока нет сканирований</string>
 
     <string name="ScanSettings-FastScan">Быстрое сканирование</string>
     <string name="ScanSettings-FileExtensions">Расширения файлов</string>

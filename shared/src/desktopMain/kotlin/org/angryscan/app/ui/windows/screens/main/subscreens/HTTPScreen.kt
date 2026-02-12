@@ -4,7 +4,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,19 +17,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.MainScreen_ScanStartButton
-import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
-import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.ui.windows.components.RadioButtonNavigation
-import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
-import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
-import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
+import org.angryscan.app.ui.windows.screens.main.components.*
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
@@ -59,7 +52,7 @@ fun HTTPScreen(
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
     val coroutineScope = rememberCoroutineScope()
-    
+
     var saveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     
     fun saveScreenState() {
@@ -165,56 +158,53 @@ fun HTTPScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 150.dp),
+            .padding(top = if (settingsExpanded) 0.dp else 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .height(80.dp)
-                .width(700.dp),
-            value = path,
-            onValueChange = {
-                path = it
-                    .split("\\s".toRegex())
-                    .filter { url -> url.trim().isNotEmpty() }
-                    .joinToString(";")
-                saveScreenState()
-            },
-            placeholder = { Text(text = stringResource(Res.string.MainScreen_SelectPathPlaceholder)) },
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium,
-            isError = selectPathError,
-            leadingIcon = {
-                Box(
+        MainScreenCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                OutlinedTextField(
                     modifier = Modifier
-                        .height(48.dp)
-                        .width(64.dp)
-                        .size(48.dp)
-                        .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = null
-                    )
-                }
-            },
-        )
-
-        Box(
-            modifier = Modifier
-                .width(700.dp)
-                .padding(vertical = 0.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            RadioButtonNavigation(
-                navController = navController
-            )
+                        .height(80.dp)
+                        .fillMaxWidth(),
+                    value = path,
+                    onValueChange = {
+                        path = it
+                            .split("\\s".toRegex())
+                            .filter { url -> url.trim().isNotEmpty() }
+                            .joinToString(";")
+                        saveScreenState()
+                    },
+                    placeholder = { Text(text = "Enter URLs separated by space or semicolon (;)") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    isError = selectPathError,
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .height(48.dp)
+                                .width(64.dp)
+                                .size(48.dp)
+                                .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                modifier = Modifier.fillMaxSize(),
+                                imageVector = Icons.Outlined.Link,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                )
+            }
         }
 
-        Row {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 700.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
                 Button(
                     onClick = {
                         // Validate path first
@@ -249,16 +239,17 @@ fun HTTPScreen(
 
                         }
                     },
-                    modifier = Modifier
-                        .width(268.dp)
-                        .height(56.dp),
+                    modifier = ScanButtonModifier(
+                        isReady = path.isNotEmpty(),
+                        modifier = Modifier.width(268.dp).height(56.dp)
+                    ),
                     shape = MaterialTheme.shapes.medium.copy(
                         topEnd = CornerSize(0.dp),
                         bottomEnd = CornerSize(0.dp)
                     )
                 ) {
                     Text(
-                        text = stringResource(Res.string.MainScreen_ScanStartButton),
+                        text = "Scan",
                         fontSize = 24.sp
                     )
                 }
@@ -283,6 +274,7 @@ fun HTTPScreen(
                 transition = settingsBoxTransition
             )
         }
+
     }
     
     // Validation error dialog

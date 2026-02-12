@@ -33,10 +33,7 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
-import org.angryscan.app.ui.windows.components.RadioButtonNavigation
-import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
-import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
-import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
+import org.angryscan.app.ui.windows.screens.main.components.*
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
 import org.jetbrains.compose.resources.stringResource
@@ -233,13 +230,15 @@ fun FileShareScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 150.dp),
+            .padding(top = if (settingsExpanded) 0.dp else 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .height(80.dp)
-                .width(700.dp),
+        MainScreenCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .height(80.dp)
+                        .fillMaxWidth(),
             value = path,
             onValueChange = { 
                 path = it
@@ -378,76 +377,47 @@ fun FileShareScreen(
                 }
             }
         )
-
-        Box(
-            modifier = Modifier
-                .width(700.dp)
-                .padding(vertical = 0.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            RadioButtonNavigation(
-                navController = navController
-            )
+            }
         }
 
-        Row {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 700.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
                 Button(
                     onClick = {
-                        // Validate path first
-                        if (!path
-                                .split(";").map {
-                                    File(it).exists()
-                                }
-                                .all { it }
-                        ) {
+                        if (!path.split(";").map { File(it).exists() }.all { it }) {
                             scanNotCorrectPath = true
                             return@Button
                         }
-                        
-                        // Validate scan settings
-                        if (!validateAndShowError()) {
-                            return@Button
-                        }
-                        
+                        if (!validateAndShowError()) return@Button
                         val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
-                            val file = File(path)
-                            file.readLines().joinToString(separator = ";")
-                        } else {
-                            path
-                        }
-                        // Save state before scanning
+                            File(path).readLines().joinToString(separator = ";")
+                        } else path
                         saveScreenState()
-                        // Ensure scanSettings is saved to get the latest state
                         scanSettings.save()
-                        // Force sync current matchers from scanSettings to screenStateSettings
-                        // This ensures we have the latest UI state even if snapshotFlow hasn't updated yet
                         screenStateSettings.fileShareScreenState.matchers.clear()
                         screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
                         screenStateSettings.save()
                         coroutineScope.launch {
-                            // Read current state directly from scanSettings to ensure we get the actual UI state
-                            // Create copies to avoid any potential issues with mutableStateListOf
-                            val currentMatchers = scanSettings.matchers.toList()
-                            val currentUserSignatures = scanSettings.userSignatures.toList()
-                            val currentExtensions = scanSettings.extensions.toList()
                             val task = scanService.createTask(
                                 name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
                                 path = scanPath,
-                                extensions = currentExtensions,
-                                matchers = currentMatchers + currentUserSignatures,
+                                extensions = scanSettings.extensions.toList(),
+                                matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
                                 fastScan = scanSettings.fastScan.value,
                                 connector = ConnectorFileShare()
                             )
                             scanService.startTask(task)
-                            task.id.value?.let { taskId ->
-                                expandScanState(taskId)
-                            }
-
+                            task.id.value?.let { expandScanState(it) }
                         }
                     },
-                    modifier = Modifier
-                        .width(268.dp)
-                        .height(56.dp),
+                    modifier = ScanButtonModifier(
+                        isReady = path.isNotEmpty(),
+                        modifier = Modifier.width(268.dp).height(56.dp)
+                    ),
                     shape = MaterialTheme.shapes.medium.copy(
                         topEnd = CornerSize(0.dp),
                         bottomEnd = CornerSize(0.dp)
@@ -479,6 +449,7 @@ fun FileShareScreen(
                 transition = settingsBoxTransition
             )
         }
+
     }
     
     // Validation error dialog

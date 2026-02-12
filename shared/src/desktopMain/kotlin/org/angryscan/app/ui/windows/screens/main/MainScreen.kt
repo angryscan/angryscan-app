@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.components.SourceSelector
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
@@ -35,20 +36,27 @@ fun MainScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Основной контент
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 90.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(
-                modifier = Modifier.height(8.dp)
+            SourceSelector(
+                navController = navController,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 700.dp)
+                    .padding(horizontal = 16.dp)
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             NavHost(
+                modifier = Modifier.weight(1f),
                 navController = navController,
                 startDestination = MainScreenConnector.FileShare,
                 enterTransition = {
@@ -118,9 +126,8 @@ fun MainScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(76.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
-        
     }
 }
 

@@ -30,6 +30,7 @@ import org.angryscan.app.resources.Task_FoundAttributes
 import org.angryscan.app.resources.aws_s3
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.common.connectors.ConnectorAIModels
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
@@ -201,6 +202,14 @@ fun ScanTaskCard(
                         is ConnectorFileShare -> {
                             Icon(
                                 imageVector = Icons.Outlined.FolderOpen,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(32.dp)
+                            )
+                        }
+                        is ConnectorAIModels -> {
+                            Icon(
+                                imageVector = Icons.Outlined.RocketLaunch,
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(32.dp)

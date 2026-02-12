@@ -43,11 +43,7 @@ import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
-import org.angryscan.app.ui.windows.components.RadioButtonNavigation
-import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
-import org.angryscan.app.ui.windows.screens.main.components.S3FileChooser
-import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
-import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
+import org.angryscan.app.ui.windows.screens.main.components.*
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
 import org.jetbrains.compose.resources.stringResource
@@ -347,13 +343,15 @@ fun S3Screen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 150.dp),
+            .padding(top = if (settingsExpanded) 0.dp else 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .height(80.dp)
-                .width(700.dp),
+        MainScreenCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .height(80.dp)
+                        .fillMaxWidth(),
             value = path,
             onValueChange = { 
                 path = it
@@ -477,16 +475,7 @@ fun S3Screen(
                 }
             }
         )
-        
-        Box(
-            modifier = Modifier
-                .width(700.dp)
-                .padding(vertical = 0.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            RadioButtonNavigation(
-                navController = navController
-            )
+            }
         }
         
         AnimatedVisibility(
@@ -580,7 +569,12 @@ fun S3Screen(
             }
         }
 
-        Row {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 700.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
                 Button(
                     onClick = {
                         val areFieldsFilled = endpoint.isNotEmpty() &&
@@ -627,9 +621,11 @@ fun S3Screen(
 
                         }
                     },
-                    modifier = Modifier
-                        .width(268.dp)
-                        .height(56.dp),
+                    modifier = ScanButtonModifier(
+                        isReady = path.isNotEmpty() && endpoint.isNotEmpty() &&
+                            accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty(),
+                        modifier = Modifier.width(268.dp).height(56.dp)
+                    ),
                     shape = MaterialTheme.shapes.medium.copy(
                         topEnd = CornerSize(0.dp),
                         bottomEnd = CornerSize(0.dp)
@@ -661,6 +657,7 @@ fun S3Screen(
                 transition = settingsBoxTransition
             )
         }
+
     }
     
     // Validation error dialog

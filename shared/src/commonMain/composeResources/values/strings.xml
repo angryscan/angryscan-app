@@ -86,8 +86,21 @@
     <string name="MainScreen-SelectTypeFile">Files</string>
     <string name="MainScreen-SelectTypeFileWithPaths">File with paths</string>
     <string name="MainScreen-FilePickerTitle">Select file(s)</string>
-    <string name="MainScreen-FolderPickerTitle">Select folder</string>"
+    <string name="MainScreen-FolderPickerTitle">Select folder</string>
     <string name="MainScreen-FileWithPathsPickerTitle">Select file with paths</string>
+    <string name="MainScreen-SourceType-FileShare">File Share</string>
+    <string name="MainScreen-SourceType-S3">AWS S3</string>
+    <string name="MainScreen-SourceType-HTTP">HTTP</string>
+    <string name="MainScreen-Placeholder-HTTP">Enter URLs separated by space or semicolon (;)</string>
+    <string name="MainScreen-Hint-FileShare">Folder, files, or txt/csv file with paths</string>
+    <string name="MainScreen-Hint-S3">Path inside bucket (e.g. folder/subfolder/)</string>
+    <string name="MainScreen-Hint-HTTP">One or more URLs (http:// or https://)</string>
+    <string name="MainScreen-QuickStart-Title">Quick start</string>
+    <string name="MainScreen-QuickStart-Step1">1. Select source type</string>
+    <string name="MainScreen-QuickStart-Step2">2. Specify path or URL</string>
+    <string name="MainScreen-QuickStart-Step3">3. Configure and start scan</string>
+    <string name="MainScreen-RecentScans-Title">Recent scans</string>
+    <string name="MainScreen-RecentScans-Empty">No scans yet</string>
 
     <string name="ScanSettings-FastScan">Fast scan</string>
     <string name="ScanSettings-FileExtensions">File extensions</string>
