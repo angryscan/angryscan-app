@@ -5,14 +5,23 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import org.angryscan.app.resources.MainScreen_SettingsTitle
+import org.angryscan.app.resources.MainScreen_SidebarTitle
+import org.angryscan.app.resources.Res
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenSidebar
 import org.angryscan.app.ui.windows.screens.main.components.SourceSelector
@@ -21,6 +30,7 @@ import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Вариант селектора источника данных.
@@ -34,6 +44,28 @@ private enum class SourceSelectorVariant {
     Sidebar,
     FloatingIcons,
     Tabs
+}
+
+private val SectionHeaderPillShape = RoundedCornerShape(12.dp)
+
+@Composable
+private fun SectionHeaderLabel(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontSize = 13.sp,
+        color = colorScheme.primary,
+        letterSpacing = 0.25.sp,
+        modifier = modifier
+            .padding(bottom = 10.dp)
+            .clip(SectionHeaderPillShape)
+            .background(colorScheme.primary.copy(alpha = 0.1f))
+            .padding(horizontal = 14.dp, vertical = 7.dp)
+    )
 }
 
 @Composable
@@ -54,21 +86,38 @@ fun MainScreen(
             horizontalArrangement = Arrangement.Start
         ) {
             if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar) {
-                MainScreenSidebar(
-                    navController = navController,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 24.dp, start = 24.dp, end = 16.dp),
-                    extraContent = sidebarExtraContent
-                )
+                Column(
+                    modifier = Modifier
+                        .width(420.dp)
+                        .padding(top = 24.dp, bottom = 24.dp, start = 24.dp, end = 16.dp)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    SectionHeaderLabel(
+                        text = stringResource(Res.string.MainScreen_SidebarTitle)
+                    )
+                    MainScreenSidebar(
+                        navController = navController,
+                        modifier = Modifier.weight(1f),
+                        extraContent = sidebarExtraContent
+                    )
+                }
             }
 
             if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar) {
-                Box(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .padding(top = 24.dp, bottom = 24.dp, end = 24.dp)
+                        .padding(top = 24.dp, bottom = 24.dp, end = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    SettingsBox(transition = settingsTransition)
+                    SectionHeaderLabel(
+                        text = stringResource(Res.string.MainScreen_SettingsTitle)
+                    )
+                    Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                        SettingsBox(transition = settingsTransition)
+                    }
                 }
             }
 

@@ -101,12 +101,25 @@
     <string name="MainScreen-QuickStart-Step3">3. Configure and start scan</string>
     <string name="MainScreen-RecentScans-Title">Recent scans</string>
     <string name="MainScreen-RecentScans-Empty">No scans yet</string>
+    <string name="MainScreen-SidebarTitle">Data source</string>
+    <string name="MainScreen-SettingsTitle">Scan settings</string>
 
-    <string name="ScanSettings-FastScan">Fast scan</string>
-    <string name="ScanSettings-FileExtensions">File extensions</string>
-    <string name="ScanSettings-DetectFunctions">Detect functions</string>
-    <string name="ScanSettings-UserSignatures">User signatures</string>
+    <string name="ScanSettings-FastScan">Fast scan mode</string>
+    <string name="ScanSettings-FileExtensions">File extensions to scan</string>
+    <string name="ScanSettings-FileExtensions-Selection">Selection</string>
+    <string name="ScanSettings-FileExtensions-Group-Documents">Documents</string>
+    <string name="ScanSettings-FileExtensions-Group-Spreadsheets">Spreadsheets</string>
+    <string name="ScanSettings-FileExtensions-Group-Presentations">Presentations</string>
+    <string name="ScanSettings-FileExtensions-Group-Text">Text</string>
+    <string name="ScanSettings-FileExtensions-Group-Archives">Archives</string>
+    <string name="ScanSettings-DetectFunctions">Detection rules and patterns</string>
+    <string name="ScanSettings-UserSignatures">User-defined signatures</string>
+    <string name="ScanSettings-TabScan">Scan options</string>
+    <string name="ScanSettings-TabFiles">File types</string>
+    <string name="ScanSettings-TabDetect">Detection rules</string>
+    <string name="ScanSettings-TabSignatures">User signatures</string>
     <string name="ScanSettings-SelectAll">Select all</string>
+    <string name="ScanSettings-DeselectAll">Deselect all</string>
     <string name="ScanSettings-DebugMode">Collect debug info</string>
 
     <string name="ScanSettings-Tooltip-FastScan">Partially scan files to speed up the scan</string>
