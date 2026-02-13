@@ -38,10 +38,10 @@ fun MainScreenCard(
         modifier = modifier
             .widthIn(max = 700.dp)
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 20.dp)
             .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(12.dp)
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
+                shape = RoundedCornerShape(24.dp)
             )
     ) {
         content()

@@ -1,21 +1,20 @@
 package org.angryscan.app.ui.windows.screens.main.subscreens
 
-import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.DocumentScanner
+import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import io.github.vinceglb.filekit.dialogs.FileKitMode
@@ -33,9 +32,10 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
-import org.angryscan.app.ui.windows.screens.main.components.*
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.components.ScanButtonModifier
+import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
+import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import java.io.File
@@ -43,10 +43,8 @@ import java.io.File
 @Composable
 fun FileShareScreen(
     navController: androidx.navigation.NavController,
-    settingsExpanded: Boolean,
-    expandSettings: () -> Unit,
-    hideSettings: () -> Unit,
-    expandScanState: (Int) -> Unit
+    expandScanState: (Int) -> Unit,
+    setSidebarContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -58,12 +56,7 @@ fun FileShareScreen(
 
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
-    val settingsButtonTransition = updateTransition(settingsExpanded)
-
-    val settingsBoxTransition = updateTransition(settingsExpanded)
-
     var selectionType by remember { scanSettings.selectionType }
-    var selectionTypeChooserExpanded by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
     
@@ -227,72 +220,83 @@ fun FileShareScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MainScreenCard(modifier = Modifier.fillMaxWidth()) {
-            Column {
-                OutlinedTextField(
+    var dropdownExpanded by remember { mutableStateOf(false) }
+    val typeOptions = listOf(
+        SelectionTypes.Folder to stringResource(Res.string.MainScreen_SelectTypeFolder),
+        SelectionTypes.File to stringResource(Res.string.MainScreen_SelectTypeFile),
+        SelectionTypes.FileWithPaths to stringResource(Res.string.MainScreen_SelectTypeFileWithPaths)
+    )
+
+    setSidebarContent {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp, 16.dp, 8.dp, 0.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (selectPathError) Modifier.border(
+                            2.dp,
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            RoundedCornerShape(20.dp)
+                        )
+                        else Modifier
+                    ),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                tonalElevation = 0.dp
+            ) {
+                Row(
                     modifier = Modifier
-                        .height(80.dp)
-                        .fillMaxWidth(),
-            value = path,
-            onValueChange = { 
-                path = it
-                saveScreenState()
-            },
-            placeholder = {
-                Text(
-                    text = when (selectionType) {
-                        SelectionTypes.FileWithPaths -> stringResource(Res.string.MainScreen_SelectFileWithPathsPlaceholder)
-                        else -> stringResource(Res.string.MainScreen_SelectPathPlaceholder)
-                    }
-                )
-            },
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium,
-            isError = selectPathError,
-            leadingIcon = {
-                Box(
-                    modifier = Modifier
-                        .height(48.dp)
-                        .width(64.dp)
-                        .size(48.dp)
-                        .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = null
-                    )
-                }
-            },
-            trailingIcon = {
-                Row {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(
-                                MaterialTheme.shapes.large.copy(
-                                    topEnd = CornerSize(0.dp),
-                                    bottomEnd = CornerSize(0.dp)
-                                )
+                    OutlinedTextField(
+                        value = path,
+                        onValueChange = { path = it; saveScreenState() },
+                        modifier = Modifier.weight(1f).height(80.dp),
+                        placeholder = {
+                            Text(
+                                text = when (selectionType) {
+                                    SelectionTypes.FileWithPaths -> stringResource(Res.string.MainScreen_SelectFileWithPathsPlaceholder)
+                                    else -> stringResource(Res.string.MainScreen_SelectPathPlaceholder)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
-                            .background(MaterialTheme.colorScheme.onBackground)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                when (selectionType) {
-                                    SelectionTypes.Folder -> folderPicker.launch()
-                                    SelectionTypes.File -> filePicker.launch()
-                                    SelectionTypes.FileWithPaths -> pathFilePicker.launch()
-                                }
-                            },
-                        contentAlignment = Alignment.Center
+                        },
+                        textStyle = MaterialTheme.typography.bodyMedium,
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        isError = selectPathError,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                        )
+                    )
+                    FilledTonalButton(
+                        onClick = {
+                            when (selectionType) {
+                                SelectionTypes.Folder -> folderPicker.launch()
+                                SelectionTypes.File -> filePicker.launch()
+                                SelectionTypes.FileWithPaths -> pathFilePicker.launch()
+                            }
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.size(48.dp),
+                        contentPadding = PaddingValues(0.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
                         Icon(
                             imageVector = when (selectionType) {
@@ -301,157 +305,90 @@ fun FileShareScreen(
                                 SelectionTypes.FileWithPaths -> Icons.Outlined.DocumentScanner
                             },
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.background
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .height(56.dp)
-                            .width(28.dp)
-                            .clip(
-                                MaterialTheme.shapes.large.copy(
-                                    topStart = CornerSize(0.dp),
-                                    bottomStart = CornerSize(0.dp)
-                                )
-                            )
-                            .background(MaterialTheme.colorScheme.onBackground)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                selectionTypeChooserExpanded = true
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.ArrowDropDown,
-                            contentDescription = null,
+                    Box {
+                        IconButton(
+                            onClick = { dropdownExpanded = true },
                             modifier = Modifier
-                                .size(32.dp),
-                            tint = MaterialTheme.colorScheme.background
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = selectionTypeChooserExpanded,
-                        onDismissRequest = {
-                            selectionTypeChooserExpanded = false
-                        }
-                    ) {
-                        DropdownMenuItem(
-                            onClick = {
-                                if (selectionType != SelectionTypes.Folder)
-                                    path = ""
-                                selectionType = SelectionTypes.Folder
-                                selectionTypeChooserExpanded = false
-                                scanSettings.save()
-                                saveScreenState()
-                                folderPicker.launch()
-                            },
-                            text = { Text(text = stringResource(Res.string.MainScreen_SelectTypeFolder)) }
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                if (selectionType != SelectionTypes.File)
-                                    path = ""
-                                selectionType = SelectionTypes.File
-                                selectionTypeChooserExpanded = false
-                                scanSettings.save()
-                                saveScreenState()
-                                filePicker.launch()
-                            },
-                            text = { Text(text = stringResource(Res.string.MainScreen_SelectTypeFile)) }
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                if (selectionType != SelectionTypes.FileWithPaths)
-                                    path = ""
-                                selectionType = SelectionTypes.FileWithPaths
-                                selectionTypeChooserExpanded = false
-                                scanSettings.save()
-                                saveScreenState()
-                                pathFilePicker.launch()
-                            },
-                            text = { Text(text = stringResource(Res.string.MainScreen_SelectTypeFileWithPaths)) }
-                        )
-
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                }
-            }
-        )
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 700.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-                Button(
-                    onClick = {
-                        if (!path.split(";").map { File(it).exists() }.all { it }) {
-                            scanNotCorrectPath = true
-                            return@Button
-                        }
-                        if (!validateAndShowError()) return@Button
-                        val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
-                            File(path).readLines().joinToString(separator = ";")
-                        } else path
-                        saveScreenState()
-                        scanSettings.save()
-                        screenStateSettings.fileShareScreenState.matchers.clear()
-                        screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
-                        screenStateSettings.save()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
-                                path = scanPath,
-                                extensions = scanSettings.extensions.toList(),
-                                matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorFileShare()
+                                .size(40.dp)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
                             )
-                            scanService.startTask(task)
-                            task.id.value?.let { expandScanState(it) }
                         }
-                    },
-                    modifier = ScanButtonModifier(
-                        isReady = path.isNotEmpty(),
-                        modifier = Modifier.width(268.dp).height(56.dp)
-                    ),
-                    shape = MaterialTheme.shapes.medium.copy(
-                        topEnd = CornerSize(0.dp),
-                        bottomEnd = CornerSize(0.dp)
-                    )
-                ) {
-                    Text(
-                        text = stringResource(Res.string.MainScreen_ScanStartButton),
-                        fontSize = 24.sp
-                    )
-                }
-                SettingsButton(
-                    transition = settingsButtonTransition,
-                    onClick = {
-                        if (!settingsExpanded) {
-                            expandSettings()
-                        } else {
-                            hideSettings()
+                        DropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false }
+                        ) {
+                            typeOptions.forEach { (type, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                                    onClick = {
+                                        if (selectionType != type) path = ""
+                                        selectionType = type
+                                        scanSettings.save()
+                                        saveScreenState()
+                                        dropdownExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
+                }
+            }
+            Button(
+                onClick = {
+                    if (!path.split(";").map { File(it).exists() }.all { it }) {
+                        scanNotCorrectPath = true
+                        return@Button
+                    }
+                    if (!validateAndShowError()) return@Button
+                    val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
+                        File(path).readLines().joinToString(separator = ";")
+                    } else path
+                    saveScreenState()
+                    scanSettings.save()
+                    screenStateSettings.fileShareScreenState.matchers.clear()
+                    screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+                    screenStateSettings.save()
+                    coroutineScope.launch {
+                        val task = scanService.createTask(
+                            name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
+                            path = scanPath,
+                            extensions = scanSettings.extensions.toList(),
+                            matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
+                            fastScan = scanSettings.fastScan.value,
+                            connector = ConnectorFileShare()
+                        )
+                        scanService.startTask(task)
+                        task.id.value?.let { expandScanState(it) }
+                    }
+                },
+                modifier = ScanButtonModifier(
+                    isReady = path.isNotEmpty(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = stringResource(Res.string.MainScreen_ScanStartButton),
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
-        
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 16.dp)
-        ) {
-            SettingsBox(
-                transition = settingsBoxTransition
-            )
         }
-
     }
-    
+
     // Validation error dialog
     ScanValidationErrorDialog(
         validationError = validationErrorDialog,

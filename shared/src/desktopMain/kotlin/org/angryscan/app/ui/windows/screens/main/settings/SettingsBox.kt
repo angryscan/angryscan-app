@@ -13,14 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.ScanSettings_FastScan
 import org.angryscan.app.resources.ScanSettings_Tooltip_FastScan
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,18 +43,12 @@ fun SettingsBox(
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surface)
                 .fillMaxHeight()
-                .padding(6.dp)
-                .width(700.dp)
+                .fillMaxWidth()
+                .padding(start = 6.dp, top = 6.dp, end = 0.dp, bottom = 6.dp)
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
-                    .padding(
-                        end = if (scrollState.canScrollBackward || scrollState.canScrollForward)
-                            30.dp
-                        else
-                            0.dp
-                    )
                     .verticalScroll(scrollState)
             ) {
                 // Fast scan checkbox
@@ -109,7 +103,6 @@ fun SettingsBox(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .fillMaxHeight()
-                    .padding(end = 10.dp)
                     .width(10.dp),
                 style = LocalScrollbarStyle.current.copy(
                     hoverColor = MaterialTheme.colorScheme.primary,

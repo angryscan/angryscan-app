@@ -1,8 +1,8 @@
 package org.angryscan.app.ui.windows.screens.main.subscreens
 
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.*
@@ -10,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
@@ -20,18 +19,17 @@ import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.ui.windows.screens.main.components.*
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
+import org.angryscan.app.ui.windows.screens.main.components.ScanButtonModifier
+import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
+import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
 import org.koin.compose.koinInject
 
 @Composable
 fun HTTPScreen(
     navController: androidx.navigation.NavController,
-    settingsExpanded: Boolean,
-    expandSettings: () -> Unit,
-    hideSettings: () -> Unit,
-    expandScanState: (Int) -> Unit
+    expandScanState: (Int) -> Unit,
+    setSidebarContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -40,10 +38,6 @@ fun HTTPScreen(
 
     val helperPath by ScanPathHelper.path.collectAsState()
     var path by remember { mutableStateOf(screenStateSettings.httpScreenState.path) }
-
-    val settingsButtonTransition = updateTransition(settingsExpanded)
-
-    val settingsBoxTransition = updateTransition(settingsExpanded)
 
     var scanNotCorrectPath by remember { mutableStateOf(false) }
 
@@ -155,128 +149,113 @@ fun HTTPScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MainScreenCard(modifier = Modifier.fillMaxWidth()) {
-            Column {
-                OutlinedTextField(
-                    modifier = Modifier
-                        .height(80.dp)
-                        .fillMaxWidth(),
-                    value = path,
-                    onValueChange = {
-                        path = it
-                            .split("\\s".toRegex())
-                            .filter { url -> url.trim().isNotEmpty() }
-                            .joinToString(";")
-                        saveScreenState()
-                    },
-                    placeholder = { Text(text = "Enter URLs separated by space or semicolon (;)") },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium,
-                    isError = selectPathError,
-                    leadingIcon = {
-                        Box(
-                            modifier = Modifier
-                                .height(48.dp)
-                                .width(64.dp)
-                                .size(48.dp)
-                                .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                modifier = Modifier.fillMaxSize(),
-                                imageVector = Icons.Outlined.Link,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                )
-            }
-        }
-
-        Row(
+    setSidebarContent {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .widthIn(max = 700.dp),
-            horizontalArrangement = Arrangement.Center
+                .padding(8.dp, 16.dp, 8.dp, 0.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-                Button(
-                    onClick = {
-                        // Validate path first
-                        if (!path.split(";").all {
-                                it.startsWith("http://") ||
-                                        it.startsWith("https://")
-                            }
-                        ) {
-                            scanNotCorrectPath = true
-                            return@Button
-                        }
-                        
-                        // Validate scan settings
-                        if (!validateAndShowError()) {
-                            return@Button
-                        }
-                        
-                        // Save state before scanning
-                        saveScreenState()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                path = path,
-                                extensions = scanSettings.extensions,
-                                matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorHTTP()
-                            )
-                            scanService.startTask(task)
-                            task.id.value?.let { taskId ->
-                                expandScanState(taskId)
-                            }
-
-                        }
-                    },
-                    modifier = ScanButtonModifier(
-                        isReady = path.isNotEmpty(),
-                        modifier = Modifier.width(268.dp).height(56.dp)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (selectPathError) Modifier.border(
+                            2.dp,
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            RoundedCornerShape(20.dp)
+                        )
+                        else Modifier
                     ),
-                    shape = MaterialTheme.shapes.medium.copy(
-                        topEnd = CornerSize(0.dp),
-                        bottomEnd = CornerSize(0.dp)
-                    )
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                tonalElevation = 0.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = "Scan",
-                        fontSize = 24.sp
+                    OutlinedTextField(
+                        value = path,
+                        onValueChange = {
+                            path = it
+                                .split("\\s".toRegex())
+                                .filter { url -> url.trim().isNotEmpty() }
+                                .joinToString(";")
+                            saveScreenState()
+                        },
+                        modifier = Modifier.weight(1f).height(80.dp),
+                        placeholder = {
+                            Text(
+                                text = "Enter URLs separated by space or semicolon (;)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.bodyMedium,
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        isError = selectPathError,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                        )
+                    )
+                    Icon(
+                        imageVector = Icons.Outlined.Link,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                SettingsButton(
-                    transition = settingsButtonTransition,
-                    onClick = {
-                        if (!settingsExpanded) {
-                            expandSettings()
-                        } else {
-                            hideSettings()
+            }
+            Button(
+                onClick = {
+                    if (!path.split(";").all {
+                            it.startsWith("http://") || it.startsWith("https://")
                         }
+                    ) {
+                        scanNotCorrectPath = true
+                        return@Button
                     }
+                    if (!validateAndShowError()) return@Button
+                    saveScreenState()
+                    coroutineScope.launch {
+                        val task = scanService.createTask(
+                            path = path,
+                            extensions = scanSettings.extensions,
+                            matchers = scanSettings.matchers + scanSettings.userSignatures,
+                            fastScan = scanSettings.fastScan.value,
+                            connector = ConnectorHTTP()
+                        )
+                        scanService.startTask(task)
+                        task.id.value?.let { expandScanState(it) }
+                    }
+                },
+                modifier = ScanButtonModifier(
+                    isReady = path.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                ),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = "Scan",
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
-        
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 16.dp)
-        ) {
-            SettingsBox(
-                transition = settingsBoxTransition
-            )
         }
-
     }
-    
+
     // Validation error dialog
     ScanValidationErrorDialog(
         validationError = validationErrorDialog,

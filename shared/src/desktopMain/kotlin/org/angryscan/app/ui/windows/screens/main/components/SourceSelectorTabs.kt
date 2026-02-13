@@ -2,7 +2,6 @@ package org.angryscan.app.ui.windows.screens.main.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -50,44 +49,52 @@ fun SourceSelectorTabs(
         else -> MainScreenConnector.FileShare
     }
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     ) {
-        SourceSelectorTabItem(
-            modifier = Modifier.weight(1f),
-            isSelected = selectedRoute == MainScreenConnector.FileShare,
-            label = "File Share",
-            sourceType = SourceSelectorTabType.FileShare,
-            onClick = {
-                if (selectedRoute != MainScreenConnector.FileShare) {
-                    navController.navigate(MainScreenConnector.FileShare)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SourceSelectorTabItem(
+                modifier = Modifier.weight(1f),
+                isSelected = selectedRoute == MainScreenConnector.FileShare,
+                label = "File Share",
+                sourceType = SourceSelectorTabType.FileShare,
+                onClick = {
+                    if (selectedRoute != MainScreenConnector.FileShare) {
+                        navController.navigate(MainScreenConnector.FileShare)
+                    }
                 }
-            }
-        )
-        SourceSelectorTabItem(
-            modifier = Modifier.weight(1f),
-            isSelected = selectedRoute == MainScreenConnector.S3,
-            label = "AWS S3",
-            sourceType = SourceSelectorTabType.S3,
-            onClick = {
-                if (selectedRoute != MainScreenConnector.S3) {
-                    navController.navigate(MainScreenConnector.S3)
+            )
+            SourceSelectorTabItem(
+                modifier = Modifier.weight(1f),
+                isSelected = selectedRoute == MainScreenConnector.S3,
+                label = "AWS S3",
+                sourceType = SourceSelectorTabType.S3,
+                onClick = {
+                    if (selectedRoute != MainScreenConnector.S3) {
+                        navController.navigate(MainScreenConnector.S3)
+                    }
                 }
-            }
-        )
-        SourceSelectorTabItem(
-            modifier = Modifier.weight(1f),
-            isSelected = selectedRoute == MainScreenConnector.HTTP,
-            label = "HTTP",
-            sourceType = SourceSelectorTabType.HTTP,
-            onClick = {
-                if (selectedRoute != MainScreenConnector.HTTP) {
-                    navController.navigate(MainScreenConnector.HTTP)
+            )
+            SourceSelectorTabItem(
+                modifier = Modifier.weight(1f),
+                isSelected = selectedRoute == MainScreenConnector.HTTP,
+                label = "HTTP",
+                sourceType = SourceSelectorTabType.HTTP,
+                onClick = {
+                    if (selectedRoute != MainScreenConnector.HTTP) {
+                        navController.navigate(MainScreenConnector.HTTP)
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -123,23 +130,19 @@ private fun RowScope.SourceSelectorTabItem(
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(14.dp),
         color = when {
-            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-            isHovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            isHovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
             else -> androidx.compose.ui.graphics.Color.Transparent
         },
-        border = if (isSelected) {
-            BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-            )
-        } else null
+        shadowElevation = if (isSelected) 2.dp else 0.dp,
+        tonalElevation = if (isSelected) 1.dp else 0.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
+                .padding(vertical = 16.dp, horizontal = 20.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -148,45 +151,45 @@ private fun RowScope.SourceSelectorTabItem(
                     Icon(
                         imageVector = Icons.Outlined.FolderOpen,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = if (isSelected)
                             MaterialTheme.colorScheme.primary
                         else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                     )
                 }
                 SourceSelectorTabType.S3 -> {
                     Icon(
                         imageVector = Icons.Outlined.Cloud,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = if (isSelected)
                             MaterialTheme.colorScheme.primary
                         else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                     )
                 }
                 SourceSelectorTabType.HTTP -> {
                     Icon(
                         imageVector = Icons.Outlined.Link,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = if (isSelected)
                             MaterialTheme.colorScheme.primary
                         else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                     )
                 }
             }
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(12.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                 color = if (isSelected)
                     MaterialTheme.colorScheme.primary
                 else
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
         }
     }
