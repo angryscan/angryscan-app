@@ -13,9 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -27,8 +29,12 @@ enum class SettingsTab { Scan, Files, Detect, Signatures }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsBox(transition: Transition<Boolean>) {
+fun SettingsBox(
+    transition: Transition<Boolean>,
+    isS3Source: Boolean = false
+) {
     val scanSettings = koinInject<ScanSettings>()
+    val screenStateSettings = koinInject<ScreenStateSettings>()
     val fastScan by scanSettings.fastScan
     var selectedTab by remember { mutableIntStateOf(SettingsTab.Scan.ordinal) }
     val scrollState = rememberScrollState()
@@ -153,6 +159,78 @@ fun SettingsBox(transition: Transition<Boolean>) {
                                             scanSettings.save()
                                         }
                                     )
+                                }
+                                // AWS S3 connection parameters — только когда выбран источник S3
+                                if (isS3Source) {
+                                    var s3Endpoint by remember { mutableStateOf(screenStateSettings.s3ScreenState.endpoint) }
+                                    var s3Bucket by remember { mutableStateOf(screenStateSettings.s3ScreenState.bucket) }
+                                    var s3AccessKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.accessKey) }
+                                    var s3SecretKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.secretKey) }
+                                    LaunchedEffect(selectedTab, isS3Source) {
+                                        if (selectedTab == SettingsTab.Scan.ordinal && isS3Source) {
+                                            s3Endpoint = screenStateSettings.s3ScreenState.endpoint
+                                            s3Bucket = screenStateSettings.s3ScreenState.bucket
+                                            s3AccessKey = screenStateSettings.s3ScreenState.accessKey
+                                            s3SecretKey = screenStateSettings.s3ScreenState.secretKey
+                                        }
+                                    }
+                                    Text(
+                                        text = stringResource(Res.string.S3Screen_Tooltip_ConnectionSettings),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                    )
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(
+                                            value = s3Endpoint,
+                                            onValueChange = {
+                                                s3Endpoint = it
+                                                screenStateSettings.s3ScreenState.endpoint = it
+                                                screenStateSettings.save()
+                                            },
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                            placeholder = { Text("Endpoint", style = MaterialTheme.typography.bodyMedium) },
+                                            singleLine = true,
+                                            textStyle = MaterialTheme.typography.bodyMedium
+                                        )
+                                        OutlinedTextField(
+                                            value = s3Bucket,
+                                            onValueChange = {
+                                                s3Bucket = it
+                                                screenStateSettings.s3ScreenState.bucket = it
+                                                screenStateSettings.save()
+                                            },
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                            placeholder = { Text("Bucket", style = MaterialTheme.typography.bodyMedium) },
+                                            singleLine = true,
+                                            textStyle = MaterialTheme.typography.bodyMedium
+                                        )
+                                        OutlinedTextField(
+                                            value = s3AccessKey,
+                                            onValueChange = {
+                                                s3AccessKey = it
+                                                screenStateSettings.s3ScreenState.accessKey = it
+                                                screenStateSettings.save()
+                                            },
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                            placeholder = { Text("Access key", style = MaterialTheme.typography.bodyMedium) },
+                                            singleLine = true,
+                                            textStyle = MaterialTheme.typography.bodyMedium
+                                        )
+                                        OutlinedTextField(
+                                            value = s3SecretKey,
+                                            onValueChange = {
+                                                s3SecretKey = it
+                                                screenStateSettings.s3ScreenState.secretKey = it
+                                                screenStateSettings.save()
+                                            },
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                            placeholder = { Text("Secret key", style = MaterialTheme.typography.bodyMedium) },
+                                            singleLine = true,
+                                            textStyle = MaterialTheme.typography.bodyMedium,
+                                            visualTransformation = PasswordVisualTransformation()
+                                        )
+                                    }
                                 }
                             }
                             SettingsTab.Files.ordinal -> SettingsBoxExtensionsSelection(scanSettings)

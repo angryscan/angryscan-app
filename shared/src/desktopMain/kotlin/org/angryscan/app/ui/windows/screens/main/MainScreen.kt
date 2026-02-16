@@ -5,19 +5,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import org.angryscan.app.resources.MainScreen_SettingsTitle
 import org.angryscan.app.resources.MainScreen_SidebarTitle
@@ -46,28 +44,6 @@ private enum class SourceSelectorVariant {
     Tabs
 }
 
-private val SectionHeaderPillShape = RoundedCornerShape(12.dp)
-
-@Composable
-private fun SectionHeaderLabel(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontSize = 13.sp,
-        color = colorScheme.primary,
-        letterSpacing = 0.25.sp,
-        modifier = modifier
-            .padding(bottom = 10.dp)
-            .clip(SectionHeaderPillShape)
-            .background(colorScheme.primary.copy(alpha = 0.1f))
-            .padding(horizontal = 14.dp, vertical = 7.dp)
-    )
-}
-
 @Composable
 fun MainScreen(
     showScan:(taskId:Int) -> Unit
@@ -77,28 +53,39 @@ fun MainScreen(
     val navController = rememberNavController()
 
     var sidebarExtraContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
+    var bottomBarContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
 
     val settingsTransition = updateTransition(targetState = true, label = "settings")
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val isS3Source = backStackEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.Start
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
             if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar) {
                 Column(
                     modifier = Modifier
                         .width(420.dp)
-                        .padding(top = 24.dp, bottom = 24.dp, start = 24.dp, end = 16.dp)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                        .padding(top = 24.dp, bottom = 24.dp, start = 24.dp, end = 8.dp)
+                        .fillMaxHeight()
                 ) {
-                    SectionHeaderLabel(
-                        text = stringResource(Res.string.MainScreen_SidebarTitle)
+                    Text(
+                        text = stringResource(Res.string.MainScreen_SidebarTitle),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
                     MainScreenSidebar(
                         navController = navController,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         extraContent = sidebarExtraContent
                     )
                 }
@@ -109,14 +96,16 @@ fun MainScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .padding(top = 24.dp, bottom = 24.dp, end = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                        .padding(top = 24.dp, bottom = 24.dp, start = 8.dp, end = 24.dp)
                 ) {
-                    SectionHeaderLabel(
-                        text = stringResource(Res.string.MainScreen_SettingsTitle)
+                    Text(
+                        text = stringResource(Res.string.MainScreen_SettingsTitle),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                        SettingsBox(transition = settingsTransition)
+                        SettingsBox(transition = settingsTransition, isS3Source = isS3Source)
                     }
                 }
             }
@@ -181,7 +170,8 @@ fun MainScreen(
                                 scanStateExpanded = false
                                 showScan(taskId)
                             },
-                            setSidebarContent = { content -> sidebarExtraContent = content }
+                            setSidebarContent = { content -> sidebarExtraContent = content },
+                            setBottomBarContent = { content -> bottomBarContent = content }
                         )
                     }
                     composable<MainScreenConnector.S3> {
@@ -191,7 +181,8 @@ fun MainScreen(
                                 scanStateExpanded = false
                                 showScan(taskId)
                             },
-                            setSidebarContent = { content -> sidebarExtraContent = content }
+                            setSidebarContent = { content -> sidebarExtraContent = content },
+                            setBottomBarContent = { content -> bottomBarContent = content }
                         )
                     }
                     composable<MainScreenConnector.HTTP> {
@@ -201,10 +192,21 @@ fun MainScreen(
                                 scanStateExpanded = false
                                 showScan(taskId)
                             },
-                            setSidebarContent = { content -> sidebarExtraContent = content }
+                            setSidebarContent = { content -> sidebarExtraContent = content },
+                            setBottomBarContent = { content -> bottomBarContent = content }
                         )
                     }
                 }
+            }
+            }
+
+            // Нижний блок на всю ширину: строка пути + кнопка Scan
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+            ) {
+                bottomBarContent()
             }
         }
 

@@ -44,7 +44,8 @@ import java.io.File
 fun FileShareScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
-    setSidebarContent: (@Composable () -> Unit) -> Unit = {}
+    setSidebarContent: (@Composable () -> Unit) -> Unit = {},
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -227,16 +228,18 @@ fun FileShareScreen(
         SelectionTypes.FileWithPaths to stringResource(Res.string.MainScreen_SelectTypeFileWithPaths)
     )
 
-    setSidebarContent {
-        Column(
+    setSidebarContent { }
+    setBottomBarContent {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp, 16.dp, 8.dp, 0.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 0.dp, vertical = 0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
@@ -342,6 +345,7 @@ fun FileShareScreen(
                 }
             }
             Button(
+                enabled = path.isNotEmpty(),
                 onClick = {
                     if (!path.split(";").map { File(it).exists() }.all { it }) {
                         scanNotCorrectPath = true
@@ -371,9 +375,7 @@ fun FileShareScreen(
                 },
                 modifier = ScanButtonModifier(
                     isReady = path.isNotEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                    modifier = Modifier.width(380.dp).height(104.dp)
                 ),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(

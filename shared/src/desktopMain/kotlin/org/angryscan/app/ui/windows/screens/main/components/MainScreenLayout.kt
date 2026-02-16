@@ -1,7 +1,5 @@
 package org.angryscan.app.ui.windows.screens.main.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,9 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -52,11 +48,4 @@ fun MainScreenCard(
 fun ScanButtonModifier(
     isReady: Boolean,
     modifier: Modifier
-): Modifier {
-    val alpha by animateFloatAsState(
-        targetValue = if (isReady) 1f else 0.85f,
-        animationSpec = tween(300),
-        label = "scanReady"
-    )
-    return modifier.alpha(alpha)
-}
+): Modifier = modifier

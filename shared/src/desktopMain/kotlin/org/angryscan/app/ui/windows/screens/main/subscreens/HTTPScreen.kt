@@ -16,6 +16,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.resources.MainScreen_ScanStartButton
+import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
@@ -23,13 +25,15 @@ import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.ScanButtonModifier
 import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
 import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
 fun HTTPScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
-    setSidebarContent: (@Composable () -> Unit) -> Unit = {}
+    setSidebarContent: (@Composable () -> Unit) -> Unit = {},
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -149,16 +153,16 @@ fun HTTPScreen(
         }
     }
 
-    setSidebarContent {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp, 16.dp, 8.dp, 0.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+    setSidebarContent { }
+    setBottomBarContent {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
@@ -216,6 +220,7 @@ fun HTTPScreen(
                 }
             }
             Button(
+                enabled = path.isNotEmpty(),
                 onClick = {
                     if (!path.split(";").all {
                             it.startsWith("http://") || it.startsWith("https://")
@@ -240,7 +245,7 @@ fun HTTPScreen(
                 },
                 modifier = ScanButtonModifier(
                     isReady = path.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                    modifier = Modifier.width(380.dp).height(104.dp)
                 ),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -249,7 +254,7 @@ fun HTTPScreen(
                 )
             ) {
                 Text(
-                    text = "Scan",
+                    text = stringResource(Res.string.MainScreen_ScanStartButton),
                     style = MaterialTheme.typography.titleMedium
                 )
             }
