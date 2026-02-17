@@ -17,9 +17,9 @@ hyperscan-windows = "5.4.0-2.0.0"
 clikt = "5.0.3"
 mordant = "3.0.2"
 #Angryscan libraries
-gitleaks = "0.1.1"
+gitleaks = "0.3.2"
 core = "1.4.8"
-gammmaaaa = "0.1.1"
+gammmaaaa = "0.3.1-test"
 
 [libraries]
 #Hyperscan
