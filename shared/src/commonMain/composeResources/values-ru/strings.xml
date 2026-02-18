@@ -101,6 +101,9 @@
     <string name="MainScreen-RecentScans-Empty">Пока нет сканирований</string>
     <string name="MainScreen-SidebarTitle">Источник данных</string>
     <string name="MainScreen-SettingsTitle">Настройки сканирования</string>
+    <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>
+    <string name="MainScreen-ScanHint-S3">Введите путь выше и настройте подключение S3 во вкладке «Параметры сканирования», чтобы активировать кнопку</string>
+    <string name="MainScreen-ScanHint-HTTP">Введите один или несколько URL выше, чтобы активировать кнопку «Сканировать»</string>
 
     <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
     <string name="ScanSettings-FileExtensions">Расширения файлов для сканирования</string>

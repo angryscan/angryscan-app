@@ -103,6 +103,9 @@
     <string name="MainScreen-RecentScans-Empty">No scans yet</string>
     <string name="MainScreen-SidebarTitle">Data source</string>
     <string name="MainScreen-SettingsTitle">Scan settings</string>
+    <string name="MainScreen-ScanHint-FileShare">Select or enter path above to enable Scan</string>
+    <string name="MainScreen-ScanHint-S3">Enter path above and set S3 connection in Scan options tab to enable Scan</string>
+    <string name="MainScreen-ScanHint-HTTP">Enter one or more URLs above to enable Scan</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">File extensions to scan</string>

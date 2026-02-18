@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -16,11 +17,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.resources.MainScreen_ScanHint_HTTP
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.ScanButtonModifier
 import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
@@ -162,7 +165,8 @@ fun HTTPScreen(
         ) {
             Surface(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.5f)
+                    .height(72.dp)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
@@ -177,8 +181,8 @@ fun HTTPScreen(
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -191,7 +195,7 @@ fun HTTPScreen(
                                 .joinToString(";")
                             saveScreenState()
                         },
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                         placeholder = {
                             Text(
                                 text = "Enter URLs separated by space or semicolon (;)",
@@ -204,8 +208,8 @@ fun HTTPScreen(
                         shape = RoundedCornerShape(14.dp),
                         isError = selectPathError,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
                             focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                             errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
@@ -219,44 +223,70 @@ fun HTTPScreen(
                     )
                 }
             }
-            Button(
-                enabled = path.isNotEmpty(),
-                onClick = {
-                    if (!path.split(";").all {
-                            it.startsWith("http://") || it.startsWith("https://")
+            if (path.isNotEmpty()) {
+                Button(
+                    enabled = true,
+                    onClick = {
+                        if (!path.split(";").all {
+                                it.startsWith("http://") || it.startsWith("https://")
+                            }
+                        ) {
+                            scanNotCorrectPath = true
+                            return@Button
                         }
-                    ) {
-                        scanNotCorrectPath = true
-                        return@Button
-                    }
-                    if (!validateAndShowError()) return@Button
-                    saveScreenState()
-                    coroutineScope.launch {
-                        val task = scanService.createTask(
-                            path = path,
-                            extensions = scanSettings.extensions,
-                            matchers = scanSettings.matchers + scanSettings.userSignatures,
-                            fastScan = scanSettings.fastScan.value,
-                            connector = ConnectorHTTP()
+                        if (!validateAndShowError()) return@Button
+                        saveScreenState()
+                        coroutineScope.launch {
+                            val task = scanService.createTask(
+                                path = path,
+                                extensions = scanSettings.extensions,
+                                matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorHTTP()
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { expandScanState(it) }
+                        }
+                    },
+                    modifier = ScanButtonModifier(
+                        isReady = true,
+                        modifier = Modifier.width(320.dp).height(72.dp)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(
+                        text = stringResource(Res.string.MainScreen_ScanStartButton),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            } else {
+                DescriptionTooltip(
+                    description = stringResource(Res.string.MainScreen_ScanHint_HTTP),
+                    delay = 400
+                ) {
+                    Button(
+                        enabled = false,
+                        onClick = { },
+                        modifier = ScanButtonModifier(
+                            isReady = false,
+                            modifier = Modifier.width(320.dp).height(72.dp)
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
-                        scanService.startTask(task)
-                        task.id.value?.let { expandScanState(it) }
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_ScanStartButton),
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
-                },
-                modifier = ScanButtonModifier(
-                    isReady = path.isNotEmpty(),
-                    modifier = Modifier.width(380.dp).height(104.dp)
-                ),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Text(
-                    text = stringResource(Res.string.MainScreen_ScanStartButton),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                }
             }
         }
     }

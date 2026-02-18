@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,7 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.ScanButtonModifier
 import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
@@ -239,7 +241,8 @@ fun FileShareScreen(
         ) {
             Surface(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.5f)
+                    .height(72.dp)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
@@ -254,15 +257,15 @@ fun FileShareScreen(
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedTextField(
                         value = path,
                         onValueChange = { path = it; saveScreenState() },
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                         placeholder = {
                             Text(
                                 text = when (selectionType) {
@@ -278,8 +281,8 @@ fun FileShareScreen(
                         shape = RoundedCornerShape(14.dp),
                         isError = selectPathError,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
                             focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                             errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
@@ -344,49 +347,75 @@ fun FileShareScreen(
                     }
                 }
             }
-            Button(
-                enabled = path.isNotEmpty(),
-                onClick = {
-                    if (!path.split(";").map { File(it).exists() }.all { it }) {
-                        scanNotCorrectPath = true
-                        return@Button
-                    }
-                    if (!validateAndShowError()) return@Button
-                    val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
-                        File(path).readLines().joinToString(separator = ";")
-                    } else path
-                    saveScreenState()
-                    scanSettings.save()
-                    screenStateSettings.fileShareScreenState.matchers.clear()
-                    screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
-                    screenStateSettings.save()
-                    coroutineScope.launch {
-                        val task = scanService.createTask(
-                            name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
-                            path = scanPath,
-                            extensions = scanSettings.extensions.toList(),
-                            matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
-                            fastScan = scanSettings.fastScan.value,
-                            connector = ConnectorFileShare()
+            if (path.isNotEmpty()) {
+                Button(
+                    enabled = true,
+                    onClick = {
+                        if (!path.split(";").map { File(it).exists() }.all { it }) {
+                            scanNotCorrectPath = true
+                            return@Button
+                        }
+                        if (!validateAndShowError()) return@Button
+                        val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
+                            File(path).readLines().joinToString(separator = ";")
+                        } else path
+                        saveScreenState()
+                        scanSettings.save()
+                        screenStateSettings.fileShareScreenState.matchers.clear()
+                        screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+                        screenStateSettings.save()
+                        coroutineScope.launch {
+                            val task = scanService.createTask(
+                                name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
+                                path = scanPath,
+                                extensions = scanSettings.extensions.toList(),
+                                matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorFileShare()
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { expandScanState(it) }
+                        }
+                    },
+                    modifier = ScanButtonModifier(
+                        isReady = true,
+                        modifier = Modifier.width(320.dp).height(72.dp)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(
+                        text = stringResource(Res.string.MainScreen_ScanStartButton),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            } else {
+                DescriptionTooltip(
+                    description = stringResource(Res.string.MainScreen_ScanHint_FileShare),
+                    delay = 400
+                ) {
+                    Button(
+                        enabled = false,
+                        onClick = { },
+                        modifier = ScanButtonModifier(
+                            isReady = false,
+                            modifier = Modifier.width(320.dp).height(72.dp)
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
-                        scanService.startTask(task)
-                        task.id.value?.let { expandScanState(it) }
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_ScanStartButton),
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
-                },
-                modifier = ScanButtonModifier(
-                    isReady = path.isNotEmpty(),
-                    modifier = Modifier.width(380.dp).height(104.dp)
-                ),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Text(
-                    text = stringResource(Res.string.MainScreen_ScanStartButton),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                }
             }
         }
     }

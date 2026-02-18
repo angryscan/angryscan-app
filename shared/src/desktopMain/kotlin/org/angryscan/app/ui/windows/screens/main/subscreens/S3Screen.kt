@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -17,12 +18,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.resources.MainScreen_ScanHint_S3
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -222,7 +225,8 @@ fun S3Screen(
         ) {
             Surface(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.5f)
+                    .height(72.dp)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
@@ -237,23 +241,23 @@ fun S3Screen(
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedTextField(
                         value = path,
                         onValueChange = { path = it; saveScreenState() },
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                         placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
                         textStyle = MaterialTheme.typography.bodyMedium,
                         singleLine = true,
                         shape = MaterialTheme.shapes.small,
                         isError = selectPathError,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
                             focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                             errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
@@ -274,42 +278,64 @@ fun S3Screen(
                     }
                 }
             }
-            Button(
-                enabled = path.isNotEmpty() && endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty(),
-                onClick = {
-                    if (endpoint.isEmpty() || accessKey.isEmpty() || secretKey.isEmpty() || bucket.isEmpty()) {
-                        incorrectConnection = true
-                        scanNotCorrectPath = true
-                        return@Button
-                    }
-                    if (!validateAndShowError()) return@Button
-                    saveScreenState()
-                    coroutineScope.launch {
-                        val task = scanService.createTask(
-                            path = path,
-                            extensions = scanSettings.extensions,
-                            matchers = scanSettings.matchers + scanSettings.userSignatures,
-                            fastScan = scanSettings.fastScan.value,
-                            connector = ConnectorS3(endpointStr = endpoint, accessKey = accessKey, secretKey = secretKey, bucketStr = bucket)
+            val s3ScanEnabled = path.isNotEmpty() && endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()
+            if (s3ScanEnabled) {
+                Button(
+                    enabled = true,
+                    onClick = {
+                        if (!validateAndShowError()) return@Button
+                        saveScreenState()
+                        coroutineScope.launch {
+                            val task = scanService.createTask(
+                                path = path,
+                                extensions = scanSettings.extensions,
+                                matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = ConnectorS3(endpointStr = endpoint, accessKey = accessKey, secretKey = secretKey, bucketStr = bucket)
+                            )
+                            scanService.startTask(task)
+                            task.id.value?.let { expandScanState(it) }
+                        }
+                    },
+                    modifier = ScanButtonModifier(
+                        isReady = true,
+                        modifier = Modifier.width(320.dp).height(72.dp)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(
+                        text = stringResource(Res.string.MainScreen_ScanStartButton),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            } else {
+                DescriptionTooltip(
+                    description = stringResource(Res.string.MainScreen_ScanHint_S3),
+                    delay = 400
+                ) {
+                    Button(
+                        enabled = false,
+                        onClick = { },
+                        modifier = ScanButtonModifier(
+                            isReady = false,
+                            modifier = Modifier.width(320.dp).height(72.dp)
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
-                        scanService.startTask(task)
-                        task.id.value?.let { expandScanState(it) }
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_ScanStartButton),
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
-                },
-                modifier = ScanButtonModifier(
-                    isReady = path.isNotEmpty() && endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty(),
-                    modifier = Modifier.width(380.dp).height(104.dp)
-                ),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Text(
-                    text = stringResource(Res.string.MainScreen_ScanStartButton),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                }
             }
         }
     }
