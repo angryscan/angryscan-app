@@ -80,7 +80,7 @@
 
     <string name="MainScreen-SelectPathPlaceholder">Choose paths to scan separated by semicolon (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Choose file with paths</string>
-    <string name="MainScreen-ScanStartButton">Scan</string>
+    <string name="MainScreen-ScanStartButton">START SCAN</string>
     <string name="MainScreen-ScanCurrentState">Current scans (%1$d)</string>
     <string name="MainScreen-SelectTypeFolder">Folder</string>
     <string name="MainScreen-SelectTypeFile">Files</string>

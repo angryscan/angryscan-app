@@ -78,7 +78,7 @@
 
     <string name="MainScreen-SelectPathPlaceholder">Укажите пути для сканирования через точку с запятой (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Укажите файл с путями</string>
-    <string name="MainScreen-ScanStartButton">Сканировать</string>
+    <string name="MainScreen-ScanStartButton">СКАНИРОВАТЬ</string>
     <string name="MainScreen-ScanCurrentState">Текущие сканирования (%1$d)</string>
     <string name="MainScreen-SelectTypeFolder">Папка</string>
     <string name="MainScreen-SelectTypeFile">Файлы</string>

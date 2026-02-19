@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,20 +44,8 @@ private enum class SourceSelectorVariant {
     Tabs
 }
 
-@Composable
-private fun SectionHeader(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    // Overline-style: мелкий uppercase, letter-spacing, приглушённый цвет (паттерн из Material / Tailwind / дашбордов)
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-        letterSpacing = 0.8.sp,
-        modifier = modifier.padding(bottom = 8.dp)
-    )
-}
+// Единый вертикальный отступ: меню→path+scan, path+scan→лейблы, лейблы→контент, снизу блоков
+private val MainContentVerticalSpacing = 18.dp
 
 @Composable
 fun MainScreen(
@@ -79,15 +66,19 @@ fun MainScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Верхний блок: путь + кнопка Scan
+            // Блок путь + кнопка Scan — сверху
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, top = 12.dp, end = 24.dp, bottom = 4.dp)
+                    .padding(
+                        start = 24.dp,
+                        top = MainContentVerticalSpacing,
+                        end = 24.dp,
+                        bottom = MainContentVerticalSpacing
+                    )
             ) {
                 bottomBarContent()
             }
-            // Ниже: источники и настройки
             Row(
                 modifier = Modifier
                     .weight(1f)
@@ -98,10 +89,20 @@ fun MainScreen(
                 Column(
                     modifier = Modifier
                         .width(420.dp)
-                        .padding(top = 8.dp, bottom = 24.dp, start = 24.dp, end = 8.dp)
+                        .padding(
+                            top = 0.dp,
+                            bottom = MainContentVerticalSpacing,
+                            start = 24.dp,
+                            end = 8.dp
+                        )
                         .fillMaxHeight()
                 ) {
-                    SectionHeader(text = stringResource(Res.string.MainScreen_SidebarTitle))
+                    Text(
+                        text = stringResource(Res.string.MainScreen_SidebarTitle),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = MainContentVerticalSpacing)
+                    )
                     MainScreenSidebar(
                         navController = navController,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -115,9 +116,19 @@ fun MainScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .padding(top = 8.dp, bottom = 24.dp, start = 8.dp, end = 24.dp)
+                        .padding(
+                            top = 0.dp,
+                            bottom = MainContentVerticalSpacing,
+                            start = 8.dp,
+                            end = 24.dp
+                        )
                 ) {
-                    SectionHeader(text = stringResource(Res.string.MainScreen_SettingsTitle))
+                    Text(
+                        text = stringResource(Res.string.MainScreen_SettingsTitle),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = MainContentVerticalSpacing)
+                    )
                     Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                         SettingsBox(transition = settingsTransition, isS3Source = isS3Source)
                     }
