@@ -19,7 +19,7 @@ mordant = "3.0.2"
 #Angryscan libraries
 gitleaks = "0.1.1"
 core = "1.4.8"
-gammmaaaa = "0.1.1"
+gammmaaaa = "0.3.5"
 
 [libraries]
 #Hyperscan

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.path
 import io.modelaudit.scanFolder
@@ -40,6 +41,8 @@ import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import java.io.File
+
+private val logger = KotlinLogging.logger {}
 
 @Composable
 fun AIModelsScreen(
@@ -188,11 +191,14 @@ fun AIModelsScreen(
         Row {
             Button(
                 onClick = {
+                    logger.info { "[AI Models] Scan button clicked. path=\"$path\"" }
                     if (path.isBlank()) {
+                        logger.warn { "[AI Models] Scan rejected: path is blank" }
                         scanNotCorrectPath = true
                         return@Button
                     }
                     if (!File(path).exists()) {
+                        logger.warn { "[AI Models] Scan rejected: path does not exist: \"$path\"" }
                         scanNotCorrectPath = true
                         return@Button
                     }
@@ -201,6 +207,7 @@ fun AIModelsScreen(
                     val pathToScan = path
                     coroutineScope.launch {
                         try {
+                            logger.info { "[AI Models] Creating task for path=\"$pathToScan\"" }
                             val task = scanService.createTask(
                                 name = null,
                                 path = pathToScan,
@@ -209,6 +216,7 @@ fun AIModelsScreen(
                                 fastScan = false,
                                 connector = ConnectorAIModels()
                             )
+                            logger.info { "[AI Models] Task created. id=${task.id.value}, path=\"${task.path.value}\"" }
                             task.setState(TaskState.SCANNING)
                             task.id.value?.let { taskId ->
                                 expandScanState(taskId)
@@ -218,6 +226,7 @@ fun AIModelsScreen(
                                 runAIModelScan(scanService, task, pathToScan)
                             }
                         } catch (e: Exception) {
+                            logger.error(e) { "[AI Models] Failed to create task or start scan: ${e.message}" }
                             scanInProgress = false
                         }
                     }
@@ -263,12 +272,21 @@ private suspend fun runAIModelScan(
     task: TaskEntityViewModel,
     path: String
 ) {
+    logger.info { "[AI Models] runAIModelScan started. taskId=${task.id.value}, path=\"$path\"" }
     try {
+        logger.info { "[AI Models] Calling io.modelaudit.scanFolder(\"$path\")..." }
         val result = withContext(Dispatchers.IO) { scanFolder(path) }
+        val resultStr = result.toString()
+        val rawPreviewLen = 3000
+        logger.info { "[AI Models] scanFolder returned. result length=${resultStr.length}, preview=${resultStr.take(200)}..." }
+        logger.debug { "[AI Models] Raw output from scanFolder (first $rawPreviewLen chars): ${resultStr.take(rawPreviewLen)}${if (resultStr.length > rawPreviewLen) " ... (truncated)" else ""}" }
         withContext(Dispatchers.Default) {
-            scanService.completeAIModelTask(task, result.toString())
+            logger.info { "[AI Models] Calling completeAIModelTask for taskId=${task.id.value}" }
+            scanService.completeAIModelTask(task, resultStr)
+            logger.info { "[AI Models] completeAIModelTask finished successfully" }
         }
     } catch (e: Exception) {
+        logger.error(e) { "[AI Models] runAIModelScan failed: ${e.message}. Setting task to FAILED." }
         withContext<Unit>(Dispatchers.Default) {
             task.setState(TaskState.FAILED)
         }
