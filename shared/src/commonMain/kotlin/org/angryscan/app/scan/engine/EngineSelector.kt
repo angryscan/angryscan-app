@@ -13,7 +13,15 @@ fun KClass<out IScanEngine>.getEngine(matchers: List<IMatcher>): IScanEngine {
 
 fun KClass<out IScanEngine>.getEngine(matchers: List<IMatcher>, requireKeywords: Boolean): IScanEngine {
     return when(this) {
-        HyperScanEngine::class -> HyperScanEngine(matchers.toHyperScanMatchers(), requireKeywords = requireKeywords)
+        HyperScanEngine::class -> {
+            val hyperMatchers = matchers.toHyperScanMatchers()
+            if (hyperMatchers.isEmpty()) {
+                // HyperScan does not accept zero patterns; use fallback engine (e.g. Gitleaks is not IHyperMatcher)
+                fallback().getEngine(matchers, requireKeywords)
+            } else {
+                HyperScanEngine(hyperMatchers, requireKeywords = requireKeywords)
+            }
+        }
         KotlinEngine::class -> KotlinEngine(matchers.toKotlinMatchers(), requireKeywords = requireKeywords)
         CustomEngine::class -> CustomEngine(matchers.toCustomMatchers())
         else -> throw IllegalArgumentException("Unknown engine")
