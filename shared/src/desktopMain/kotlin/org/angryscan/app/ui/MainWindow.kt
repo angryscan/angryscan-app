@@ -23,9 +23,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import ch.qos.logback.classic.Level
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.OS
 import org.angryscan.app.logging.LogLevel
@@ -33,7 +30,7 @@ import org.angryscan.app.navigation.AppScreen
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.appName
 import org.angryscan.app.resources.eula_version
-import org.angryscan.app.resources.icon
+import org.angryscan.app.resources.favicon_light
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.mainWindow
 import org.angryscan.app.ui.dialogs.EulaDialog
@@ -44,6 +41,9 @@ import org.angryscan.app.ui.windows.screens.main.MainScreen
 import org.angryscan.app.ui.windows.screens.scans.ScanResultScreen
 import org.angryscan.app.ui.windows.screens.scans.ScansScreen
 import org.angryscan.app.ui.windows.screens.settings.SettingsScreen
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import java.awt.Dimension
 import java.util.*
 
@@ -92,7 +92,7 @@ fun MainWindow(
         state = windowState,
         undecorated = true,
         transparent = true,
-        icon = painterResource(Res.drawable.icon),
+        icon = painterResource(Res.drawable.favicon_light),
         visible = isVisible,
         alwaysOnTop = focusRemember
     ) {

@@ -7,9 +7,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.ApplicationScope
 import dorkbox.systemTray.MenuItem
 import dorkbox.systemTray.SystemTray
+import org.angryscan.app.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
-import org.angryscan.app.resources.*
 
 @Composable
 fun ApplicationScope.DorkTray(
@@ -20,8 +20,9 @@ fun ApplicationScope.DorkTray(
 
     val tray by remember { mutableStateOf(SystemTray.get() ?: throw Exception("Unable to load SystemTray!")) }
 
-    val trayImage = painterResource(Res.drawable.icon)
-        .toAwtImage(Density(2f), LayoutDirection.Ltr)
+    // Более высокая плотность — иконка рендерится крупнее (трей сам масштабирует под слот)
+    val trayImage = painterResource(Res.drawable.favicon_light_tab)
+        .toAwtImage(Density(5f), LayoutDirection.Ltr)
 
     LaunchedEffect(true) {
         tray.setImage(
