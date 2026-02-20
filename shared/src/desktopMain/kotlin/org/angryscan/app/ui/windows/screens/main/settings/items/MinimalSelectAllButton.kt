@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.ScanSettings_DiscardAll
 import org.angryscan.app.resources.ScanSettings_SelectAll
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.stringResource
@@ -104,13 +105,14 @@ fun MinimalSelectAllButton(
             }
 
             Text(
-                text = stringResource(Res.string.ScanSettings_SelectAll),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isHovered)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurface
+                text = if (isAllSelected) stringResource(Res.string.ScanSettings_DiscardAll) else stringResource(Res.string.ScanSettings_SelectAll),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = when {
+                    isAllSelected -> MaterialTheme.colorScheme.error
+                    isHovered -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
         }
     }

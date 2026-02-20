@@ -122,7 +122,7 @@
     <string name="ScanSettings-TabDetect">Detection rules</string>
     <string name="ScanSettings-TabSignatures">User signatures</string>
     <string name="ScanSettings-SelectAll">Select all</string>
-    <string name="ScanSettings-DeselectAll">Deselect all</string>
+    <string name="ScanSettings-DiscardAll">Discard all</string>
     <string name="ScanSettings-DebugMode">Collect debug info</string>
 
     <string name="ScanSettings-Tooltip-FastScan">Partially scan files to speed up the scan</string>

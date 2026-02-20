@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
 import org.angryscan.app.resources.*
+import org.angryscan.app.ui.windows.screens.main.settings.items.SelectAllOrDiscardAllText
 import org.angryscan.common.matchers.UserSignature
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -84,7 +85,8 @@ fun SettingsBoxUserSignature(scanSettings: ScanSettings) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(
+                SelectAllOrDiscardAllText(
+                    allSelected = selectedSignatures.containsAll(userSignatures),
                     onClick = {
                         if (selectedSignatures.containsAll(userSignatures))
                             selectedSignatures.clear()
@@ -92,12 +94,7 @@ fun SettingsBoxUserSignature(scanSettings: ScanSettings) {
                             selectedSignatures.addAll(userSignatures.filter { it !in selectedSignatures })
                         scanSettings.save()
                     }
-                ) {
-                    Text(
-                        text = if (selectedSignatures.containsAll(userSignatures)) stringResource(Res.string.ScanSettings_DeselectAll) else stringResource(Res.string.ScanSettings_SelectAll),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
+                )
             }
         }
 

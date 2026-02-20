@@ -1,10 +1,10 @@
 package org.angryscan.app.ui.windows.screens.main.settings
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,10 +15,7 @@ import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.ui.strings.composableName
-import org.angryscan.app.ui.windows.screens.main.settings.items.CountryFilterChips
-import org.angryscan.app.ui.windows.screens.main.settings.items.MatcherCountry
-import org.angryscan.app.ui.windows.screens.main.settings.items.MatcherCountryMapping
-import org.angryscan.app.ui.windows.screens.main.settings.items.MatchersGroup
+import org.angryscan.app.ui.windows.screens.main.settings.items.*
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.matchers.*
 import org.angryscan.gitleaks.matcher.GitleaksMatcher
@@ -106,7 +103,8 @@ fun SettingsBoxDetectFunctionsGrouped(scanSettings: ScanSettings) {
                     Pair(selected, total)
                 }
             )
-            TextButton(
+            SelectAllOrDiscardAllText(
+                allSelected = isAllSelected,
                 onClick = {
                     if (isAllSelected) {
                         countryMatchers.forEach { m -> scanSettings.matchers.removeAll { it::class == m::class } }
@@ -115,19 +113,12 @@ fun SettingsBoxDetectFunctionsGrouped(scanSettings: ScanSettings) {
                     }
                     scanSettings.save()
                 }
-            ) {
-                Text(
-                    text = if (isAllSelected) stringResource(Res.string.ScanSettings_DeselectAll) else stringResource(Res.string.ScanSettings_SelectAll),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+            )
         }
 
         filteredGroups.forEach { group ->
             val groupMatchers = group.matchers
             val groupAllSelected = groupMatchers.all { m -> scanSettings.matchers.any { it::class == m::class } }
-            val interactionSource = remember { MutableInteractionSource() }
-            val isHovered by interactionSource.collectIsHoveredAsState()
 
             Row(
                 modifier = Modifier
@@ -142,25 +133,16 @@ fun SettingsBoxDetectFunctionsGrouped(scanSettings: ScanSettings) {
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = if (groupAllSelected) stringResource(Res.string.ScanSettings_DeselectAll) else stringResource(Res.string.ScanSettings_SelectAll),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontSize = 13.sp,
-                    color = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = {
-                                if (groupAllSelected) {
-                                    groupMatchers.forEach { m -> scanSettings.matchers.removeAll { it::class == m::class } }
-                                } else {
-                                    scanSettings.matchers.addAll(groupMatchers.filter { m -> !scanSettings.matchers.any { it::class == m::class } })
-                                }
-                                scanSettings.save()
-                            }
-                        )
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                SelectAllOrDiscardAllText(
+                    allSelected = groupAllSelected,
+                    onClick = {
+                        if (groupAllSelected) {
+                            groupMatchers.forEach { m -> scanSettings.matchers.removeAll { it::class == m::class } }
+                        } else {
+                            scanSettings.matchers.addAll(groupMatchers.filter { m -> !scanSettings.matchers.any { it::class == m::class } })
+                        }
+                        scanSettings.save()
+                    }
                 )
             }
             FlowRow(

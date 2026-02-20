@@ -120,7 +120,7 @@
     <string name="ScanSettings-TabDetect">Правила детектирования</string>
     <string name="ScanSettings-TabSignatures">Пользовательские сигнатуры</string>
     <string name="ScanSettings-SelectAll">Выбрать все</string>
-    <string name="ScanSettings-DeselectAll">Снять выбор</string>
+    <string name="ScanSettings-DiscardAll">Сбросить все</string>
     <string name="SettingsScreen-Logging">Журналирование</string>
     <string name="SettingsScreen-OpenFolder">Открыть папку</string>
     <string name="SettingsScreen-ScanEngine">Движок сканирования</string>
