@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -34,6 +35,7 @@ private val SIDEBAR_WIDTH = 420.dp
 private val ITEM_HEIGHT = 56.dp
 private val ACCENT_BAR_WIDTH = 4.dp
 private val ITEM_RADIUS = 14.dp
+private val CONTAINER_RADIUS = 24.dp
 
 @Composable
 fun MainScreenSidebar(
@@ -51,16 +53,22 @@ fun MainScreenSidebar(
         else -> MainScreenConnector.FileShare
     }
 
+    val colorScheme = MaterialTheme.colorScheme
+    val containerShape = RoundedCornerShape(CONTAINER_RADIUS)
     Column(
         modifier = modifier
             .width(SIDEBAR_WIDTH)
             .fillMaxHeight()
-            .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                RoundedCornerShape(24.dp)
+            .clip(containerShape)
+            .background(colorScheme.surface.copy(alpha = 0.6f), containerShape)
+            .border(
+                width = 1.dp,
+                color = colorScheme.outlineVariant.copy(alpha = 0.25f),
+                shape = containerShape
             )
             .padding(vertical = 20.dp, horizontal = 12.dp)
     ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SidebarNavItem(
             isSelected = selectedRoute == MainScreenConnector.FileShare,
             label = "File Share",
@@ -91,6 +99,7 @@ fun MainScreenSidebar(
                 }
             }
         )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -122,12 +131,21 @@ private fun SidebarNavItem(
         animationSpec = tween(200),
         label = "accent"
     )
-
+    val colorScheme = MaterialTheme.colorScheme
+    val isLightTheme = (colorScheme.surface.red + colorScheme.surface.green + colorScheme.surface.blue) / 3f >= 0.5f
+    val itemShape = RoundedCornerShape(ITEM_RADIUS)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(ITEM_HEIGHT)
-            .clip(RoundedCornerShape(ITEM_RADIUS))
+            .clip(itemShape)
+            .then(
+                if (isLightTheme) Modifier.border(
+                    width = 1.dp,
+                    color = colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    shape = itemShape
+                ) else Modifier
+            )
             .background(backgroundColor)
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable(

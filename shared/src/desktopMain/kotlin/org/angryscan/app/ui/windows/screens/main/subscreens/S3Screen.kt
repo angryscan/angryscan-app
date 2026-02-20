@@ -19,7 +19,6 @@ import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.MainScreen_ScanHint_S3
-import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
@@ -299,18 +298,17 @@ fun S3Screen(
                     },
                     modifier = ScanButtonModifier(
                         isReady = true,
-                        modifier = Modifier.width(320.dp).height(72.dp)
-                    ),
+                        modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                    ).scanButtonHoverFeedback(enabled = true),
                     shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 10.dp,
+                        disabledElevation = 2.dp
+                    ),
+                    colors = startScanButtonColors()
                 ) {
-                    Text(
-                        text = stringResource(Res.string.MainScreen_ScanStartButton),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    StartScanButtonContent()
                 }
             } else {
                 DescriptionTooltip(
@@ -322,18 +320,17 @@ fun S3Screen(
                         onClick = { },
                         modifier = ScanButtonModifier(
                             isReady = false,
-                            modifier = Modifier.width(320.dp).height(72.dp)
-                        ),
+                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                        ).scanButtonHoverFeedback(enabled = false),
                         shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 6.dp,
+                            pressedElevation = 10.dp,
+                            disabledElevation = 0.dp
+                        ),
+                        colors = startScanButtonColors()
                     ) {
-                        Text(
-                            text = stringResource(Res.string.MainScreen_ScanStartButton),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        StartScanButtonContent()
                     }
                 }
             }
