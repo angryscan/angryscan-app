@@ -37,7 +37,7 @@ logging-oshai = { module = "io.github.oshai:kotlin-logging-jvm", version = "7.0.
 logging-logback = { module = "ch.qos.logback:logback-classic", version = "1.5.17" }
 logging-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
 
-dorkbox = { module = "com.dorkbox:SystemTray", version = "4.4" }
+composenativetray = { module = "io.github.kdroidfilter:composenativetray", version = "1.1.0" }
 knotify = { module = "io.github.kdroidfilter:knotify", version.ref = "knotify" }
 
 files-junrar = { module = "com.github.junrar:junrar", version = "7.5.5" }

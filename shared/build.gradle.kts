@@ -15,7 +15,7 @@ kotlin {
                 implementation(compose.materialIconsExtended)
                 implementation(compose.material3)
 
-                implementation(libs.dorkbox)
+                implementation(libs.composenativetray)
                 implementation(libs.knotify)
 
                 implementation(libs.kotlinx.coroutines.core)

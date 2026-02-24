@@ -66,7 +66,6 @@ fun MainWindow(
     val appSettings = koinInject<AppSettings>()
 
     val hideOnMinimize by remember { appSettings.hideOnMinimize }
-    val isMac = OS.currentOS() == OS.MAC
 
     val navController = rememberNavController()
     val scanService = koinInject<ScanService>()
@@ -167,7 +166,7 @@ fun MainWindow(
                         windowPlacement = windowState.placement,
                         expanded = windowState.placement == WindowPlacement.Maximized,
                         onMinimizeClick = {
-                            if (hideOnMinimize && !isMac) {
+                            if (shouldHideOnMinimizeToTray(hideOnMinimize, OS.currentOS())) {
                                 onHideRequest()
                             } else {
                                 windowState.isMinimized = true
