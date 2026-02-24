@@ -26,6 +26,7 @@ import ch.qos.logback.classic.Level
 import io.github.kdroidfilter.knotify.builder.ExperimentalNotificationsApi
 import io.github.kdroidfilter.knotify.builder.sendNotification
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -51,6 +52,7 @@ import org.angryscan.app.ui.windows.screens.scans.ScanResultScreen
 import org.angryscan.app.ui.windows.screens.scans.ScansScreen
 import org.angryscan.app.ui.windows.screens.settings.SettingsScreen
 import java.awt.Dimension
+import java.io.File
 import java.util.*
 
 @Composable
@@ -72,6 +74,7 @@ fun MainWindow(
     val scope = rememberCoroutineScope()
     val notificationTitle = stringResource(Res.string.scanCompletedNotificationTitle)
     val notificationMessage = stringResource(Res.string.scanCompletedNotificationMessage)
+    val notificationAssets = remember { scanCompletionNotificationAssets() }
 
     val debugMode by remember { appSettings.debugMode }
 
@@ -98,8 +101,10 @@ fun MainWindow(
     LaunchedEffect(Unit) {
         scanService.tasks.completedTaskIds.collect { taskId ->
             sendScanResultNotification(
+                completionMiniIconResourcePath = notificationAssets.completionMiniIconResourcePath,
                 title = notificationTitle,
                 message = notificationMessage,
+                appIconResourcePath = notificationAssets.appIconResourcePath,
                 onActivated = {
                     scope.launch {
                         onShowRequest()
@@ -304,6 +309,8 @@ fun MainWindow(
 private suspend fun sendScanResultNotification(
     title: String,
     message: String,
+    appIconResourcePath: String,
+    completionMiniIconResourcePath: String,
     onActivated: () -> Unit
 ) {
     val canUseNativeNotification = shouldUseNativeScanCompletionNotification(
@@ -313,9 +320,27 @@ private suspend fun sendScanResultNotification(
     )
     if (!canUseNativeNotification) return
 
+    val appIconPath = runCatching {
+        composeResourceToNotificationFile(appIconResourcePath)
+    }.getOrNull()
+    val completionMiniIconPath = runCatching {
+        composeResourceToNotificationFile(completionMiniIconResourcePath)
+    }.getOrNull()
+
     sendNotification(
         title = title,
         message = message,
+        largeImage = completionMiniIconPath,
+        smallIcon = appIconPath,
         onActivated = onActivated
     )
+}
+
+@OptIn(ExperimentalResourceApi::class)
+private suspend fun composeResourceToNotificationFile(resourcePath: String): String {
+    val fileName = resourcePath.substringAfterLast('/')
+    val targetFile = File(System.getProperty("java.io.tmpdir"), "angryscan_notification_$fileName")
+    targetFile.writeBytes(Res.readBytes(resourcePath))
+    targetFile.deleteOnExit()
+    return targetFile.absolutePath
 }
