@@ -217,6 +217,9 @@ suspend fun main(args: Array<String>) {
                     onHideRequest = {
                         mainIsVisible = false
                     },
+                    onShowRequest = {
+                        mainIsVisible = true
+                    },
                     isVisible = mainIsVisible
                 )
                 DorkTray(

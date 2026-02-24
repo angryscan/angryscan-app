@@ -48,6 +48,8 @@
     <string name="trayExit">Exit</string>
     <string name="trayOpen">Open</string>
     <string name="trayHide">Hide</string>
+    <string name="scanCompletedNotificationTitle">Scanning completed</string>
+    <string name="scanCompletedNotificationMessage">Click to open completed task</string>
     <string name="statTime">Scan time: %1$d:%2$d:%3$d</string>
     <string name="statTotalFile">Total files in dir: %1$d (%2$s)</string>
     <string name="statFilesSelected">Files selected to scanFile: %1$d (%2$s)</string>

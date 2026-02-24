@@ -16,6 +16,7 @@ kotlin {
                 implementation(compose.material3)
 
                 implementation(libs.dorkbox)
+                implementation(libs.knotify)
 
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)

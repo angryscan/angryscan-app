@@ -23,6 +23,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import ch.qos.logback.classic.Level
+import io.github.kdroidfilter.knotify.builder.ExperimentalNotificationsApi
+import io.github.kdroidfilter.knotify.builder.sendNotification
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -34,6 +37,9 @@ import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.appName
 import org.angryscan.app.resources.eula_version
 import org.angryscan.app.resources.icon
+import org.angryscan.app.resources.scanCompletedNotificationMessage
+import org.angryscan.app.resources.scanCompletedNotificationTitle
+import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.mainWindow
 import org.angryscan.app.ui.dialogs.EulaDialog
@@ -51,6 +57,7 @@ import java.util.*
 fun MainWindow(
     onCloseRequest: () -> Unit,
     onHideRequest: () -> Unit,
+    onShowRequest: () -> Unit,
     isVisible: Boolean
 ) {
     val windowState = rememberWindowState(width = 1280.dp, height = 720.dp)
@@ -62,6 +69,10 @@ fun MainWindow(
     val isMac = OS.currentOS() == OS.MAC
 
     val navController = rememberNavController()
+    val scanService = koinInject<ScanService>()
+    val scope = rememberCoroutineScope()
+    val notificationTitle = stringResource(Res.string.scanCompletedNotificationTitle)
+    val notificationMessage = stringResource(Res.string.scanCompletedNotificationMessage)
 
     val debugMode by remember { appSettings.debugMode }
 
@@ -84,6 +95,20 @@ fun MainWindow(
             LogLevel.setLoggingLevel(Level.DEBUG)
         else
             LogLevel.setLoggingLevel(Level.INFO)
+    }
+    LaunchedEffect(Unit) {
+        scanService.tasks.completedTaskIds.collect { taskId ->
+            sendScanResultNotification(
+                title = notificationTitle,
+                message = notificationMessage,
+                onActivated = {
+                    scope.launch {
+                        onShowRequest()
+                        navController.navigate(AppScreen.ScanResult(taskId))
+                    }
+                }
+            )
+        }
     }
 
     Window(
@@ -246,6 +271,7 @@ fun MainWindow(
                             composable<AppScreen.Main> {
                                 MainScreen(
                                     showScan = { taskId ->
+                                        onShowRequest()
                                         navController.navigate(AppScreen.ScanResult(taskId))
                                     }
                                 )
@@ -253,6 +279,7 @@ fun MainWindow(
                             composable<AppScreen.Scans> {
                                 ScansScreen(
                                     onTaskClick = { taskId ->
+                                        onShowRequest()
                                         navController.navigate(AppScreen.ScanResult(taskId))
                                     }
                                 )
@@ -272,4 +299,17 @@ fun MainWindow(
             }
         }
     }
+}
+
+@OptIn(ExperimentalNotificationsApi::class)
+private suspend fun sendScanResultNotification(
+    title: String,
+    message: String,
+    onActivated: () -> Unit
+) {
+    sendNotification(
+        title = title,
+        message = message,
+        onActivated = onActivated
+    )
 }

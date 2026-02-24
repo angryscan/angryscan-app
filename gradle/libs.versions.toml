@@ -16,6 +16,7 @@ hyperscan = "5.4.11-3.1.0"
 hyperscan-windows = "5.4.0-2.0.0"
 clikt = "5.0.3"
 mordant = "3.0.2"
+knotify = "0.4.3"
 #Angryscan libraries
 gitleaks = "0.1.1"
 core = "1.4.8"
@@ -37,6 +38,7 @@ logging-logback = { module = "ch.qos.logback:logback-classic", version = "1.5.17
 logging-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
 
 dorkbox = { module = "com.dorkbox:SystemTray", version = "4.4" }
+knotify = { module = "io.github.kdroidfilter:knotify", version.ref = "knotify" }
 
 files-junrar = { module = "com.github.junrar:junrar", version = "7.5.5" }
 files-fastexcel-reader = { module = "org.dhatim:fastexcel-reader", version.ref = "fastexcel" }
