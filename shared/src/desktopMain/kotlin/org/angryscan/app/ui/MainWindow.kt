@@ -306,6 +306,13 @@ private suspend fun sendScanResultNotification(
     message: String,
     onActivated: () -> Unit
 ) {
+    val canUseNativeNotification = shouldUseNativeScanCompletionNotification(
+        os = OS.currentOS(),
+        javaHome = System.getProperty("java.home"),
+        jpackageAppPath = System.getProperty("jpackage.app-path")
+    )
+    if (!canUseNativeNotification) return
+
     sendNotification(
         title = title,
         message = message,
