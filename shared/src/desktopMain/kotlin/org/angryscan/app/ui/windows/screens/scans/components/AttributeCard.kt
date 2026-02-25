@@ -33,13 +33,13 @@ fun AttributeCard(
                     MaterialTheme.shapes.small
                 )
                 .background(color = MaterialTheme.colorScheme.secondary)
-                .padding(vertical = 2.dp, horizontal = 4.dp)
+                .padding(vertical = 4.dp, horizontal = 8.dp)
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 14.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.1.sp,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.05.sp,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }
@@ -67,13 +67,13 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
                     onClick = onClick,
                     enabled = enabled
                 )
-                .padding(vertical = 2.dp, horizontal = 4.dp)
+                .padding(vertical = 4.dp, horizontal = 8.dp)
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 14.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.1.sp,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.05.sp,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }

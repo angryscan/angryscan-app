@@ -77,7 +77,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 20.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         Column(
             modifier = Modifier
@@ -89,12 +89,12 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     color = colorScheme.outlineVariant.copy(alpha = 0.25f),
                     shape = containerShape
                 )
-                .padding(24.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -145,8 +145,8 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -244,7 +244,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                             .fillMaxWidth()
                             .padding(end = 28.dp),
                         state = state,
-                        contentPadding = PaddingValues(vertical = 8.dp),
+                        contentPadding = PaddingValues(vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(filteredTasks) { task ->

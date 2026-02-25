@@ -4,6 +4,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -25,59 +26,79 @@ fun ScanTimeStatItem(
     pausedAt: LocalDateTime?,
     state: TaskState
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Column {
+    val compact = true
+    if (compact) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             Text(
-                text = stringResource(resource = Res.string.Task_StartedAt),
-                fontSize = 14.sp,
-                letterSpacing = 0.1.sp,
-                maxLines = 1
+                text = "${stringResource(Res.string.Task_StartedAt)} ${startedAt?.let { DateFormat.format(it) } ?: ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (finishedAt != null && state == TaskState.COMPLETED) {
                 Text(
-                    text = stringResource(Res.string.Task_FinishedAt),
-                    fontSize = 14.sp,
-                    letterSpacing = 0.1.sp,
-                    maxLines = 1
+                    text = "${stringResource(Res.string.Task_FinishedAt)} ${DateFormat.format(finishedAt)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
                 Text(
-                    text = stringResource(resource = Res.string.Task_PausedAt),
-                    fontSize = 14.sp,
-                    letterSpacing = 0.1.sp,
-                    maxLines = 1
+                    text = "${stringResource(Res.string.Task_PausedAt)} ${DateFormat.format(pausedAt)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        Column {
-            Text(
-                text = startedAt?.let {
-                    DateFormat.format(it)
-                } ?: "",
-                fontSize = 14.sp,
-                letterSpacing = 0.1.sp,
-                maxLines = 1
-            )
-            if (finishedAt != null && state == TaskState.COMPLETED) {
+    } else {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Column {
                 Text(
-                    text = finishedAt.let {
-                        DateFormat.format(it)
-                    },
+                    text = stringResource(resource = Res.string.Task_StartedAt),
                     fontSize = 14.sp,
                     letterSpacing = 0.1.sp,
                     maxLines = 1
                 )
-            } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
+                if (finishedAt != null && state == TaskState.COMPLETED) {
+                    Text(
+                        text = stringResource(Res.string.Task_FinishedAt),
+                        fontSize = 14.sp,
+                        letterSpacing = 0.1.sp,
+                        maxLines = 1
+                    )
+                } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
+                    Text(
+                        text = stringResource(resource = Res.string.Task_PausedAt),
+                        fontSize = 14.sp,
+                        letterSpacing = 0.1.sp,
+                        maxLines = 1
+                    )
+                }
+            }
+            Column {
                 Text(
-                    text = pausedAt.let {
-                        DateFormat.format(it)
-                    },
+                    text = startedAt?.let { DateFormat.format(it) } ?: "",
                     fontSize = 14.sp,
                     letterSpacing = 0.1.sp,
                     maxLines = 1
                 )
+                if (finishedAt != null && state == TaskState.COMPLETED) {
+                    Text(
+                        text = DateFormat.format(finishedAt),
+                        fontSize = 14.sp,
+                        letterSpacing = 0.1.sp,
+                        maxLines = 1
+                    )
+                } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
+                    Text(
+                        text = DateFormat.format(pausedAt),
+                        fontSize = 14.sp,
+                        letterSpacing = 0.1.sp,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

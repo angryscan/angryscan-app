@@ -13,7 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Http
 import androidx.compose.material.icons.outlined.RocketLaunch
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,7 +29,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.angryscan.app.db.models.TaskState
@@ -110,6 +112,7 @@ fun ScanTaskCard(
     val isHovered by interactionSource.collectIsHoveredAsState()
     val colorScheme = MaterialTheme.colorScheme
     val accentBarWidth = 4.dp
+    val iconSize = 30.dp
 
     Row(
         modifier = Modifier
@@ -136,190 +139,124 @@ fun ScanTaskCard(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(18.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            ScanTimeStatItem(
+                startedAt = startedAt,
+                finishedAt = finishedAt,
+                pausedAt = pausedAt,
+                state = state
+            )
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier
-                        .weight(1f)
+                    modifier = Modifier.weight(1f)
                 ) {
                     if (fastScan) {
                         Icon(
                             imageVector = Icons.Outlined.RocketLaunch,
                             contentDescription = null,
-                            modifier = Modifier
-                                .size(24.dp),
+                            modifier = Modifier.size(iconSize),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(1.dp)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (state == TaskState.SCANNING) {
-                                val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                                val rotationAngle by infiniteTransition.animateFloat(
-                                    initialValue = 0f,
-                                    targetValue = 360f,
-                                    animationSpec = infiniteRepeatable(
-                                        animation = tween(2000, easing = LinearEasing),
-                                        repeatMode = RepeatMode.Restart
-                                    ),
-                                    label = "rotation"
-                                )
-                                
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .rotate(rotationAngle),
-                                    strokeWidth = 2.dp,
-                                    color = state.color()
-                                )
-                            }
-                            
+                    Box(contentAlignment = Alignment.Center) {
+                        if (state == TaskState.SCANNING) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                            val rotationAngle by infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 360f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(2000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                ),
+                                label = "rotation"
+                            )
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(iconSize).rotate(rotationAngle),
+                                strokeWidth = 2.dp,
+                                color = state.color()
+                            )
+                        } else {
                             Icon(
                                 imageVector = state.icon(),
                                 contentDescription = null,
                                 tint = state.color(),
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(iconSize)
                             )
                         }
                     }
-
-                    when(taskEntity.dbTask.connector) {
-                        is ConnectorS3 -> {
-                            Icon(
-                                painter = painterResource(Res.drawable.aws_s3),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                        }
-                        is ConnectorHTTP -> {
-                            Icon(
-                                imageVector = Icons.Outlined.Http,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                        }
-                        is ConnectorFileShare -> {
-                            Icon(
-                                imageVector = Icons.Outlined.FolderOpen,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                        }
-                        is ConnectorAIModels -> {
-                            Icon(
-                                imageVector = Icons.Outlined.RocketLaunch,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                        }
+                    when (taskEntity.dbTask.connector) {
+                        is ConnectorS3 -> Icon(painter = painterResource(Res.drawable.aws_s3), contentDescription = null, modifier = Modifier.size(iconSize))
+                        is ConnectorHTTP -> Icon(imageVector = Icons.Outlined.Http, contentDescription = null, modifier = Modifier.size(iconSize))
+                        is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(iconSize))
+                        is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = null, modifier = Modifier.size(iconSize))
                     }
-
-                    Column(
+                    Text(
+                        text = when {
+                            name != null && path.isNotBlank() && path != name -> "$name · $path"
+                            else -> (name ?: path)
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
+                            .weight(1f)
                             .clickable(onClick = onClick)
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = name ?: path,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(0.7f)
-                        )
-                        if (name != null && path.isNotBlank() && path != name) {
-                            Text(
-                                text = path,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth(0.7f)
-                            )
-                        }
-                    }
+                            .padding(vertical = 2.dp)
+                    )
                 }
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(state.color().copy(alpha = 0.2f))
-                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = state.text(),
-                        fontSize = 11.sp,
-                        color = state.color(),
-                        letterSpacing = 0.05.sp
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = state.color()
                     )
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                ScanTimeStatItem(
-                    startedAt = startedAt,
-                    finishedAt = finishedAt,
-                    pausedAt = pausedAt,
-                    state = state
-                )
-
-                VerticalDivider(
-                    thickness = 1.dp,
-                    color = colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                ScanStat(
-                    totalFiles = totalFiles,
-                    selectedFiles = selectedFiles,
-                    foundFiles = foundFiles,
-                    folderSize = folderSize,
-                    selectedFilesSize = selectedFilesSize,
-                    foundFilesSize = foundFilesSize,
-                    scanTime = scanTime,
-                    scoreSum = scoreSum,
-                    onClick = onClick
-                )
-            }
+            ScanStatInline(
+                totalFiles = totalFiles,
+                selectedFiles = selectedFiles,
+                foundFiles = foundFiles,
+                folderSize = folderSize,
+                selectedFilesSize = selectedFilesSize,
+                foundFilesSize = foundFilesSize,
+                scanTime = scanTime,
+                scoreSum = scoreSum,
+                onClick = onClick
+            )
 
             if (foundAttributes.isNotEmpty()) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start)
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.primary
                     )
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
                             AttributeCard(attr.first, attr.second)
