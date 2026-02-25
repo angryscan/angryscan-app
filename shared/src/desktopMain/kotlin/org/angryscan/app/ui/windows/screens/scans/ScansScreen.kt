@@ -101,15 +101,10 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 10.dp),
+                    .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(Res.string.SideMenu_ScanListPage),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = colorScheme.onSurface
-                )
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -126,7 +121,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     leadingIcon = {
                         Icon(
                             Icons.Outlined.Search,
-                            contentDescription = null,
+                            contentDescription = stringResource(Res.string.ScansPage_SearchPlaceholder),
                             tint = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     },
@@ -142,17 +137,17 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
-                Text(
-                    text = stringResource(Res.string.ScansPage_ResultCount, filteredTasks.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colorScheme.onSurfaceVariant
-                )
             }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 12.dp),
+                color = colorScheme.outlineVariant.copy(alpha = 0.2f)
+            )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 14.dp),
+                    .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -167,6 +162,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     paused = paused,
                     error = error,
                     completed = completed,
+                    totalCount = visibleTasks.size,
                     countActive = countActive,
                     countPaused = countPaused,
                     countError = countError,
@@ -214,7 +210,27 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                 )
             }
 
-            if (filteredTasks.isEmpty()) {
+            if (allTasks.isNotEmpty() && visibleTasks.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Text(
+                            text = stringResource(Res.string.ScansPage_Loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else if (filteredTasks.isEmpty()) {
                 val isFiltered = filterTaskStates.isNotEmpty()
                 Box(
                     modifier = Modifier
@@ -229,8 +245,8 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.FolderOpen,
-                            contentDescription = null,
-                            modifier = Modifier.size(56.dp),
+                            contentDescription = stringResource(Res.string.MainScreen_RecentScans_Empty),
+                            modifier = Modifier.size(48.dp),
                             tint = colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                         Text(
@@ -244,7 +260,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                         Text(
                             text = stringResource(Res.string.ScansPage_EmptyHint),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -254,7 +270,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 28.dp),
+                            .padding(end = 16.dp),
                         state = state,
                         contentPadding = PaddingValues(vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -275,7 +291,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                         modifier = Modifier
                             .fillMaxHeight()
                             .padding(end = 8.dp)
-                            .width(10.dp)
+                            .width(8.dp)
                             .align(Alignment.CenterEnd),
                         style = LocalScrollbarStyle.current.copy(
                             unhoverColor = colorScheme.outlineVariant.copy(alpha = 0.6f),

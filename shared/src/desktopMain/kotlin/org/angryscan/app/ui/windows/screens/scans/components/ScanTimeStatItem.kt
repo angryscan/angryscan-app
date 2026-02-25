@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDateTime
@@ -24,29 +26,37 @@ fun ScanTimeStatItem(
     startedAt: LocalDateTime?,
     finishedAt: LocalDateTime?,
     pausedAt: LocalDateTime?,
-    state: TaskState
+    state: TaskState,
+    modifier: Modifier = Modifier
 ) {
     val compact = true
     if (compact) {
         Row(
+            modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = "${stringResource(Res.string.Task_StartedAt)} ${startedAt?.let { DateFormat.format(it) } ?: ""}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (finishedAt != null && state == TaskState.COMPLETED) {
                 Text(
                     text = "${stringResource(Res.string.Task_FinishedAt)} ${DateFormat.format(finishedAt)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
                 Text(
                     text = "${stringResource(Res.string.Task_PausedAt)} ${DateFormat.format(pausedAt)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

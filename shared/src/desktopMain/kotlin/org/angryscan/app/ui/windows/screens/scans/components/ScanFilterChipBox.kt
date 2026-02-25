@@ -3,7 +3,7 @@ package org.angryscan.app.ui.windows.screens.scans.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -19,6 +19,7 @@ fun ScanFilterChipBox(
     paused: Boolean,
     error: Boolean,
     completed: Boolean,
+    totalCount: Int = 0,
     countActive: Int = 0,
     countPaused: Int = 0,
     countError: Int = 0,
@@ -35,10 +36,10 @@ fun ScanFilterChipBox(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ScanFilterChip(
-            text = stringResource(Res.string.ScansPage_FilterAll),
+            text = formatChipLabel(stringResource(Res.string.ScansPage_FilterAll), totalCount),
             selected = !anyFilter,
             onClick = onAllClick,
-            icon = Icons.Outlined.FilterList,
+            icon = Icons.AutoMirrored.Outlined.List,
             tint = colorScheme.onSurfaceVariant
         )
         ScanFilterChip(
@@ -72,5 +73,4 @@ fun ScanFilterChipBox(
     }
 }
 
-private fun formatChipLabel(label: String, count: Int): String =
-    if (count > 0) "$label ($count)" else label
+private fun formatChipLabel(label: String, count: Int): String = "$label ($count)"

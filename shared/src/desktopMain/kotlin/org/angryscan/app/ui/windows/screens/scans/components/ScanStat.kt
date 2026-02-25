@@ -3,18 +3,19 @@ package org.angryscan.app.ui.windows.screens.scans.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.angryscan.app.resources.*
 import org.angryscan.app.ui.extensions.toHumanReadable
@@ -110,6 +111,8 @@ private fun StatChip(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
         color = colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         modifier = base
             .clip(shape)
             .background(colorScheme.surfaceVariant.copy(alpha = 0.35f))
@@ -117,6 +120,7 @@ private fun StatChip(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ScanStatInline(
     totalFiles: Long,
@@ -129,9 +133,9 @@ fun ScanStatInline(
     scoreSum: Long,
     onClick: (() -> Unit)? = null
 ) {
-    Row(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         StatChip(
             "${stringResource(Res.string.Task_TotalFiles)}: ${if (totalFiles > 0 && folderSize.isNotEmpty()) "$totalFiles ($folderSize)" else totalFiles}",

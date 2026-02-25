@@ -126,7 +126,8 @@ fun ScanTaskCard(
             )
             .border(
                 width = 1.dp,
-                color = colorScheme.outlineVariant.copy(alpha = 0.35f),
+                color = if (isHovered) colorScheme.outlineVariant.copy(alpha = 0.5f)
+                else colorScheme.outlineVariant.copy(alpha = 0.35f),
                 shape = cardShape
             )
     ) {
@@ -134,7 +135,7 @@ fun ScanTaskCard(
             modifier = Modifier
                 .width(accentBarWidth)
                 .fillMaxHeight()
-                .background(state.color().copy(alpha = 0.7f), RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
+                .background(state.color().copy(alpha = 0.55f), RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
         )
         Column(
             modifier = Modifier
@@ -151,7 +152,8 @@ fun ScanTaskCard(
                     startedAt = startedAt,
                     finishedAt = finishedAt,
                     pausedAt = pausedAt,
-                    state = state
+                    state = state,
+                    modifier = Modifier.weight(1f)
                 )
                 Box(
                     modifier = Modifier
@@ -177,13 +179,13 @@ fun ScanTaskCard(
                     val availableWidth = maxWidth
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                     if (fastScan) {
                         Icon(
                             imageVector = Icons.Outlined.RocketLaunch,
-                            contentDescription = null,
+                            contentDescription = "Fast scan",
                             modifier = Modifier.size(iconSize),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -208,17 +210,17 @@ fun ScanTaskCard(
                         } else {
                             Icon(
                                 imageVector = state.icon(),
-                                contentDescription = null,
+                                contentDescription = state.text(),
                                 tint = state.color(),
                                 modifier = Modifier.size(iconSize)
                             )
                         }
                     }
                     when (taskEntity.dbTask.connector) {
-                        is ConnectorS3 -> Icon(painter = painterResource(Res.drawable.aws_s3), contentDescription = null, modifier = Modifier.size(iconSize))
-                        is ConnectorHTTP -> Icon(imageVector = Icons.Outlined.Http, contentDescription = null, modifier = Modifier.size(iconSize))
-                        is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(iconSize))
-                        is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = null, modifier = Modifier.size(iconSize))
+                        is ConnectorS3 -> Icon(painter = painterResource(Res.drawable.aws_s3), contentDescription = "S3", modifier = Modifier.size(iconSize))
+                        is ConnectorHTTP -> Icon(imageVector = Icons.Outlined.Http, contentDescription = "HTTP", modifier = Modifier.size(iconSize))
+                        is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = "File share", modifier = Modifier.size(iconSize))
+                        is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = "AI models", modifier = Modifier.size(iconSize))
                     }
                     Box(
                         modifier = Modifier
@@ -258,7 +260,9 @@ fun ScanTaskCard(
 
             if (foundAttributes.isNotEmpty()) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 2.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.Start
                 ) {

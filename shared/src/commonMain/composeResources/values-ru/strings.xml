@@ -105,6 +105,7 @@
     <string name="ScansPage-EmptyHint">Запустите сканирование на вкладке «Главная»</string>
     <string name="ScansPage-NoMatches">Нет сканов по выбранным фильтрам</string>
     <string name="ScansPage-SearchPlaceholder">Поиск по имени или пути…</string>
+    <string name="ScansPage-Loading">Загрузка…</string>
     <string name="MainScreen-SidebarTitle">Источник данных</string>
     <string name="MainScreen-SettingsTitle">Настройки сканирования</string>
     <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>
