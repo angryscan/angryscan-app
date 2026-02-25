@@ -46,6 +46,8 @@
     <string name="trayExit">Выход</string>
     <string name="trayOpen">Открыть</string>
     <string name="trayHide">Сложить</string>
+    <string name="scanCompletedNotificationTitle">Сканирование завершено</string>
+    <string name="scanCompletedNotificationMessage">Нажмите, чтобы открыть завершенную задачу</string>
     <string name="statTime">Время сканирования: %1$d:%2$d:%3$d</string>
     <string name="statTotalFile">Всего файлов в папке: %1$d (%2$s)</string>
     <string name="statFilesSelected">Выбрано для сканирования: %1$d (%2$s)</string>

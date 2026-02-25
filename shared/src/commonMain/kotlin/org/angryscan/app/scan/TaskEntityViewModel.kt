@@ -38,6 +38,7 @@ class TaskEntityViewModel(
     state: TaskState = TaskState.LOADING
 ) : ViewModel(), KoinComponent {
     private val database: DatabaseConnector by inject()
+    private val tasksViewModel: TasksViewModel by inject()
 
     private val taskScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 
@@ -263,6 +264,7 @@ class TaskEntityViewModel(
         logger.debug { "Task state changed to $state. ID: ${_id.value}. Path: \"${_path.value}\"" }
 
         taskScope.launch {
+            val previousState = _state.value
             while (_busy.value)
                 delay(1000)
 
@@ -343,6 +345,11 @@ class TaskEntityViewModel(
             }
 
             _state.value = state
+            if (previousState != TaskState.COMPLETED && state == TaskState.COMPLETED) {
+                tasksViewModel.notifyTaskCompleted(_id.value)
+            } else if (previousState == TaskState.COMPLETED && state != TaskState.COMPLETED) {
+                tasksViewModel.resetTaskCompletionNotification(_id.value)
+            }
 
             if (state == TaskState.STOPPED) {
                 while (true) {

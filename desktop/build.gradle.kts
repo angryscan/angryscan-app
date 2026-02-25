@@ -80,7 +80,7 @@ compose.desktop {
             packageName = "AngryDataScanner"
             packageVersion = version.toString()
             copyright = "Open Source Software, 2025"
-            licenseFile.set(rootProject.file("LICENSE.en.txt"))
+            licenseFile.set(rootProject.file("LICENSE"))
 
             modules("java.sql", "jdk.charsets", "jdk.unsupported", "java.naming")
 
