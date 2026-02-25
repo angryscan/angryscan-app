@@ -1,6 +1,7 @@
 package org.angryscan.app.ui.windows.screens.scans
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.angryscan.app.db.models.TaskState
@@ -73,6 +76,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
 
     val colorScheme = MaterialTheme.colorScheme
     val containerShape = RoundedCornerShape(24.dp)
+    val focusManager = LocalFocusManager.current
 
     Column(
         modifier = Modifier
@@ -90,6 +94,9 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     shape = containerShape
                 )
                 .padding(20.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
+                }
         ) {
             Row(
                 modifier = Modifier
@@ -165,6 +172,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     countError = countError,
                     countCompleted = countCompleted,
                     onAllClick = {
+                        focusManager.clearFocus()
                         active = false
                         paused = false
                         error = false
@@ -172,6 +180,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                         filterTaskStates.clear()
                     },
                     onActiveClick = {
+                        focusManager.clearFocus()
                         active = !active
                         if (active) {
                             filterTaskStates.addAll(listOf(TaskState.SCANNING, TaskState.SEARCHING))
@@ -180,6 +189,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                         }
                     },
                     onPausedClick = {
+                        focusManager.clearFocus()
                         paused = !paused
                         if (paused) {
                             filterTaskStates.add(TaskState.STOPPED)
@@ -190,11 +200,13 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                         }
                     },
                     onErrorClick = {
+                        focusManager.clearFocus()
                         error = !error
                         if (error) filterTaskStates.add(TaskState.FAILED)
                         else filterTaskStates.remove(TaskState.FAILED)
                     },
                     onCompletedClick = {
+                        focusManager.clearFocus()
                         completed = !completed
                         if (completed) filterTaskStates.add(TaskState.COMPLETED)
                         else filterTaskStates.remove(TaskState.COMPLETED)
@@ -250,7 +262,10 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                         items(filteredTasks) { task ->
                             ScanTaskCard(
                                 taskEntity = task,
-                                onClick = { onTaskClick(task.id.value!!) },
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    onTaskClick(task.id.value!!)
+                                },
                                 currentTime = currentTime,
                             )
                         }

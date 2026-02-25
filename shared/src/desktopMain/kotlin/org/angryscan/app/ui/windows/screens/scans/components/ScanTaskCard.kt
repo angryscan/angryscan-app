@@ -142,23 +142,44 @@ fun ScanTaskCard(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ScanTimeStatItem(
-                startedAt = startedAt,
-                finishedAt = finishedAt,
-                pausedAt = pausedAt,
-                state = state
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ScanTimeStatItem(
+                    startedAt = startedAt,
+                    finishedAt = finishedAt,
+                    pausedAt = pausedAt,
+                    state = state
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(state.color().copy(alpha = 0.2f))
+                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = state.text(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = state.color()
+                    )
+                }
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
+                BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                    val availableWidth = maxWidth
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                     if (fastScan) {
                         Icon(
                             imageVector = Icons.Outlined.RocketLaunch,
@@ -199,34 +220,27 @@ fun ScanTaskCard(
                         is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(iconSize))
                         is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = null, modifier = Modifier.size(iconSize))
                     }
-                    Text(
-                        text = when {
-                            name != null && path.isNotBlank() && path != name -> "$name · $path"
-                            else -> (name ?: path)
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .wrapContentWidth()
+                            .widthIn(max = availableWidth)
                             .clickable(onClick = onClick)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .padding(vertical = 2.dp)
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(state.color().copy(alpha = 0.2f))
-                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = state.text(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = state.color()
-                    )
+                    ) {
+                        Text(
+                            text = when {
+                                name != null && path.isNotBlank() && path != name -> "$name · $path"
+                                else -> (name ?: path)
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
 
@@ -243,10 +257,10 @@ fun ScanTaskCard(
             )
 
             if (foundAttributes.isNotEmpty()) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
@@ -254,7 +268,6 @@ fun ScanTaskCard(
                         color = colorScheme.primary
                     )
                     FlowRow(
-                        modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {

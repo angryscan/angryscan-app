@@ -1,14 +1,18 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
@@ -94,6 +98,26 @@ fun ScanStat(
 }
 
 @Composable
+private fun StatChip(
+    text: String,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(8.dp)
+    val base = if (onClick != null) modifier.clickable(onClick = onClick).pointerHoverIcon(PointerIcon.Hand) else modifier
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = colorScheme.onSurfaceVariant,
+        modifier = base
+            .clip(shape)
+            .background(colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    )
+}
+
+@Composable
 fun ScanStatInline(
     totalFiles: Long,
     selectedFiles: Long,
@@ -105,21 +129,23 @@ fun ScanStatInline(
     scoreSum: Long,
     onClick: (() -> Unit)? = null
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    val modifier = if (onClick != null) Modifier.clickable(onClick = onClick).pointerHoverIcon(PointerIcon.Hand) else Modifier
     Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(0.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("${stringResource(Res.string.Task_TotalFiles)} ${if (totalFiles > 0 && folderSize.isNotEmpty()) "$totalFiles ($folderSize)" else totalFiles}", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
-        Text(" · ", style = MaterialTheme.typography.bodyMedium, color = colorScheme.outline)
-        Text("${stringResource(Res.string.Task_SelectedFiles)} ${if (selectedFiles > 0 && selectedFilesSize > 0) "$selectedFiles (${selectedFilesSize.toHumanReadable()})" else selectedFiles}", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
-        Text(" · ", style = MaterialTheme.typography.bodyMedium, color = colorScheme.outline)
-        Text("${stringResource(Res.string.Task_FoundFiles)} ${if (foundFiles > 0 && foundFilesSize > 0) "$foundFiles (${foundFilesSize.toHumanReadable()})" else foundFiles}", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
-        Text(" · ", style = MaterialTheme.typography.bodyMedium, color = colorScheme.outline)
-        Text("${stringResource(Res.string.Task_ScanTime)} $scanTime", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
-        Text(" · ", style = MaterialTheme.typography.bodyMedium, color = colorScheme.outline)
-        Text("${stringResource(Res.string.Result_ColumnScore)} $scoreSum", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
+        StatChip(
+            "${stringResource(Res.string.Task_TotalFiles)}: ${if (totalFiles > 0 && folderSize.isNotEmpty()) "$totalFiles ($folderSize)" else totalFiles}",
+            onClick
+        )
+        StatChip(
+            "${stringResource(Res.string.Task_SelectedFiles)}: ${if (selectedFiles > 0 && selectedFilesSize > 0) "$selectedFiles (${selectedFilesSize.toHumanReadable()})" else selectedFiles}",
+            onClick
+        )
+        StatChip(
+            "${stringResource(Res.string.Task_FoundFiles)}: ${if (foundFiles > 0 && foundFilesSize > 0) "$foundFiles (${foundFilesSize.toHumanReadable()})" else foundFiles}",
+            onClick
+        )
+        StatChip("${stringResource(Res.string.Task_ScanTime)}: $scanTime", onClick)
+        StatChip("${stringResource(Res.string.Result_ColumnScore)}: $scoreSum", onClick)
     }
 }
