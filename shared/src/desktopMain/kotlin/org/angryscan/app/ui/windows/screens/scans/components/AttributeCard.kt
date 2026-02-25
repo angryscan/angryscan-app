@@ -32,7 +32,7 @@ fun AttributeCard(
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(color = MaterialTheme.colorScheme.secondary)
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f))
                 .padding(vertical = 4.dp, horizontal = 8.dp)
         ) {
             Text(
@@ -57,12 +57,7 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(
-                    color = if (enabled)
-                        MaterialTheme.colorScheme.secondary
-                    else
-                        MaterialTheme.colorScheme.outlineVariant
-                )
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f))
                 .clickable(
                     onClick = onClick,
                     enabled = enabled
