@@ -109,8 +109,9 @@ fun ScanTaskCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val colorScheme = MaterialTheme.colorScheme
+    val accentBarWidth = 4.dp
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .hoverable(interactionSource = interactionSource)
@@ -125,9 +126,17 @@ fun ScanTaskCard(
                 color = colorScheme.outlineVariant.copy(alpha = 0.35f),
                 shape = cardShape
             )
-            .padding(18.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .width(accentBarWidth)
+                .fillMaxHeight()
+                .background(state.color().copy(alpha = 0.7f), RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
+        )
         Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(

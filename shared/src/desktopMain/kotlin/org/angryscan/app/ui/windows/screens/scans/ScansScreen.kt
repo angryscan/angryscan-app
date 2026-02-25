@@ -6,8 +6,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +39,19 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
 
     val allTasks by scanService.tasks.tasks.collectAsState()
 
+    var searchQuery by remember { mutableStateOf("") }
+
     val visibleTasks = allTasks.filter { it.state.value != TaskState.LOADING }
     val filteredTasks = visibleTasks
         .filter { task ->
             if (filterTaskStates.isEmpty()) true
             else task.state.value in filterTaskStates
+        }
+        .filter { task ->
+            val q = searchQuery.trim().lowercase()
+            if (q.isEmpty()) true
+            else (task.name.value.orEmpty().lowercase().contains(q) ||
+                    task.path.value.orEmpty().lowercase().contains(q))
         }
         .sortedByDescending { it.finishedAt.value }
         .sortedByDescending { it.pausedAt.value }
@@ -82,14 +92,48 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                 .padding(24.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = stringResource(Res.string.SideMenu_ScanListPage),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colorScheme.onSurface
+                )
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 40.dp),
+                    placeholder = {
+                        Text(
+                            stringResource(Res.string.ScansPage_SearchPlaceholder),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = null,
+                            tint = colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.6f),
+                        unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        focusedContainerColor = colorScheme.surface,
+                        unfocusedContainerColor = colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                        cursorColor = colorScheme.primary,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
                 Text(
                     text = stringResource(Res.string.ScansPage_ResultCount, filteredTasks.size),
@@ -98,16 +142,19 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                 )
             }
 
-            Text(
-                text = stringResource(Res.string.ScansPage_FilterByStatus),
-                style = MaterialTheme.typography.labelMedium,
-                color = colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
-            )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 20.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text(
+                    text = stringResource(Res.string.ScansPage_FilterByStatus),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                )
                 ScanFilterChipBox(
                     active = active,
                     paused = paused,
@@ -165,9 +212,15 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(32.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(40.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(56.dp),
+                            tint = colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
                         Text(
                             text = if (isFiltered)
                                 stringResource(Res.string.ScansPage_NoMatches)
@@ -191,7 +244,8 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                             .fillMaxWidth()
                             .padding(end = 28.dp),
                         state = state,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(filteredTasks) { task ->
                             ScanTaskCard(
