@@ -15,4 +15,8 @@ class TasksViewModel : ViewModel() {
     fun delete(task: TaskEntityViewModel) {
         _tasks.value -= task
     }
+
+    fun setAll(list: List<TaskEntityViewModel>) {
+        _tasks.value = list
+    }
 }

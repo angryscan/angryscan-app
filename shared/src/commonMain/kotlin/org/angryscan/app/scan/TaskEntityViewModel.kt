@@ -139,30 +139,26 @@ class TaskEntityViewModel(
                 _folderSize.value = folderSize
         }
 
-        taskScope.launch {
-            database.transaction {
-                _fastScan.value = dbTask.fastScan
-                _path.value = dbTask.path
-                _name.value = dbTask.name
-                _startedAt.value = dbTask.startedAt
-                _pausedAt.value = dbTask.pauseDate
-                _deltaSeconds.value = dbTask.delta
-                _finishedAt.value = dbTask.finishedAt
-                _totalFiles.value = dbTask.filesCount ?: 0L
-
-                _foundAttributes.value =
-                    (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
-                        .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
-                        .groupBy(TaskMatchers.matcher)
-                        .where { TaskFiles.task.eq(dbTask.id) }
-                        .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
-                        .filter { it.value > 0 }
-            }
-        }
         _id.value = dbTask.id.value
+        _fastScan.value = dbTask.fastScan
+        _path.value = dbTask.path
+        _name.value = dbTask.name
+        _startedAt.value = dbTask.startedAt
+        _pausedAt.value = dbTask.pauseDate
+        _deltaSeconds.value = dbTask.delta
+        _finishedAt.value = dbTask.finishedAt
+        _totalFiles.value = dbTask.filesCount ?: 0L
+        if (folderSize != null) _folderSize.value = folderSize
+        else _folderSize.value = dbTask.size ?: ""
+
         taskScope.launch {
             checkProgress()
         }
+    }
+
+    fun setFoundStats(foundFiles: Long, foundAttributes: Map<IMatcher, Int>) {
+        _foundFiles.value = foundFiles
+        _foundAttributes.value = foundAttributes.filter { it.value > 0 }
     }
 
     fun deleteFoundAttribute(fileId: Int, matcher: IMatcher) {
