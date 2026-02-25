@@ -100,6 +100,10 @@
     <string name="MainScreen-RecentScans-Title">Недавние сканирования</string>
     <string name="MainScreen-RecentScans-Empty">Пока нет сканирований</string>
     <string name="ScansPage-FilterByStatus">Фильтр по статусу</string>
+    <string name="ScansPage-FilterAll">Все</string>
+    <string name="ScansPage-ResultCount">%1$d скан(ов)</string>
+    <string name="ScansPage-EmptyHint">Запустите сканирование на вкладке «Главная»</string>
+    <string name="ScansPage-NoMatches">Нет сканов по выбранным фильтрам</string>
     <string name="MainScreen-SidebarTitle">Источник данных</string>
     <string name="MainScreen-SettingsTitle">Настройки сканирования</string>
     <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>

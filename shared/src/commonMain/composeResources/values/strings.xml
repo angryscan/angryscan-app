@@ -102,6 +102,10 @@
     <string name="MainScreen-RecentScans-Title">Recent scans</string>
     <string name="MainScreen-RecentScans-Empty">No scans yet</string>
     <string name="ScansPage-FilterByStatus">Filter by status</string>
+    <string name="ScansPage-FilterAll">All</string>
+    <string name="ScansPage-ResultCount">%1$d scan(s)</string>
+    <string name="ScansPage-EmptyHint">Start a scan from the Main tab</string>
+    <string name="ScansPage-NoMatches">No scans match the selected filters</string>
     <string name="MainScreen-SidebarTitle">Data source</string>
     <string name="MainScreen-SettingsTitle">Scan settings</string>
     <string name="MainScreen-ScanHint-FileShare">Select or enter path above to enable Scan</string>

@@ -24,8 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.TimeZone
@@ -226,22 +225,31 @@ fun ScanTaskCard(
                         }
                     }
 
-                    Box(
+                    Column(
                         modifier = Modifier
                             .clickable(onClick = onClick)
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         Text(
                             text = name ?: path,
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
-                            fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                            letterSpacing = 0.1.sp,
-                            style = TextStyle.Default.copy(
-                                lineBreak = LineBreak.Heading
-                            )
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(0.7f)
                         )
+                        if (name != null && path.isNotBlank() && path != name) {
+                            Text(
+                                text = path,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth(0.7f)
+                            )
+                        }
                     }
                 }
                 Box(
