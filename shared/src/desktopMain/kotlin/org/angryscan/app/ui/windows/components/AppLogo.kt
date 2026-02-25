@@ -24,11 +24,25 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.angryscan.app.navigation.AppScreen
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.appName
-import org.angryscan.app.resources.favicon_light_128
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.*
 
 val logger = KotlinLogging.logger { }
+
+private const val RES_BASE = "composeResources/org.angryscan.app.resources/"
+
+@OptIn(InternalResourceApi::class)
+private fun logoDrawableResource(isDarkTheme: Boolean): DrawableResource = if (isDarkTheme) {
+    DrawableResource(
+        "drawable:favicon_dark_128",
+        setOf(ResourceItem(setOf(), "${RES_BASE}drawable/favicon_dark_128.png", -1, -1))
+    )
+} else {
+    DrawableResource(
+        "drawable:favicon_light_128",
+        setOf(ResourceItem(setOf(), "${RES_BASE}drawable/favicon_light_128.png", -1, -1))
+    )
+}
+
 @Composable
 fun AppLogo(
     navController: NavController
@@ -55,6 +69,7 @@ fun AppLogo(
     )
 
     val colorScheme = MaterialTheme.colorScheme
+    val isDarkTheme = (colorScheme.surface.red + colorScheme.surface.green + colorScheme.surface.blue) / 3f < 0.5f
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -80,7 +95,7 @@ fun AppLogo(
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(Res.drawable.favicon_light_128),
+                painter = painterResource(logoDrawableResource(isDarkTheme)),
                 contentDescription = stringResource(Res.string.appName),
                 modifier = Modifier.size(64.dp)
             )
