@@ -99,6 +99,7 @@
     <string name="MainScreen-QuickStart-Step3">3. Настройте и запустите сканирование</string>
     <string name="MainScreen-RecentScans-Title">Недавние сканирования</string>
     <string name="MainScreen-RecentScans-Empty">Пока нет сканирований</string>
+    <string name="ScansPage-FilterByStatus">Фильтр по статусу</string>
     <string name="MainScreen-SidebarTitle">Источник данных</string>
     <string name="MainScreen-SettingsTitle">Настройки сканирования</string>
     <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>

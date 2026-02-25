@@ -101,6 +101,7 @@
     <string name="MainScreen-QuickStart-Step3">3. Configure and start scan</string>
     <string name="MainScreen-RecentScans-Title">Recent scans</string>
     <string name="MainScreen-RecentScans-Empty">No scans yet</string>
+    <string name="ScansPage-FilterByStatus">Filter by status</string>
     <string name="MainScreen-SidebarTitle">Data source</string>
     <string name="MainScreen-SettingsTitle">Scan settings</string>
     <string name="MainScreen-ScanHint-FileShare">Select or enter path above to enable Scan</string>

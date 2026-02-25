@@ -32,7 +32,7 @@ fun ScanStat(
 
     VerticalDivider(
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 
     //Selected files count
@@ -48,7 +48,7 @@ fun ScanStat(
 
     VerticalDivider(
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 
     //Found files count
@@ -64,7 +64,7 @@ fun ScanStat(
 
     VerticalDivider(
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 
     //Scan time
@@ -75,7 +75,7 @@ fun ScanStat(
 
     VerticalDivider(
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 
     //Score sum of all found files

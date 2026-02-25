@@ -1,9 +1,14 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Http
@@ -12,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,20 +106,30 @@ fun ScanTaskCard(
         "00:00:00"
     }
 
+    val cardShape = RoundedCornerShape(20.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val colorScheme = MaterialTheme.colorScheme
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            .hoverable(interactionSource = interactionSource)
+            .clip(cardShape)
+            .background(
+                color = if (isHovered) colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                else colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                shape = cardShape
+            )
             .border(
                 width = 1.dp,
-                color = state.color(),
-                shape = MaterialTheme.shapes.medium
+                color = colorScheme.outlineVariant.copy(alpha = 0.35f),
+                shape = cardShape
             )
-            .padding(14.dp),
-
-        ) {
+            .padding(18.dp)
+    ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -173,13 +189,6 @@ fun ScanTaskCard(
                                 modifier = Modifier.size(32.dp)
                             )
                         }
-                        
-                        Text(
-                            text = state.text(),
-                            fontSize = 10.sp,
-                            color = state.color(),
-                            letterSpacing = 0.1.sp
-                        )
                     }
 
                     when(taskEntity.dbTask.connector) {
@@ -235,7 +244,20 @@ fun ScanTaskCard(
                         )
                     }
                 }
-
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(state.color().copy(alpha = 0.2f))
+                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = state.text(),
+                        fontSize = 11.sp,
+                        color = state.color(),
+                        letterSpacing = 0.05.sp
+                    )
+                }
             }
 
             Row(
@@ -252,7 +274,7 @@ fun ScanTaskCard(
 
                 VerticalDivider(
                     thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
                 ScanStat(
