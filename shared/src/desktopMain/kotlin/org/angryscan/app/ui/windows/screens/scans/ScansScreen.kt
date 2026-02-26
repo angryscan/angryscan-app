@@ -270,7 +270,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 16.dp),
+                            .padding(end = 24.dp),
                         state = state,
                         contentPadding = PaddingValues(vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)

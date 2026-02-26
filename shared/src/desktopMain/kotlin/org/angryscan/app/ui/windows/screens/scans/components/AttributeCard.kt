@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.angryscan.app.di.PreviewModule
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
@@ -37,9 +36,7 @@ fun AttributeCard(
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
-                letterSpacing = 0.05.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }
@@ -66,9 +63,7 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
-                letterSpacing = 0.05.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }

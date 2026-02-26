@@ -268,7 +268,7 @@ fun ScanTaskCard(
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.labelMedium,
                         color = colorScheme.primary
                     )
                     FlowRow(

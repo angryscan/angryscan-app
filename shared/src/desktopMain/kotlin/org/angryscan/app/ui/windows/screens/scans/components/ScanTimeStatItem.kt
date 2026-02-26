@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDateTime
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.Res
@@ -37,7 +36,7 @@ fun ScanTimeStatItem(
         ) {
             Text(
                 text = "${stringResource(Res.string.Task_StartedAt)} ${startedAt?.let { DateFormat.format(it) } ?: ""}",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -45,7 +44,7 @@ fun ScanTimeStatItem(
             if (finishedAt != null && state == TaskState.COMPLETED) {
                 Text(
                     text = "${stringResource(Res.string.Task_FinishedAt)} ${DateFormat.format(finishedAt)}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -53,7 +52,7 @@ fun ScanTimeStatItem(
             } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
                 Text(
                     text = "${stringResource(Res.string.Task_PausedAt)} ${DateFormat.format(pausedAt)}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -62,27 +61,28 @@ fun ScanTimeStatItem(
         }
     } else {
         Row(
+            modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column {
                 Text(
-                    text = stringResource(resource = Res.string.Task_StartedAt),
-                    fontSize = 14.sp,
-                    letterSpacing = 0.1.sp,
+                    text = stringResource(Res.string.Task_StartedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
                 if (finishedAt != null && state == TaskState.COMPLETED) {
                     Text(
                         text = stringResource(Res.string.Task_FinishedAt),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
                     Text(
-                        text = stringResource(resource = Res.string.Task_PausedAt),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
+                        text = stringResource(Res.string.Task_PausedAt),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 }
@@ -90,22 +90,22 @@ fun ScanTimeStatItem(
             Column {
                 Text(
                     text = startedAt?.let { DateFormat.format(it) } ?: "",
-                    fontSize = 14.sp,
-                    letterSpacing = 0.1.sp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
                 if (finishedAt != null && state == TaskState.COMPLETED) {
                     Text(
                         text = DateFormat.format(finishedAt),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 } else if (pausedAt != null && (state == TaskState.STOPPED || state == TaskState.PENDING)) {
                     Text(
                         text = DateFormat.format(pausedAt),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 }
