@@ -2,11 +2,10 @@ package org.angryscan.app.ui.windows.screens.scans
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -29,12 +28,6 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
-import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.ScanSettings
@@ -51,6 +44,12 @@ import org.angryscan.app.ui.extensions.icon
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
 import org.angryscan.app.ui.windows.screens.scans.components.*
+import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import java.awt.datatransfer.StringSelection
 import kotlin.time.Clock
 import kotlin.time.DurationUnit
@@ -218,25 +217,23 @@ fun ScanResultScreen(
         )
     }
 
-    val shapes = MaterialTheme.shapes.medium.copy(bottomEnd = CornerSize(0.dp), bottomStart = CornerSize(0.dp))
-
+    val colorScheme = MaterialTheme.colorScheme
+    val containerShape = RoundedCornerShape(24.dp)
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
+        containerColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp)
-            .clip(shape = shapes)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .clip(containerShape)
+            .background(colorScheme.surfaceVariant.copy(alpha = 0.22f), containerShape)
             .border(
-                shape = shapes,
-                color = state.color(),
-                width = 1.dp
+                width = 1.dp,
+                color = colorScheme.outlineVariant.copy(alpha = 0.25f),
+                shape = containerShape
             )
-            .padding(
-                start = 15.dp,
-                top = 15.dp,
-                end = 15.dp
-            ),
+            .padding(20.dp),
         snackbarHost = {
             SnackbarHost(snackbarHostState)
         }
@@ -526,10 +523,9 @@ fun ScanResultScreen(
             }
 
 
-            Row(
-                modifier = Modifier
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 ScanTimeStatItem(
                     startedAt = startedAt,
@@ -537,12 +533,6 @@ fun ScanResultScreen(
                     pausedAt = pausedAt,
                     state = state
                 )
-
-                VerticalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
                 ScanStat(
                     totalFiles = totalFiles,
                     selectedFiles = selectedFiles,
@@ -557,45 +547,56 @@ fun ScanResultScreen(
 
             if (foundAttributes.isNotEmpty()) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.Top
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
                         fontSize = 14.sp,
                         letterSpacing = 0.1.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(max = 88.dp)
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        AttributeFilterChip(
-                            text = stringResource(Res.string.SelectAll, attributesOnOpen.size),
-                            selected = attributesOnOpen.size == selectedAttributes.size,
-                            onClick = {
-                                if (attributesOnOpen.size == selectedAttributes.size) {
-                                    selectedAttributes.clear()
-                                } else {
-                                    selectedAttributes.addAll(attributesOnOpen.keys.filter { it !in selectedAttributes })
-                                }
-                            }
-                        )
-                        attributesOnOpen.toList().sortedByDescending { it.second }.forEach { attr ->
-                            MatcherTooltip(
-                                matcher = attr.first,
-                                count = attr.second
-                            ) {
-                                AttributeFilterChip(
-                                    text = attr.first.composableName(),
-                                    selected = attr.first in selectedAttributes,
-                                    onClick = {
-                                        if (attr.first in selectedAttributes) {
-                                            selectedAttributes -= attr.first
-                                        } else {
-                                            selectedAttributes += attr.first
-                                        }
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            AttributeFilterChip(
+                                text = stringResource(Res.string.SelectAll, attributesOnOpen.size),
+                                selected = attributesOnOpen.size == selectedAttributes.size,
+                                onClick = {
+                                    if (attributesOnOpen.size == selectedAttributes.size) {
+                                        selectedAttributes.clear()
+                                    } else {
+                                        selectedAttributes.addAll(attributesOnOpen.keys.filter { it !in selectedAttributes })
                                     }
-                                )
+                                }
+                            )
+                            attributesOnOpen.toList().sortedByDescending { it.second }.forEach { attr ->
+                                MatcherTooltip(
+                                    matcher = attr.first,
+                                    count = attr.second
+                                ) {
+                                    AttributeFilterChip(
+                                        text = attr.first.composableName(),
+                                        selected = attr.first in selectedAttributes,
+                                        onClick = {
+                                            if (attr.first in selectedAttributes) {
+                                                selectedAttributes -= attr.first
+                                            } else {
+                                                selectedAttributes += attr.first
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

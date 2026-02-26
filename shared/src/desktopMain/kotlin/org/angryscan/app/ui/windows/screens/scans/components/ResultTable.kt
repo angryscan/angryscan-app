@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -184,15 +185,19 @@ fun ResultTable(
 
 
 
+    val colorScheme = MaterialTheme.colorScheme
+    val containerShape = RoundedCornerShape(24.dp)
+
     Scaffold(
+        containerColor = Color.Transparent,
         modifier = Modifier
-            .clip(
-                MaterialTheme.shapes.medium.copy(
-                    bottomStart = CornerSize(0.dp),
-                    bottomEnd = CornerSize(0.dp)
-                )
-            )
-            .background(MaterialTheme.colorScheme.surface),
+            .clip(containerShape)
+            .background(colorScheme.surfaceVariant.copy(alpha = 0.22f), containerShape)
+            .border(
+                width = 1.dp,
+                color = colorScheme.outlineVariant.copy(alpha = 0.25f),
+                shape = containerShape
+            ),
         floatingActionButton = {
             if (selectedFiles.isNotEmpty()) {
                 FloatingActionButton(
