@@ -52,7 +52,8 @@ fun ResultTable(
     taskFilesViewModel: TaskFilesViewModel,
     task: TaskEntityViewModel,
     selectedAttributes: List<IMatcher>,
-    scanSettings: ScanSettings
+    scanSettings: ScanSettings,
+    modifier: Modifier = Modifier
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -190,7 +191,8 @@ fun ResultTable(
 
     Scaffold(
         containerColor = Color.Transparent,
-        modifier = Modifier
+        modifier = modifier
+            .fillMaxSize()
             .clip(containerShape)
             .background(colorScheme.surfaceVariant.copy(alpha = 0.22f), containerShape)
             .border(
@@ -243,7 +245,10 @@ fun ResultTable(
                         modifier = Modifier
                             .padding(horizontal = 10.dp)
                     ) {
-                        Text(text = stringResource(Res.string.Result_DeleteFiles, selectedFiles.size))
+                        Text(
+                            text = stringResource(Res.string.Result_DeleteFiles, selectedFiles.size),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = null
@@ -265,9 +270,9 @@ fun ResultTable(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 8.dp)
                 ) {
                     Checkbox(
                         checked = selectedFiles.isNotEmpty() && selectedFiles.containsAll(sortedFiles.map { it.id }),
@@ -299,7 +304,7 @@ fun ResultTable(
                                     sortDescending = false
                                 }
                             }
-                            .padding(2.dp),
+                            .padding(8.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
@@ -307,6 +312,7 @@ fun ResultTable(
                         ) {
                             Text(
                                 text = stringResource(Res.string.Result_ColumnFile),
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (sortColumn == SortColumn.Path) {
@@ -332,7 +338,7 @@ fun ResultTable(
                                     sortDescending = false
                                 }
                             }
-                            .padding(2.dp),
+                            .padding(8.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
@@ -340,6 +346,7 @@ fun ResultTable(
                         ) {
                             Text(
                                 text = stringResource(Res.string.Result_ColumnAttributes),
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (sortColumn == SortColumn.Attribute) {
@@ -356,6 +363,7 @@ fun ResultTable(
                     Box(
                         modifier = Modifier
                             .weight(0.1f)
+                            .widthIn(min = 56.dp)
                             .clip(shape = MaterialTheme.shapes.small)
                             .clickable {
                                 if (sortColumn == SortColumn.Score) {
@@ -365,7 +373,7 @@ fun ResultTable(
                                     sortDescending = false
                                 }
                             }
-                            .padding(2.dp),
+                            .padding(8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
@@ -373,6 +381,7 @@ fun ResultTable(
                         ) {
                             Text(
                                 text = stringResource(Res.string.Result_ColumnScore),
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (sortColumn == SortColumn.Score) {
@@ -389,6 +398,7 @@ fun ResultTable(
                     Box(
                         modifier = Modifier
                             .weight(0.1f)
+                            .widthIn(min = 56.dp)
                             .clip(shape = MaterialTheme.shapes.small)
                             .clickable {
                                 if (sortColumn == SortColumn.Count) {
@@ -398,7 +408,7 @@ fun ResultTable(
                                     sortDescending = false
                                 }
                             }
-                            .padding(2.dp),
+                            .padding(8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
@@ -406,6 +416,7 @@ fun ResultTable(
                         ) {
                             Text(
                                 text = stringResource(Res.string.Result_ColumnCount),
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (sortColumn == SortColumn.Count) {
@@ -422,6 +433,7 @@ fun ResultTable(
                     Box(
                         modifier = Modifier
                             .weight(0.1f)
+                            .widthIn(min = 56.dp)
                             .clip(shape = MaterialTheme.shapes.small)
                             .clickable {
                                 if (sortColumn == SortColumn.Size) {
@@ -431,7 +443,7 @@ fun ResultTable(
                                     sortDescending = false
                                 }
                             }
-                            .padding(2.dp),
+                            .padding(8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
@@ -439,6 +451,7 @@ fun ResultTable(
                         ) {
                             Text(
                                 text = stringResource(Res.string.Result_ColumnSize),
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             if (sortColumn == SortColumn.Size) {
@@ -486,7 +499,8 @@ fun ResultTable(
                                         menuExpanded = true
                                     }
                                 }
-                                .padding(4.dp)
+                                .heightIn(min = 48.dp)
+                                .padding(8.dp)
                         ) {
                             CursorDropdownMenu(
                                 expanded = menuExpanded,
@@ -504,7 +518,10 @@ fun ResultTable(
                                         )
                                     },
                                     text = {
-                                        Text(stringResource(Res.string.openFile))
+                                        Text(
+                                            stringResource(Res.string.openFile),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
                                     },
                                     onClick = {
                                         try {
@@ -523,7 +540,10 @@ fun ResultTable(
                                         )
                                     },
                                     text = {
-                                        Text(stringResource(Res.string.deleteFile))
+                                        Text(
+                                            stringResource(Res.string.deleteFile),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
                                     },
                                     onClick = {
                                         if (File(file.path).delete()) {
@@ -542,7 +562,10 @@ fun ResultTable(
                                             )
                                         },
                                         text = {
-                                            Text(stringResource(Res.string.DropDown_OpenInExplorer))
+                                            Text(
+                                                stringResource(Res.string.DropDown_OpenInExplorer),
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
                                         },
                                         onClick = {
                                             val f = File(file.path)
@@ -565,7 +588,10 @@ fun ResultTable(
                                             )
                                         },
                                         text = {
-                                            Text(stringResource(Res.string.LocationWindow_ExportAllRows))
+                                            Text(
+                                                stringResource(Res.string.LocationWindow_ExportAllRows),
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
                                         },
                                         onClick = {
                                             exportFile = file.path
@@ -582,7 +608,7 @@ fun ResultTable(
                             }
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
 
                                 Checkbox(
@@ -638,23 +664,26 @@ fun ResultTable(
                                 }
                                 Text(
                                     text = file.score.toString(),
-                                    modifier = Modifier.weight(0.1f),
-                                    fontSize = 14.sp,
-                                    letterSpacing = 0.1.sp,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .weight(0.1f)
+                                        .widthIn(min = 56.dp),
                                     textAlign = TextAlign.Center
                                 )
                                 Text(
                                     text = file.count.toString(),
-                                    modifier = Modifier.weight(0.1f),
-                                    fontSize = 14.sp,
-                                    letterSpacing = 0.1.sp,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .weight(0.1f)
+                                        .widthIn(min = 56.dp),
                                     textAlign = TextAlign.Center
                                 )
                                 Text(
                                     text = file.size.toString(),
-                                    modifier = Modifier.weight(0.1f),
-                                    fontSize = 14.sp,
-                                    letterSpacing = 0.1.sp,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .weight(0.1f)
+                                        .widthIn(min = 56.dp),
                                     textAlign = TextAlign.Center
                                 )
                             }

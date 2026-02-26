@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.PlatformFile
@@ -233,25 +234,25 @@ fun ScanResultScreen(
                 color = colorScheme.outlineVariant.copy(alpha = 0.25f),
                 shape = containerShape
             )
-            .padding(20.dp),
+            .padding(16.dp),
         snackbarHost = {
             SnackbarHost(snackbarHostState)
         }
     ) {
         Column(
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.weight(0.8f)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         IconButton(
                             onClick = onCloseClick
@@ -278,7 +279,10 @@ fun ScanResultScreen(
                             fontSize = MaterialTheme.typography.bodyMedium.fontSize,
                             lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
                             fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                            letterSpacing = 0.1.sp
+                            letterSpacing = 0.1.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
 
                         if (name == null) {
@@ -314,7 +318,7 @@ fun ScanResultScreen(
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AnimatedVisibility(
@@ -349,8 +353,9 @@ fun ScanResultScreen(
                                         )
                                         Text(
                                             text = reportExtension.name,
+                                            style = MaterialTheme.typography.bodyMedium,
                                             modifier = Modifier
-                                                .padding(start = 5.dp)
+                                                .padding(start = 8.dp)
                                         )
                                     }
                                 }
@@ -389,7 +394,7 @@ fun ScanResultScreen(
                                                 reportExtensionChooserExpanded = false
                                                 appSettings.save()
                                             },
-                                            text = { Text(text = it.name) }
+                                            text = { Text(text = it.name, style = MaterialTheme.typography.bodyMedium) }
                                         )
                                     }
                                 }
@@ -414,11 +419,10 @@ fun ScanResultScreen(
                         }
                     }
                 }
-            }
 
             if (state != TaskState.COMPLETED) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (busy || state in listOf(TaskState.LOADING, TaskState.SEARCHING)) {
@@ -455,21 +459,14 @@ fun ScanResultScreen(
                         }
                     }
                     Column(
-                        modifier = Modifier.width(800.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "$progress% (${scanned + skipped} / $selectedFiles)",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                        Text(
+                            text = "$progress% (${scanned + skipped} / $selectedFiles)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
                         Box(
                             modifier = Modifier
@@ -507,7 +504,7 @@ fun ScanResultScreen(
                                             brush = Brush.horizontalGradient(
                                                 colors = listOf(
                                                     Color.Transparent,
-                                                    Color.White.copy(alpha = 0.4f),
+                                                    colorScheme.surface.copy(alpha = 0.4f),
                                                     Color.Transparent
                                                 ),
                                                 startX = shimmerOffset * 300f,
@@ -523,15 +520,22 @@ fun ScanResultScreen(
             }
 
 
-            Column(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 ScanTimeStatItem(
                     startedAt = startedAt,
                     finishedAt = finishedAt,
                     pausedAt = pausedAt,
                     state = state
+                )
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(24.dp)
+                        .background(colorScheme.outlineVariant.copy(alpha = 0.5f))
                 )
                 ScanStat(
                     totalFiles = totalFiles,
@@ -548,20 +552,19 @@ fun ScanResultScreen(
             if (foundAttributes.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.widthIn(max = 200.dp)
                     )
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(max = 88.dp)
+                            .heightIn(max = 140.dp)
                             .verticalScroll(rememberScrollState())
                     ) {
                         FlowRow(
@@ -607,7 +610,8 @@ fun ScanResultScreen(
                 taskFilesViewModel = taskFilesViewModel,
                 task = task,
                 selectedAttributes = selectedAttributes,
-                scanSettings = scanSettings
+                scanSettings = scanSettings,
+                modifier = Modifier.weight(1f)
             )
         }
     }
