@@ -297,6 +297,7 @@
     <string name="MatcherCountry-International-Short">Межд.</string>
 
     <string name="SettingsScreen-ThreadsCount">Количество потоков</string>
+    <string name="SettingsScreen-RecommendedThreads">Рекомендуется: %1$d потоков</string>
     <string name="SettingsScreen-ContextMenu">Контекстное меню</string>
     <string name="SettingsScreen-ContextMenuExplorer">Файловый проводник</string>
     <string name="SettingsScreen-Language">Язык</string>

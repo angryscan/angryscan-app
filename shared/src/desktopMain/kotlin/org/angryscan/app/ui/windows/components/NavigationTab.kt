@@ -141,9 +141,11 @@ fun NavigationTab(
                     label = "iconScale"
                 )
                 
+                val isSettingsTab = item.route is AppScreen.Settings
                 val iconRotation by animateFloatAsState(
                     targetValue = when {
                         isPressed -> 2f
+                        isHovered && isSettingsTab -> 12f
                         isHovered -> -1f
                         else -> 0f
                     },

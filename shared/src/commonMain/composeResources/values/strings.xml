@@ -300,6 +300,7 @@
     <string name="MatcherCountry-International-Short">Intl.</string>
 
     <string name="SettingsScreen-ThreadsCount">Threads count</string>
+    <string name="SettingsScreen-RecommendedThreads">Recommended: %1$d threads</string>
     <string name="SettingsScreen-ContextMenu">Context menu</string>
     <string name="SettingsScreen-ContextMenuExplorer">File explorer</string>
     <string name="SettingsScreen-Language">Language</string>
