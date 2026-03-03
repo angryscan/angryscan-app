@@ -299,12 +299,12 @@ fun S3Screen(
                     modifier = ScanButtonModifier(
                         isReady = true,
                         modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                    ).scanButtonHoverFeedback(enabled = true),
+                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
                     shape = RoundedCornerShape(20.dp),
                     elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 6.dp,
-                        pressedElevation = 10.dp,
-                        disabledElevation = 2.dp
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        disabledElevation = 0.dp
                     ),
                     colors = startScanButtonColors()
                 ) {
@@ -321,11 +321,11 @@ fun S3Screen(
                         modifier = ScanButtonModifier(
                             isReady = false,
                             modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                        ).scanButtonHoverFeedback(enabled = false),
+                        ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
                         shape = RoundedCornerShape(20.dp),
                         elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 6.dp,
-                            pressedElevation = 10.dp,
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
                             disabledElevation = 0.dp
                         ),
                         colors = startScanButtonColors()
