@@ -2,6 +2,9 @@ package org.angryscan.app.ui.windows.screens.scans.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,6 +13,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -127,7 +132,15 @@ private fun StatChip(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(8.dp)
-    val base = if (onClick != null) modifier.clickable(onClick = onClick).pointerHoverIcon(PointerIcon.Hand) else modifier
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isClickable = onClick != null
+    val base = if (isClickable) {
+        modifier
+            .hoverable(interactionSource = interactionSource)
+            .clickable(onClick = onClick!!)
+            .pointerHoverIcon(PointerIcon.Hand)
+    } else modifier
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
@@ -136,7 +149,10 @@ private fun StatChip(
         overflow = TextOverflow.Ellipsis,
         modifier = base
             .clip(shape)
-            .background(colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .background(
+                if (isClickable && isHovered) colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                else colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
             .padding(horizontal = 10.dp, vertical = 6.dp)
     )
 }

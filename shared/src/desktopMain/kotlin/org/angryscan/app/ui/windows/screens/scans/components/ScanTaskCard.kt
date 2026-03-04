@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
@@ -222,10 +223,13 @@ fun ScanTaskCard(
                         is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = "File share", modifier = Modifier.size(iconSize))
                         is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = "AI models", modifier = Modifier.size(iconSize))
                     }
+                    val pathInteractionSource = remember { MutableInteractionSource() }
+                    val pathHovered by pathInteractionSource.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .wrapContentWidth()
                             .widthIn(max = availableWidth)
+                            .hoverable(pathInteractionSource)
                             .clickable(onClick = onClick)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .padding(vertical = 2.dp)
@@ -237,6 +241,7 @@ fun ScanTaskCard(
                             },
                             style = MaterialTheme.typography.titleMedium,
                             color = colorScheme.onSurface,
+                            textDecoration = if (pathHovered) TextDecoration.Underline else TextDecoration.None,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
