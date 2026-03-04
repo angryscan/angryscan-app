@@ -54,7 +54,8 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
             val q = searchQuery.trim().lowercase()
             if (q.isEmpty()) true
             else (task.name.value.orEmpty().lowercase().contains(q) ||
-                    task.path.value.orEmpty().lowercase().contains(q))
+                    task.path.value.orEmpty().lowercase().contains(q) ||
+                    task.foundAttributes.value.keys.any { it.name.lowercase().contains(q) })
         }
         .sortedByDescending { it.finishedAt.value }
         .sortedByDescending { it.pausedAt.value }

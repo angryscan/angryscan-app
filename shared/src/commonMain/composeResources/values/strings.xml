@@ -106,7 +106,7 @@
     <string name="ScansPage-ResultCount">%1$d scan(s)</string>
     <string name="ScansPage-EmptyHint">Start a scan from the Main tab</string>
     <string name="ScansPage-NoMatches">No scans match the selected filters</string>
-    <string name="ScansPage-SearchPlaceholder">Search by name or path…</string>
+    <string name="ScansPage-SearchPlaceholder">Search by name, path or attributes…</string>
     <string name="ScansPage-Loading">Loading…</string>
     <string name="MainScreen-SidebarTitle">Data source</string>
     <string name="MainScreen-SettingsTitle">Scan settings</string>
