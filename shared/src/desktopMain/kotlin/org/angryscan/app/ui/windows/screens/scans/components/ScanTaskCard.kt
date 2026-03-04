@@ -1,17 +1,10 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Http
-import androidx.compose.material.icons.outlined.RocketLaunch
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextDecoration
@@ -32,17 +25,13 @@ import kotlinx.datetime.toInstant
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.Task_FoundAttributes
-import org.angryscan.app.resources.aws_s3
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFilesViewModel
-import org.angryscan.app.scan.common.connectors.ConnectorAIModels
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.extensions.color
-import org.angryscan.app.ui.extensions.icon
 import org.angryscan.app.ui.extensions.text
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -110,7 +99,6 @@ fun ScanTaskCard(
     val isHovered by interactionSource.collectIsHoveredAsState()
     val colorScheme = MaterialTheme.colorScheme
     val accentBarWidth = 4.dp
-    val iconSize = 30.dp
 
     Row(
         modifier = Modifier
@@ -144,48 +132,8 @@ fun ScanTaskCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (fastScan) {
-                    Icon(
-                        imageVector = Icons.Outlined.RocketLaunch,
-                        contentDescription = "Fast scan",
-                        modifier = Modifier.size(iconSize),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Box(contentAlignment = Alignment.Center) {
-                    if (state == TaskState.SCANNING) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                        val rotationAngle by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 360f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(2000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "rotation"
-                        )
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(iconSize).rotate(rotationAngle),
-                            strokeWidth = 2.dp,
-                            color = state.color()
-                        )
-                    } else {
-                        Icon(
-                            imageVector = state.icon(),
-                            contentDescription = state.text(),
-                            tint = state.color(),
-                            modifier = Modifier.size(iconSize)
-                        )
-                    }
-                }
-                when (taskEntity.dbTask.connector) {
-                    is ConnectorS3 -> Icon(painter = painterResource(Res.drawable.aws_s3), contentDescription = "S3", modifier = Modifier.size(iconSize))
-                    is ConnectorHTTP -> Icon(imageVector = Icons.Outlined.Http, contentDescription = "HTTP", modifier = Modifier.size(iconSize))
-                    is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = "File share", modifier = Modifier.size(iconSize))
-                    is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = "AI models", modifier = Modifier.size(iconSize))
-                }
                 val pathInteractionSource = remember { MutableInteractionSource() }
                 val pathHovered by pathInteractionSource.collectIsHoveredAsState()
                 Box(
@@ -195,6 +143,7 @@ fun ScanTaskCard(
                         .clickable(onClick = onClick)
                         .pointerHoverIcon(PointerIcon.Hand)
                         .padding(vertical = 2.dp)
+                        .padding(end = 12.dp)
                 ) {
                     Text(
                         text = when {
@@ -208,18 +157,60 @@ fun ScanTaskCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(state.color().copy(alpha = 0.2f))
-                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = state.text(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = state.color()
-                    )
+                    val sourceLabel = when (taskEntity.dbTask.connector) {
+                        is ConnectorS3 -> "S3"
+                        is ConnectorHTTP -> "HTTP"
+                        is ConnectorFileShare -> "File share"
+                        else -> null
+                    }
+                    if (sourceLabel != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = sourceLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(state.color().copy(alpha = 0.2f))
+                            .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = state.text(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = state.color()
+                        )
+                    }
+                    if (fastScan) {
+                        val fastScanColor = Color(0xFFE65100) // Orange, distinct from status/source
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(fastScanColor.copy(alpha = 0.2f))
+                                .border(1.dp, fastScanColor.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = "Fast scan",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = fastScanColor
+                            )
+                        }
+                    }
                 }
             }
 
