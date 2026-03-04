@@ -129,8 +129,10 @@
     <string name="ScanSettings-SelectAll">Выбрать все</string>
     <string name="ScanSettings-DiscardAll">Сбросить все</string>
     <string name="SettingsScreen-Logging">Журналирование</string>
+    <string name="SettingsScreen-LoggingDescription">Режим отладки и расположение файлов логов.</string>
     <string name="SettingsScreen-OpenFolder">Открыть папку</string>
     <string name="SettingsScreen-ScanEngine">Движок сканирования</string>
+    <string name="SettingsScreen-ScanEngineDescription">Движок поиска по файлам. HyperScan быстрее, Kotlin — более универсален.</string>
     <string name="ScanSettings-DebugMode">Собирать отладочную информацию</string>
 
 
@@ -301,7 +303,11 @@
     <string name="SettingsScreen-ContextMenu">Контекстное меню</string>
     <string name="SettingsScreen-ContextMenuExplorer">Файловый проводник</string>
     <string name="SettingsScreen-Language">Язык</string>
+    <string name="SettingsScreen-LanguageDescription">Язык интерфейса приложения.</string>
+    <string name="SettingsScreen-LanguageRestartNote">Для полного применения может потребоваться перезапуск.</string>
     <string name="SettingsScreen-Theme">Тема</string>
+    <string name="SettingsScreen-ThemeDescription">Светлая, тёмная или как в системе.</string>
+    <string name="SettingsScreen-ThemeAppliedNote">Применяется сразу.</string>
 
     <string name="ThemeType-Light">Светлая</string>
     <string name="ThemeType-Dark">Тёмная</string>

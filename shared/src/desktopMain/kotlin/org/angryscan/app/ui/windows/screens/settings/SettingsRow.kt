@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -17,11 +18,12 @@ private val cardShape = RoundedCornerShape(16.dp)
 @Composable
 fun SettingsRow(
     title: String,
+    modifier: Modifier = Modifier,
     block: @Composable () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(cardShape)
             .border(
@@ -35,9 +37,9 @@ fun SettingsRow(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = title,
@@ -50,7 +52,10 @@ fun SettingsRow(
                 color = colorScheme.outlineVariant.copy(alpha = 0.4f),
                 thickness = 1.dp
             )
-            Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopStart
+            ) {
                 block()
             }
         }

@@ -22,10 +22,10 @@ import org.angryscan.app.ui.windows.screens.settings.SettingsRow
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
-private val valueBadgeShape = RoundedCornerShape(10.dp)
+private val valueBadgeShape = RoundedCornerShape(8.dp)
 
 @Composable
-fun ThreadCountSettings() {
+fun ThreadCountSettings(modifier: Modifier = Modifier) {
     val appSettings = koinInject<AppSettings>()
     val scanService = koinInject<ScanService>()
     val colorScheme = MaterialTheme.colorScheme
@@ -34,34 +34,38 @@ fun ThreadCountSettings() {
     var threadCount by remember { appSettings.threadCount }
     val maxThreads = Runtime.getRuntime().availableProcessors()
     val recommendedThreads = (maxThreads + 1) / 2
-    SettingsRow(title = stringResource(Res.string.SettingsScreen_ThreadsCount)) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    SettingsRow(title = stringResource(Res.string.SettingsScreen_ThreadsCount), modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Slider(
-                value = sliderPosition,
-                onValueChange = { sliderPosition = it },
-                valueRange = 1f..maxThreads.toFloat(),
-                steps = (maxThreads - 2).coerceAtLeast(0),
-                onValueChangeFinished = {
-                    threadCount = sliderPosition.toInt()
-                    appSettings.save()
-                    scanService.setThreadsCount()
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .widthIn(max = 500.dp),
-                colors = SliderDefaults.colors(
-                    thumbColor = colorScheme.primary,
-                    activeTrackColor = colorScheme.primary,
-                    inactiveTrackColor = colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    activeTickColor = colorScheme.onPrimary.copy(alpha = 0.4f),
-                    inactiveTickColor = colorScheme.outline.copy(alpha = 0.25f)
+                    value = sliderPosition,
+                    onValueChange = { sliderPosition = it },
+                    valueRange = 1f..maxThreads.toFloat(),
+                    steps = (maxThreads - 2).coerceAtLeast(0),
+                    onValueChangeFinished = {
+                        threadCount = sliderPosition.toInt()
+                        appSettings.save()
+                        scanService.setThreadsCount()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .widthIn(max = 500.dp)
+                        .height(52.dp),
+                    colors = SliderDefaults.colors(
+                        thumbColor = colorScheme.primary,
+                        activeTrackColor = colorScheme.primary,
+                        inactiveTrackColor = colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                        activeTickColor = colorScheme.onPrimary.copy(alpha = 0.4f),
+                        inactiveTickColor = colorScheme.outline.copy(alpha = 0.25f)
+                    )
                 )
-            )
             Box(
                 modifier = Modifier
                     .widthIn(min = 40.dp)
@@ -80,7 +84,7 @@ fun ThreadCountSettings() {
             }
             Text(
                 text = stringResource(Res.string.SettingsScreen_RecommendedThreads, recommendedThreads),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
             )
         }
