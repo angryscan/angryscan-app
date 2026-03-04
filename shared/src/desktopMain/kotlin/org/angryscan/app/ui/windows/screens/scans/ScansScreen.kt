@@ -81,7 +81,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
         Column(
             modifier = Modifier
@@ -93,7 +93,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     color = colorScheme.outlineVariant.copy(alpha = 0.25f),
                     shape = containerShape
                 )
-                .padding(20.dp)
+                .padding(16.dp)
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
@@ -101,7 +101,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -110,7 +110,7 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                     onValueChange = { searchQuery = it },
                     modifier = Modifier
                         .weight(1f)
-                        .heightIn(min = 40.dp),
+                        .heightIn(min = 36.dp),
                     placeholder = {
                         Text(
                             stringResource(Res.string.ScansPage_SearchPlaceholder),
@@ -140,14 +140,14 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
             }
 
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = 12.dp),
+                modifier = Modifier.padding(vertical = 4.dp),
                 color = colorScheme.outlineVariant.copy(alpha = 0.2f)
             )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -272,8 +272,8 @@ fun ScansScreen(onTaskClick: (Int) -> Unit) {
                             .fillMaxWidth()
                             .padding(end = 24.dp),
                         state = state,
-                        contentPadding = PaddingValues(vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        contentPadding = PaddingValues(vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(filteredTasks) { task ->
                             ScanTaskCard(

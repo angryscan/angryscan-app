@@ -1,10 +1,7 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -141,21 +138,76 @@ fun ScanTaskCard(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                ScanTimeStatItem(
-                    startedAt = startedAt,
-                    finishedAt = finishedAt,
-                    pausedAt = pausedAt,
-                    state = state,
-                    modifier = Modifier.weight(1f)
-                )
+                if (fastScan) {
+                    Icon(
+                        imageVector = Icons.Outlined.RocketLaunch,
+                        contentDescription = "Fast scan",
+                        modifier = Modifier.size(iconSize),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Box(contentAlignment = Alignment.Center) {
+                    if (state == TaskState.SCANNING) {
+                        val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+                        val rotationAngle by infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 360f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(2000, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart
+                            ),
+                            label = "rotation"
+                        )
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(iconSize).rotate(rotationAngle),
+                            strokeWidth = 2.dp,
+                            color = state.color()
+                        )
+                    } else {
+                        Icon(
+                            imageVector = state.icon(),
+                            contentDescription = state.text(),
+                            tint = state.color(),
+                            modifier = Modifier.size(iconSize)
+                        )
+                    }
+                }
+                when (taskEntity.dbTask.connector) {
+                    is ConnectorS3 -> Icon(painter = painterResource(Res.drawable.aws_s3), contentDescription = "S3", modifier = Modifier.size(iconSize))
+                    is ConnectorHTTP -> Icon(imageVector = Icons.Outlined.Http, contentDescription = "HTTP", modifier = Modifier.size(iconSize))
+                    is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = "File share", modifier = Modifier.size(iconSize))
+                    is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = "AI models", modifier = Modifier.size(iconSize))
+                }
+                val pathInteractionSource = remember { MutableInteractionSource() }
+                val pathHovered by pathInteractionSource.collectIsHoveredAsState()
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .hoverable(pathInteractionSource)
+                        .clickable(onClick = onClick)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .padding(vertical = 2.dp)
+                ) {
+                    Text(
+                        text = when {
+                            name != null && path.isNotBlank() && path != name -> "$name · $path"
+                            else -> (name ?: path)
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colorScheme.onSurface,
+                        textDecoration = if (pathHovered) TextDecoration.Underline else TextDecoration.None,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
@@ -172,96 +224,32 @@ fun ScanTaskCard(
             }
 
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                BoxWithConstraints(modifier = Modifier.weight(1f)) {
-                    val availableWidth = maxWidth
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                    if (fastScan) {
-                        Icon(
-                            imageVector = Icons.Outlined.RocketLaunch,
-                            contentDescription = "Fast scan",
-                            modifier = Modifier.size(iconSize),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Box(contentAlignment = Alignment.Center) {
-                        if (state == TaskState.SCANNING) {
-                            val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                            val rotationAngle by infiniteTransition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 360f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(2000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                ),
-                                label = "rotation"
-                            )
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(iconSize).rotate(rotationAngle),
-                                strokeWidth = 2.dp,
-                                color = state.color()
-                            )
-                        } else {
-                            Icon(
-                                imageVector = state.icon(),
-                                contentDescription = state.text(),
-                                tint = state.color(),
-                                modifier = Modifier.size(iconSize)
-                            )
-                        }
-                    }
-                    when (taskEntity.dbTask.connector) {
-                        is ConnectorS3 -> Icon(painter = painterResource(Res.drawable.aws_s3), contentDescription = "S3", modifier = Modifier.size(iconSize))
-                        is ConnectorHTTP -> Icon(imageVector = Icons.Outlined.Http, contentDescription = "HTTP", modifier = Modifier.size(iconSize))
-                        is ConnectorFileShare -> Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = "File share", modifier = Modifier.size(iconSize))
-                        is ConnectorAIModels -> Icon(imageVector = Icons.Outlined.RocketLaunch, contentDescription = "AI models", modifier = Modifier.size(iconSize))
-                    }
-                    val pathInteractionSource = remember { MutableInteractionSource() }
-                    val pathHovered by pathInteractionSource.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .wrapContentWidth()
-                            .widthIn(max = availableWidth)
-                            .hoverable(pathInteractionSource)
-                            .clickable(onClick = onClick)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .padding(vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = when {
-                                name != null && path.isNotBlank() && path != name -> "$name · $path"
-                                else -> (name ?: path)
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = colorScheme.onSurface,
-                            textDecoration = if (pathHovered) TextDecoration.Underline else TextDecoration.None,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+                ScanTimeStatItem(
+                    startedAt = startedAt,
+                    finishedAt = finishedAt,
+                    pausedAt = pausedAt,
+                    state = state,
+                    compact = true
+                )
+                ScanStatInline(
+                    totalFiles = totalFiles,
+                    selectedFiles = selectedFiles,
+                    foundFiles = foundFiles,
+                    folderSize = folderSize,
+                    selectedFilesSize = selectedFilesSize,
+                    foundFilesSize = foundFilesSize,
+                    scanTime = scanTime,
+                    scoreSum = scoreSum,
+                    onClick = onClick,
+                    compact = true
+                )
             }
-
-            ScanStatInline(
-                totalFiles = totalFiles,
-                selectedFiles = selectedFiles,
-                foundFiles = foundFiles,
-                folderSize = folderSize,
-                selectedFilesSize = selectedFilesSize,
-                foundFilesSize = foundFilesSize,
-                scanTime = scanTime,
-                scoreSum = scoreSum,
-                onClick = onClick
-            )
 
             if (foundAttributes.isNotEmpty()) {
                 Column(

@@ -128,6 +128,7 @@ private fun ScanStatChip(
 private fun StatChip(
     text: String,
     onClick: (() -> Unit)?,
+    compact: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -143,7 +144,7 @@ private fun StatChip(
     } else modifier
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium,
+        style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall,
         color = colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -153,7 +154,10 @@ private fun StatChip(
                 if (isClickable && isHovered) colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 else colorScheme.surfaceVariant.copy(alpha = 0.35f)
             )
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(
+                horizontal = if (compact) 6.dp else 10.dp,
+                vertical = if (compact) 4.dp else 6.dp
+            )
     )
 }
 
@@ -168,25 +172,55 @@ fun ScanStatInline(
     foundFilesSize: Long,
     scanTime: String,
     scoreSum: Long,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    compact: Boolean = false
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        StatChip(
-            "${stringResource(Res.string.Task_TotalFiles)}: ${if (totalFiles > 0 && folderSize.isNotEmpty()) "$totalFiles ($folderSize)" else totalFiles}",
-            onClick
-        )
-        StatChip(
-            "${stringResource(Res.string.Task_SelectedFiles)}: ${if (selectedFiles > 0 && selectedFilesSize > 0) "$selectedFiles (${selectedFilesSize.toHumanReadable()})" else selectedFiles}",
-            onClick
-        )
-        StatChip(
-            "${stringResource(Res.string.Task_FoundFiles)}: ${if (foundFiles > 0 && foundFilesSize > 0) "$foundFiles (${foundFilesSize.toHumanReadable()})" else foundFiles}",
-            onClick
-        )
-        StatChip("${stringResource(Res.string.Task_ScanTime)}: $scanTime", onClick)
-        StatChip("${stringResource(Res.string.Result_ColumnScore)}: $scoreSum", onClick)
+    val spacing = if (compact) 4.dp else 6.dp
+    if (compact) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatChip(
+                "${stringResource(Res.string.Task_TotalFiles)}: ${if (totalFiles > 0 && folderSize.isNotEmpty()) "$totalFiles ($folderSize)" else totalFiles}",
+                onClick,
+                compact
+            )
+            StatChip(
+                "${stringResource(Res.string.Task_SelectedFiles)}: ${if (selectedFiles > 0 && selectedFilesSize > 0) "$selectedFiles (${selectedFilesSize.toHumanReadable()})" else selectedFiles}",
+                onClick,
+                compact
+            )
+            StatChip(
+                "${stringResource(Res.string.Task_FoundFiles)}: ${if (foundFiles > 0 && foundFilesSize > 0) "$foundFiles (${foundFilesSize.toHumanReadable()})" else foundFiles}",
+                onClick,
+                compact
+            )
+            StatChip("${stringResource(Res.string.Task_ScanTime)}: $scanTime", onClick, compact)
+            StatChip("${stringResource(Res.string.Result_ColumnScore)}: $scoreSum", onClick, compact)
+        }
+    } else {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalArrangement = Arrangement.spacedBy(spacing)
+        ) {
+            StatChip(
+                "${stringResource(Res.string.Task_TotalFiles)}: ${if (totalFiles > 0 && folderSize.isNotEmpty()) "$totalFiles ($folderSize)" else totalFiles}",
+                onClick,
+                compact
+            )
+            StatChip(
+                "${stringResource(Res.string.Task_SelectedFiles)}: ${if (selectedFiles > 0 && selectedFilesSize > 0) "$selectedFiles (${selectedFilesSize.toHumanReadable()})" else selectedFiles}",
+                onClick,
+                compact
+            )
+            StatChip(
+                "${stringResource(Res.string.Task_FoundFiles)}: ${if (foundFiles > 0 && foundFilesSize > 0) "$foundFiles (${foundFilesSize.toHumanReadable()})" else foundFiles}",
+                onClick,
+                compact
+            )
+            StatChip("${stringResource(Res.string.Task_ScanTime)}: $scanTime", onClick, compact)
+            StatChip("${stringResource(Res.string.Result_ColumnScore)}: $scoreSum", onClick, compact)
+        }
     }
 }

@@ -522,20 +522,15 @@ fun ScanResultScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ScanTimeStatItem(
                     startedAt = startedAt,
                     finishedAt = finishedAt,
                     pausedAt = pausedAt,
-                    state = state
-                )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(24.dp)
-                        .background(colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    state = state,
+                    useScanStatChipStyle = true
                 )
                 ScanStat(
                     totalFiles = totalFiles,
@@ -550,20 +545,19 @@ fun ScanResultScreen(
             }
 
             if (foundAttributes.isNotEmpty()) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.Top
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.widthIn(max = 200.dp)
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Column(
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .heightIn(max = 140.dp)
                             .verticalScroll(rememberScrollState())
                     ) {
