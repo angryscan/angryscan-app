@@ -20,6 +20,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.PlatformFile
@@ -39,6 +40,7 @@ import org.angryscan.app.scan.common.files.LocationFinder
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.getEngine
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.components.MessageBox
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.getString
@@ -294,7 +296,8 @@ fun ResultTable(
                     )
                     Box(
                         modifier = Modifier
-                            .weight(0.5f)
+                            .weight(0.25f)
+                            .widthIn(max = 320.dp)
                             .clip(shape = MaterialTheme.shapes.small)
                             .clickable {
                                 if (sortColumn == SortColumn.Path) {
@@ -328,7 +331,7 @@ fun ResultTable(
                     }
                     Box(
                         modifier = Modifier
-                            .weight(0.5f)
+                            .weight(0.75f)
                             .clip(shape = MaterialTheme.shapes.small)
                             .clickable {
                                 if (sortColumn == SortColumn.Attribute) {
@@ -627,27 +630,40 @@ fun ResultTable(
                                     ),
                                     enabled = exist
                                 )
-                                Text(
-                                    text = file.path
-                                        .replace(task.path.value, "")
-                                        .removePrefix("/")
-                                        .removePrefix("\\")
-                                        .ifEmpty {
-                                            file.path
-                                                .substringAfterLast("/")
-                                                .substringAfterLast("\\")
-                                        },
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                    letterSpacing = 0.1.sp,
-                                    fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
-                                    modifier = Modifier.weight(0.5f),
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .weight(0.25f)
+                                        .widthIn(max = 320.dp)
+                                ) {
+                                    DescriptionTooltip(
+                                        description = file.path,
+                                        delay = 400
+                                    ) {
+                                        Text(
+                                            text = file.path
+                                                .replace(task.path.value, "")
+                                                .removePrefix("/")
+                                                .removePrefix("\\")
+                                                .ifEmpty {
+                                                    file.path
+                                                        .substringAfterLast("/")
+                                                        .substringAfterLast("\\")
+                                                },
+                                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
+                                            letterSpacing = 0.1.sp,
+                                            fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                    }
+                                }
                                 FlowRow(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier
-                                        .weight(0.5f)
+                                        .weight(0.75f)
                                 ) {
                                     file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
                                         AttributeCard(
