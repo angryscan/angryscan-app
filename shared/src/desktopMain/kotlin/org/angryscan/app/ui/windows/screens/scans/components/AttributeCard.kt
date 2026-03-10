@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.angryscan.app.di.PreviewModule
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
@@ -32,14 +31,12 @@ fun AttributeCard(
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(color = MaterialTheme.colorScheme.secondary)
-                .padding(vertical = 2.dp, horizontal = 4.dp)
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f))
+                .padding(vertical = 4.dp, horizontal = 8.dp)
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 14.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.1.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }
@@ -57,23 +54,16 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(
-                    color = if (enabled)
-                        MaterialTheme.colorScheme.secondary
-                    else
-                        MaterialTheme.colorScheme.outlineVariant
-                )
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f))
                 .clickable(
                     onClick = onClick,
                     enabled = enabled
                 )
-                .padding(vertical = 2.dp, horizontal = 4.dp)
+                .padding(vertical = 4.dp, horizontal = 8.dp)
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 14.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.1.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }

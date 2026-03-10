@@ -41,6 +41,7 @@ import org.angryscan.app.resources.icon
 import org.angryscan.app.resources.scanCompletedNotificationMessage
 import org.angryscan.app.resources.scanCompletedNotificationTitle
 import org.angryscan.app.scan.ScanService
+import org.angryscan.app.resources.favicon_light
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.mainWindow
 import org.angryscan.app.ui.dialogs.EulaDialog
@@ -51,6 +52,9 @@ import org.angryscan.app.ui.windows.screens.main.MainScreen
 import org.angryscan.app.ui.windows.screens.scans.ScanResultScreen
 import org.angryscan.app.ui.windows.screens.scans.ScansScreen
 import org.angryscan.app.ui.windows.screens.settings.SettingsScreen
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import java.awt.Dimension
 import java.io.File
 import java.util.*
@@ -121,7 +125,7 @@ fun MainWindow(
         state = windowState,
         undecorated = true,
         transparent = true,
-        icon = painterResource(Res.drawable.icon),
+        icon = painterResource(Res.drawable.favicon_light),
         visible = isVisible,
         alwaysOnTop = focusRemember
     ) {

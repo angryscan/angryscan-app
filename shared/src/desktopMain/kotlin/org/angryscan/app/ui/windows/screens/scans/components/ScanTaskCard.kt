@@ -1,42 +1,37 @@
 package org.angryscan.app.ui.windows.screens.scans.components
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Http
-import androidx.compose.material.icons.outlined.RocketLaunch
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.Task_FoundAttributes
-import org.angryscan.app.resources.aws_s3
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.extensions.color
-import org.angryscan.app.ui.extensions.icon
 import org.angryscan.app.ui.extensions.text
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -99,154 +94,141 @@ fun ScanTaskCard(
         "00:00:00"
     }
 
-    Box(
+    val cardShape = RoundedCornerShape(20.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val colorScheme = MaterialTheme.colorScheme
+    val accentBarWidth = 4.dp
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            .hoverable(interactionSource = interactionSource)
+            .clip(cardShape)
+            .background(
+                color = if (isHovered) colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                else colorScheme.surfaceVariant.copy(alpha = 0.15f),
+                shape = cardShape
+            )
             .border(
                 width = 1.dp,
-                color = state.color(),
-                shape = MaterialTheme.shapes.medium
+                color = if (isHovered) colorScheme.outlineVariant.copy(alpha = 0.5f)
+                else colorScheme.outlineVariant.copy(alpha = 0.35f),
+                shape = cardShape
             )
-            .padding(14.dp),
-
-        ) {
+    ) {
+        Box(
+            modifier = Modifier
+                .width(accentBarWidth)
+                .fillMaxHeight()
+                .background(state.color().copy(alpha = 0.55f), RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
+        )
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                val pathInteractionSource = remember { MutableInteractionSource() }
+                val pathHovered by pathInteractionSource.collectIsHoveredAsState()
+                Box(
                     modifier = Modifier
                         .weight(1f)
+                        .hoverable(pathInteractionSource)
+                        .clickable(onClick = onClick)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .padding(vertical = 2.dp)
+                        .padding(end = 12.dp)
                 ) {
-                    if (fastScan) {
-                        Icon(
-                            imageVector = Icons.Outlined.RocketLaunch,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    Text(
+                        text = when {
+                            name != null && path.isNotBlank() && path != name -> "$name · $path"
+                            else -> (name ?: path)
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colorScheme.onSurface,
+                        textDecoration = if (pathHovered) TextDecoration.Underline else TextDecoration.None,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val sourceLabel = when (taskEntity.dbTask.connector) {
+                        is ConnectorS3 -> "S3"
+                        is ConnectorHTTP -> "HTTP"
+                        is ConnectorFileShare -> "File share"
+                        else -> null
                     }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(1.dp)
-                    ) {
+                    if (sourceLabel != null) {
                         Box(
-                            contentAlignment = Alignment.Center
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
-                            if (state == TaskState.SCANNING) {
-                                val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                                val rotationAngle by infiniteTransition.animateFloat(
-                                    initialValue = 0f,
-                                    targetValue = 360f,
-                                    animationSpec = infiniteRepeatable(
-                                        animation = tween(2000, easing = LinearEasing),
-                                        repeatMode = RepeatMode.Restart
-                                    ),
-                                    label = "rotation"
-                                )
-                                
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .rotate(rotationAngle),
-                                    strokeWidth = 2.dp,
-                                    color = state.color()
-                                )
-                            }
-                            
-                            Icon(
-                                imageVector = state.icon(),
-                                contentDescription = null,
-                                tint = state.color(),
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                        
-                        Text(
-                            text = state.text(),
-                            fontSize = 10.sp,
-                            color = state.color(),
-                            letterSpacing = 0.1.sp
-                        )
-                    }
-
-                    when(taskEntity.dbTask.connector) {
-                        is ConnectorS3 -> {
-                            Icon(
-                                painter = painterResource(Res.drawable.aws_s3),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                        }
-                        is ConnectorHTTP -> {
-                            Icon(
-                                imageVector = Icons.Outlined.Http,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
-                            )
-                        }
-                        is ConnectorFileShare -> {
-                            Icon(
-                                imageVector = Icons.Outlined.FolderOpen,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(32.dp)
+                            Text(
+                                text = sourceLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colorScheme.onSurfaceVariant
                             )
                         }
                     }
-
                     Box(
                         modifier = Modifier
-                            .clickable(onClick = onClick)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(state.color().copy(alpha = 0.2f))
+                            .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            text = name ?: path,
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
-                            fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                            letterSpacing = 0.1.sp,
-                            style = TextStyle.Default.copy(
-                                lineBreak = LineBreak.Heading
-                            )
+                            text = state.text(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = state.color()
                         )
                     }
+                    if (fastScan) {
+                        val fastScanColor = Color(0xFFE65100) // Orange, distinct from status/source
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(fastScanColor.copy(alpha = 0.2f))
+                                .border(1.dp, fastScanColor.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = "Fast scan",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = fastScanColor
+                            )
+                        }
+                    }
                 }
-
             }
 
             Row(
                 modifier = Modifier
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 ScanTimeStatItem(
                     startedAt = startedAt,
                     finishedAt = finishedAt,
                     pausedAt = pausedAt,
-                    state = state
+                    state = state,
+                    compact = true
                 )
-
-                VerticalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                ScanStat(
+                ScanStatInline(
                     totalFiles = totalFiles,
                     selectedFiles = selectedFiles,
                     foundFiles = foundFiles,
@@ -255,23 +237,27 @@ fun ScanTaskCard(
                     foundFilesSize = foundFilesSize,
                     scanTime = scanTime,
                     scoreSum = scoreSum,
-                    onClick = onClick
+                    onClick = onClick,
+                    compact = true
                 )
             }
 
             if (foundAttributes.isNotEmpty()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = stringResource(Res.string.Task_FoundAttributes),
-                        fontSize = 14.sp,
-                        letterSpacing = 0.1.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorScheme.primary
                     )
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
                             AttributeCard(attr.first, attr.second)

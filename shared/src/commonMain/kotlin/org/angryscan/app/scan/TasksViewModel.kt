@@ -39,4 +39,8 @@ class TasksViewModel : ViewModel() {
             completedTasksGuard.remove(taskId)
         }
     }
+
+    fun setAll(list: List<TaskEntityViewModel>) {
+        _tasks.value = list
+    }
 }

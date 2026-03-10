@@ -24,7 +24,7 @@ fun SettingsSelector(
 ) {
     Box(
         modifier = Modifier
-            .size(width = 150.dp, height = 34.dp)
+            .size(width = 180.dp, height = 34.dp)
             .clip(
                 MaterialTheme.shapes.large
             )

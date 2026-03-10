@@ -1,44 +1,38 @@
 package org.angryscan.app.ui.windows.screens.main.subscreens
 
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.MainScreen_ScanStartButton
-import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
+import org.angryscan.app.resources.MainScreen_ScanHint_HTTP
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.ui.windows.components.RadioButtonNavigation
-import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
-import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
-import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
 fun HTTPScreen(
     navController: androidx.navigation.NavController,
-    settingsExpanded: Boolean,
-    expandSettings: () -> Unit,
-    hideSettings: () -> Unit,
-    expandScanState: (Int) -> Unit
+    expandScanState: (Int) -> Unit,
+    setSidebarContent: (@Composable () -> Unit) -> Unit = {},
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -48,10 +42,6 @@ fun HTTPScreen(
     val helperPath by ScanPathHelper.path.collectAsState()
     var path by remember { mutableStateOf(screenStateSettings.httpScreenState.path) }
 
-    val settingsButtonTransition = updateTransition(settingsExpanded)
-
-    val settingsBoxTransition = updateTransition(settingsExpanded)
-
     var scanNotCorrectPath by remember { mutableStateOf(false) }
 
     var selectPathError by remember { mutableStateOf(false) }
@@ -59,7 +49,7 @@ fun HTTPScreen(
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
     val coroutineScope = rememberCoroutineScope()
-    
+
     var saveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     
     fun saveScreenState() {
@@ -162,77 +152,85 @@ fun HTTPScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 150.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .height(80.dp)
-                .width(700.dp),
-            value = path,
-            onValueChange = {
-                path = it
-                    .split("\\s".toRegex())
-                    .filter { url -> url.trim().isNotEmpty() }
-                    .joinToString(";")
-                saveScreenState()
-            },
-            placeholder = { Text(text = stringResource(Res.string.MainScreen_SelectPathPlaceholder)) },
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium,
-            isError = selectPathError,
-            leadingIcon = {
-                Box(
+    setSidebarContent { }
+    setBottomBarContent {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .height(72.dp)
+                    .then(
+                        if (selectPathError) Modifier.border(
+                            2.dp,
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            RoundedCornerShape(20.dp)
+                        )
+                        else Modifier
+                    ),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                tonalElevation = 0.dp
+            ) {
+                Row(
                     modifier = Modifier
-                        .height(48.dp)
-                        .width(64.dp)
-                        .size(48.dp)
-                        .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    OutlinedTextField(
+                        value = path,
+                        onValueChange = {
+                            path = it
+                                .split("\\s".toRegex())
+                                .filter { url -> url.trim().isNotEmpty() }
+                                .joinToString(";")
+                            saveScreenState()
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        placeholder = {
+                            Text(
+                                text = "Enter URLs separated by space or semicolon (;)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.bodyMedium,
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        isError = selectPathError,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                        )
+                    )
                     Icon(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = null
+                        imageVector = Icons.Outlined.Link,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
-            },
-        )
-
-        Box(
-            modifier = Modifier
-                .width(700.dp)
-                .padding(vertical = 0.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            RadioButtonNavigation(
-                navController = navController
-            )
-        }
-
-        Row {
+            }
+            if (path.isNotEmpty()) {
                 Button(
+                    enabled = true,
                     onClick = {
-                        // Validate path first
                         if (!path.split(";").all {
-                                it.startsWith("http://") ||
-                                        it.startsWith("https://")
+                                it.startsWith("http://") || it.startsWith("https://")
                             }
                         ) {
                             scanNotCorrectPath = true
                             return@Button
                         }
-                        
-                        // Validate scan settings
-                        if (!validateAndShowError()) {
-                            return@Button
-                        }
-                        
-                        // Save state before scanning
+                        if (!validateAndShowError()) return@Button
                         saveScreenState()
                         coroutineScope.launch {
                             val task = scanService.createTask(
@@ -243,48 +241,50 @@ fun HTTPScreen(
                                 connector = ConnectorHTTP()
                             )
                             scanService.startTask(task)
-                            task.id.value?.let { taskId ->
-                                expandScanState(taskId)
-                            }
-
+                            task.id.value?.let { expandScanState(it) }
                         }
                     },
-                    modifier = Modifier
-                        .width(268.dp)
-                        .height(56.dp),
-                    shape = MaterialTheme.shapes.medium.copy(
-                        topEnd = CornerSize(0.dp),
-                        bottomEnd = CornerSize(0.dp)
-                    )
+                    modifier = ScanButtonModifier(
+                        isReady = true,
+                        modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        disabledElevation = 0.dp
+                    ),
+                    colors = startScanButtonColors()
                 ) {
-                    Text(
-                        text = stringResource(Res.string.MainScreen_ScanStartButton),
-                        fontSize = 24.sp
-                    )
+                    StartScanButtonContent()
                 }
-                SettingsButton(
-                    transition = settingsButtonTransition,
-                    onClick = {
-                        if (!settingsExpanded) {
-                            expandSettings()
-                        } else {
-                            hideSettings()
-                        }
+            } else {
+                DescriptionTooltip(
+                    description = stringResource(Res.string.MainScreen_ScanHint_HTTP),
+                    delay = 400
+                ) {
+                    Button(
+                        enabled = false,
+                        onClick = { },
+                        modifier = ScanButtonModifier(
+                            isReady = false,
+                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                        ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
+                            disabledElevation = 0.dp
+                        ),
+                        colors = startScanButtonColors()
+                    ) {
+                        StartScanButtonContent()
                     }
-                )
+                }
             }
-        
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 16.dp)
-        ) {
-            SettingsBox(
-                transition = settingsBoxTransition
-            )
         }
     }
-    
+
     // Validation error dialog
     ScanValidationErrorDialog(
         validationError = validationErrorDialog,

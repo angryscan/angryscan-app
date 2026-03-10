@@ -41,74 +41,87 @@ class ScanService : KoinComponent {
     init {
         DatabaseMigration.migrate()
         scanThreads = Array(appSettings.threadCount.value) { ScanThread() }
-        
+
         CoroutineScope(Dispatchers.IO).launch {
-            // Load all tasks in one transaction first
             val allTasks = database.transaction {
-                Task.all().toList()
-            }
-            
-            // Process each task in separate transactions to avoid blocking
-            allTasks.forEach { task ->
-                database.transaction {
-                    val foundAttributes = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
-                        .select(TaskFileScanResults.count.sum(),TaskMatchers.matcher)
-                        .groupBy(TaskMatchers.matcher)
-                        .where { TaskFiles.task.eq(task.id) }
-                        .associate{ it[TaskMatchers.matcher] to (it[TaskFileScanResults.count.sum()]?: 0) }
-                        .filter { it.value > 0 }
-                    
-                    val foundFiles = TaskFiles
-                        .innerJoin(TaskFileScanResults)
-                        .select(TaskFiles.id)
-                        .where { TaskFiles.task.eq(task.id) }
-                        .withDistinct()
-                        .count()
-                    
-                    val taskEntity = TaskEntityViewModel(
-                        dbTask = task,
-                        state = task.taskState,
-                        totalFiles = task.filesCount,
-                        foundAttributes = foundAttributes,
-                        foundFiles = foundFiles,
-                        folderSize = task.size
-                    )
-                    
+                val tasksList = Task.all().toList()
+                tasksList.forEach { task ->
                     if (task.taskState == TaskState.SCANNING) {
                         task.pauseDate = task.lastFileDate
-
-                        taskEntity.setState(TaskState.STOPPED)
                         TaskFiles.update(
                             where = {
                                 TaskFiles.task.eq(task.id) and
-                                        TaskFiles.state.neq(TaskState.STOPPED) and
-                                        TaskFiles.state.neq(TaskState.COMPLETED) and
-                                        TaskFiles.state.neq(TaskState.FAILED)
+                                    TaskFiles.state.neq(TaskState.STOPPED) and
+                                    TaskFiles.state.neq(TaskState.COMPLETED) and
+                                    TaskFiles.state.neq(TaskState.FAILED)
                             }
                         ) {
                             it[state] = TaskState.STOPPED
                         }
-
                         logger.info(throwable = null, LogMarkers.UserAction) {
-                            "Stopped task after restart (${taskEntity.id.value}) ${taskEntity.path.value}"
+                            "Stopped task after restart (${task.id.value}) ${task.path}"
                         }
                     }
-
                     if (task.taskState == TaskState.SEARCHING) {
                         task.pauseDate = task.startedAt
-
-                        taskEntity.setState(TaskState.PENDING)
                         TaskFiles.deleteWhere {
                             TaskFiles.task.eq(task.id)
                         }
-
                         logger.info(throwable = null, LogMarkers.UserAction) {
-                            "Reset task after restart (${taskEntity.id.value}) ${taskEntity.path.value}"
+                            "Reset task after restart (${task.id.value}) ${task.path}"
                         }
                     }
-
-                    tasks.add(taskEntity)
                 }
+                tasksList
+            }
+
+            val entities = allTasks.map { task ->
+                val state = when (task.taskState) {
+                    TaskState.SCANNING -> TaskState.STOPPED
+                    TaskState.SEARCHING -> TaskState.PENDING
+                    else -> task.taskState
+                }
+                TaskEntityViewModel(
+                    dbTask = task,
+                    state = state,
+                    totalFiles = task.filesCount,
+                    foundAttributes = null,
+                    foundFiles = null,
+                    folderSize = task.size
+                )
+            }
+            tasks.setAll(entities)
+
+            val (foundFilesMap, foundAttributesMap) = database.transaction {
+                val foundFilesByTask = (TaskFiles innerJoin TaskFileScanResults)
+                    .select(TaskFiles.task, TaskFiles.id)
+                    .withDistinct()
+                    .map { row -> row[TaskFiles.task].value to row[TaskFiles.id].value }
+                    .groupBy({ it.first }, { it.second })
+                    .mapValues { it.value.distinct().size }
+
+                val foundAttrsByTask = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
+                    .select(TaskFiles.task, TaskMatchers.matcher, TaskFileScanResults.count.sum())
+                    .groupBy(TaskFiles.task, TaskMatchers.matcher)
+                    .map { row ->
+                        val taskId = row[TaskFiles.task].value
+                        val matcher = row[TaskMatchers.matcher]
+                        val sum = row[TaskFileScanResults.count.sum()] ?: 0
+                        Triple(taskId, matcher, sum)
+                    }
+                    .filter { it.third > 0 }
+                    .groupBy({ it.first }, { it.second to it.third })
+                    .mapValues { entries -> entries.value.associate { it.first to it.second } }
+
+                Pair(foundFilesByTask, foundAttrsByTask)
+            }
+
+            entities.forEach { entity ->
+                val taskId = entity.id.value ?: return@forEach
+                entity.setFoundStats(
+                    foundFiles = foundFilesMap.getOrDefault(taskId, 0).toLong(),
+                    foundAttributes = foundAttributesMap.getOrDefault(taskId, emptyMap())
+                )
             }
         }
     }

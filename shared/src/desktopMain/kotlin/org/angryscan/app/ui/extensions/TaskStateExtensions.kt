@@ -1,7 +1,7 @@
 package org.angryscan.app.ui.extensions
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Warning
@@ -22,7 +22,7 @@ fun TaskState.color() = when (this) {
 @Composable
 fun TaskState.icon() = when (this) {
     TaskState.LOADING, TaskState.SCANNING, TaskState.SEARCHING -> Icons.Outlined.PlayArrow
-    TaskState.COMPLETED -> Icons.Outlined.DoneAll
+    TaskState.COMPLETED -> Icons.Outlined.CheckCircle
     TaskState.STOPPED, TaskState.PENDING -> Icons.Outlined.Pause
     TaskState.FAILED -> Icons.Outlined.Warning
 }

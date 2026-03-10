@@ -5,10 +5,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import kotlinx.serialization.serializer
-import org.angryscan.app.scan.common.connectors.ConnectorFileShare
-import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.scan.common.connectors.ConnectorS3
-import org.angryscan.app.scan.common.connectors.IConnector
+import org.angryscan.app.scan.common.connectors.*
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
@@ -101,6 +98,7 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(ConnectorS3::class)
         subclass(ConnectorFileShare::class)
         subclass(ConnectorHTTP::class)
+        subclass(ConnectorAIModels::class)
     }
     polymorphic(IScanEngine::class) {
         subclass(KotlinEngine::class)
