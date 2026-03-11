@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.*
+import org.angryscan.app.ui.windows.screens.main.settings.items.SettingsTextField
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -31,7 +32,8 @@ enum class SettingsTab { Scan, Files, Detect, Signatures }
 @Composable
 fun SettingsBox(
     transition: Transition<Boolean>,
-    isS3Source: Boolean = false
+    isS3Source: Boolean = false,
+    isPostgresSource: Boolean = false
 ) {
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
@@ -160,7 +162,6 @@ fun SettingsBox(
                                         }
                                     )
                                 }
-                                // AWS S3 connection parameters — только когда выбран источник S3
                                 if (isS3Source) {
                                     var s3Endpoint by remember { mutableStateOf(screenStateSettings.s3ScreenState.endpoint) }
                                     var s3Bucket by remember { mutableStateOf(screenStateSettings.s3ScreenState.bucket) }
@@ -229,6 +230,71 @@ fun SettingsBox(
                                             singleLine = true,
                                             textStyle = MaterialTheme.typography.bodyMedium,
                                             visualTransformation = PasswordVisualTransformation()
+                                        )
+                                    }
+                                }
+                                if (isPostgresSource) {
+                                    var sqlScreenState by remember {screenStateSettings.sqlScreenState}
+
+                                    Text(
+                                        text = "SQL Database connection",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                    )
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        SettingsTextField(
+                                            placeholder = "Host",
+                                            value = sqlScreenState.host,
+                                            onValueChange = {
+                                                sqlScreenState = sqlScreenState.copy(host = it)
+                                                screenStateSettings.save()
+                                            }
+                                        )
+                                        SettingsTextField(
+                                            placeholder = "Port",
+                                            value = sqlScreenState.port,
+                                            onValueChange = { port ->
+                                                port.toIntOrNull()?.let {
+                                                    sqlScreenState = sqlScreenState.copy(port = port)
+                                                    screenStateSettings.save()
+                                                }
+                                            }
+                                        )
+                                        SettingsTextField(
+                                            placeholder = "Database",
+                                            value = sqlScreenState.database,
+                                            onValueChange = {
+                                                sqlScreenState = sqlScreenState.copy(database = it)
+                                                screenStateSettings.save()
+                                            }
+                                        )
+                                        SettingsTextField(
+                                            placeholder = "User",
+                                            value = sqlScreenState.user,
+                                            onValueChange = {
+                                                sqlScreenState = sqlScreenState.copy(user = it)
+                                                screenStateSettings.save()
+                                            }
+                                        )
+                                        SettingsTextField(
+                                            placeholder = "Password",
+                                            value = sqlScreenState.password,
+                                            onValueChange = {
+                                                sqlScreenState = sqlScreenState.copy(password = it)
+                                                screenStateSettings.save()
+                                            },
+                                            isPassword = true
+                                        )
+                                        SettingsTextField(
+                                            placeholder = "Rows to scan",
+                                            value = sqlScreenState.rowLimit,
+                                            onValueChange = { rowLimit ->
+                                                rowLimit.toIntOrNull()?.let {
+                                                    sqlScreenState = sqlScreenState.copy(rowLimit = rowLimit)
+                                                    screenStateSettings.save()
+                                                }
+                                            }
                                         )
                                     }
                                 }

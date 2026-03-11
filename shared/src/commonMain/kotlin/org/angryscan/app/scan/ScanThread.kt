@@ -7,12 +7,15 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
+import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.scan.engine.fallback
 import org.angryscan.app.scan.engine.getEngine
 import org.angryscan.app.scan.engine.inappropriateMatchers
 import org.angryscan.common.engine.IScanEngine
+import java.io.File
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -110,11 +113,11 @@ class ScanThread : KoinComponent {
                     continue
                 }
 
+                val connector = taskEntity.dbTask.connector
                 val fastScan = database.transaction { taskEntity.dbTask.fastScan }
 
                 val fileId = dbFile[TaskFiles.id].value
                 val filePath = dbFile[TaskFiles.path]
-                val fileObject = taskEntity.dbTask.connector.getFile(filePath)
 
                 val matchers = database.transaction {
                     taskEntity.dbTask.lastFileDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -131,15 +134,26 @@ class ScanThread : KoinComponent {
                         .map { it[TaskFileExtensions.extension] }
                 }
 
-                // Determine file types early to decide on requireKeywords
-                val fileTypes = IFileType
-                    .getFileType(fileObject)
-                    .filter { ft ->
-                        ft in extensions
+                var fileObject: File? = null
+                var fileTypes: List<IFileType> = emptyList()
+                var tableContent: String? = null
+
+                val requireKeywords = when (connector) {
+                    is IFileConnector -> {
+                        fileObject = connector.getFile(filePath)
+                        fileTypes = IFileType
+                            .getFileType(fileObject)
+                            .filter { ft -> ft in extensions }
+                        fileTypes.requireKeywords(fileObject.extension)
                     }
 
-                // Check if file requires requireKeywords = false
-                val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
+                    is IDatabaseConnector -> {
+                        tableContent = connector.getTableContent(filePath)
+                        false
+                    }
+
+                    else -> true
+                }
 
                 val engines: MutableList<IScanEngine> = mutableListOf()
                 scanSettings.value.engine.value
@@ -170,27 +184,41 @@ class ScanThread : KoinComponent {
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
-                    val scanResults = fileTypes.map { ft ->
-                        ft.scanFile(
-                            file = fileObject,
-                            context = currentCoroutineContext(),
-                            engines = engines,
-                            fastScan = fastScan,
-                            selectedExtensions = extensions
-                        )
-                    }
+                    val scanRes = try {
+                        when {
+                            fileObject != null -> {
+                                val scanResults = fileTypes.map { ft ->
+                                    ft.scanFile(
+                                        file = fileObject,
+                                        context = currentCoroutineContext(),
+                                        engines = engines,
+                                        fastScan = fastScan,
+                                        selectedExtensions = extensions
+                                    )
+                                }
 
-                    engines.forEach { eng ->
-                        eng.close()
-                    }
+                                scanResults.firstOrNull()?.also { result ->
+                                    scanResults.drop(1).forEach {
+                                        result.plus(it.getDocumentFields())
+                                    }
+                                }
+                            }
 
-                    val scanRes = scanResults.firstOrNull()
-                    if (scanRes != null) {
-                        scanResults.drop(1).forEach {
-                            scanRes.plus(it.getDocumentFields())
+                            tableContent != null -> {
+                                DatabaseContentScanner.scanContent(
+                                    path = filePath,
+                                    content = tableContent,
+                                    engines = engines
+                                )
+                            }
+
+                            else -> null
+                        }
+                    } finally {
+                        engines.forEach { eng ->
+                            eng.close()
                         }
                     }
-
 
                     if (scanRes != null && !scanRes.skipped()) {
                         database.transaction {
@@ -225,7 +253,19 @@ class ScanThread : KoinComponent {
                         }
                     }
                 }
-                logger.debug { "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms" }
+                when {
+                    fileObject != null -> {
+                        logger.debug {
+                            "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms"
+                        }
+                    }
+
+                    tableContent != null -> {
+                        logger.debug {
+                            "Scanned database table $filePath with content length ${tableContent.length} in $timer ms"
+                        }
+                    }
+                }
 
                 taskEntity.checkProgress()
                 yield()

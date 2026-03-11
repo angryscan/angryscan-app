@@ -93,10 +93,13 @@
     <string name="MainScreen-SourceType-FileShare">File Share</string>
     <string name="MainScreen-SourceType-S3">AWS S3</string>
     <string name="MainScreen-SourceType-HTTP">HTTP</string>
+    <string name="MainScreen-SourceType-Postgres">SQL Database</string>
     <string name="MainScreen-Placeholder-HTTP">Enter URLs separated by space or semicolon (;)</string>
+    <string name="MainScreen-Placeholder-Postgres">Schema to scan (optional, e.g. public)</string>
     <string name="MainScreen-Hint-FileShare">Folder, files, or txt/csv file with paths</string>
     <string name="MainScreen-Hint-S3">Path inside bucket (e.g. folder/subfolder/)</string>
     <string name="MainScreen-Hint-HTTP">One or more URLs (http:// or https://)</string>
+    <string name="MainScreen-Hint-Postgres">Schema name to limit scanning, or leave empty to scan all tables</string>
     <string name="MainScreen-QuickStart-Title">Quick start</string>
     <string name="MainScreen-QuickStart-Step1">1. Select source type</string>
     <string name="MainScreen-QuickStart-Step2">2. Specify path or URL</string>
@@ -116,6 +119,7 @@
     <string name="MainScreen-ScanHint-FileShare">Select or enter path above to enable Scan</string>
     <string name="MainScreen-ScanHint-S3">Enter path above and set S3 connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-ScanHint-HTTP">Enter one or more URLs above to enable Scan</string>
+    <string name="MainScreen-ScanHint-Postgres">Set SQL Database connection in Scan options tab to enable Scan</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">File extensions to scan</string>

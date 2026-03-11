@@ -71,9 +71,30 @@ class ScreenStateSettings : KoinComponent {
         var fastScan: MutableState<Boolean> = mutableStateOf(false)
     )
 
+    @Serializable
+    data class PostgresScreenState(
+        var schema: String = "",
+        var host: String = "",
+        var port: String = "5432",
+        var database: String = "",
+        var user: String = "",
+        var password: String = "",
+        var rowLimit: String = "1000",
+        @Serializable
+        val extensions: MutableList<IFileType> = mutableStateListOf(),
+        @Serializable
+        val matchers: MutableList<IMatcher> = mutableStateListOf(),
+        @Serializable
+        val userSignatures: MutableList<UserSignature> = mutableStateListOf(),
+        @Serializable(with = MutableStateSerializer::class)
+        var fastScan: MutableState<Boolean> = mutableStateOf(false)
+    )
+
     var fileShareScreenState = FileShareScreenState()
     var s3ScreenState = S3ScreenState()
     var httpScreenState = HTTPScreenState()
+    @Serializable(with = MutableStateSerializer::class)
+    var sqlScreenState = mutableStateOf(PostgresScreenState())
 
     constructor() {
         val userSignatureSettings by inject<UserSignatureSettings>()
@@ -122,6 +143,25 @@ class ScreenStateSettings : KoinComponent {
                     prop.httpScreenState.userSignatures.filter { it in userSignatureSettings.userSignatures }
                 )
                 this.httpScreenState.fastScan = prop.httpScreenState.fastScan
+
+                // Restore PostgreSQLScreen state
+                this.sqlScreenState.value = prop.sqlScreenState.value
+//                this.postgresScreenState.path = prop.postgresScreenState.path
+//                this.postgresScreenState.host = prop.postgresScreenState.host
+//                this.postgresScreenState.port = prop.postgresScreenState.port
+//                this.postgresScreenState.database = prop.postgresScreenState.database
+//                this.postgresScreenState.user = prop.postgresScreenState.user
+//                this.postgresScreenState.password = prop.postgresScreenState.password
+//                this.postgresScreenState.rowLimit = prop.postgresScreenState.rowLimit
+//                this.postgresScreenState.extensions.clear()
+//                this.postgresScreenState.extensions.addAll(prop.postgresScreenState.extensions)
+//                this.postgresScreenState.matchers.clear()
+//                this.postgresScreenState.matchers.addAll(prop.postgresScreenState.matchers.distinct())
+//                this.postgresScreenState.userSignatures.clear()
+//                this.postgresScreenState.userSignatures.addAll(
+//                    prop.postgresScreenState.userSignatures.filter { it in userSignatureSettings.userSignatures }
+//                )
+//                this.postgresScreenState.fastScan = prop.postgresScreenState.fastScan
             }
         } catch (e: Exception) {
             logger.error(e) {

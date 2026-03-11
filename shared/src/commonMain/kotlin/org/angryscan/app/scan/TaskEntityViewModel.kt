@@ -15,8 +15,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.exposed.sql.*
@@ -419,7 +421,7 @@ class TaskEntityViewModel(
                 val filesCounters = path.split(";")
                     .map { dir ->
                         try {
-                            scanDirectory(dir, extensions) {
+                            scanObjects(dir, extensions) {
                                 taskScope.launch {
                                     database.transaction {
                                         TaskFile.new {
@@ -437,17 +439,17 @@ class TaskEntityViewModel(
                             return@launch
                         }
                     }
-                val directorySize = FilesCounter()
+                val directorySize = ObjectCounter()
                 filesCounters.forEach {
                     directorySize.plus(it)
                 }
 
                 database.transaction {
-                    dbTask.size = directorySize.filesSize.toString()
-                    dbTask.filesCount = directorySize.filesCount
+                    dbTask.size = directorySize.objectSize.toString()
+                    dbTask.filesCount = directorySize.objectCount
                 }
-                _totalFiles.value = directorySize.filesCount
-                _folderSize.value = directorySize.filesSize.toString()
+                _totalFiles.value = directorySize.objectCount
+                _folderSize.value = directorySize.objectSize.toString()
             }
 
             setState(TaskState.SCANNING)
@@ -455,20 +457,24 @@ class TaskEntityViewModel(
         }
     }
 
-    private suspend fun scanDirectory(
-        dir: String,
+    private suspend fun scanObjects(
+        path: String,
         extensions: List<IFileType>,
         fileSelected: (file: FoundedFile) -> Unit
-    ): FilesCounter {
-        try {
-            val res = dbTask.connector.scanDirectory(
-                dir = dir,
+    ): ObjectCounter {
+        return when (val connector = dbTask.connector) {
+            is IFileConnector -> connector.scanDirectory(
+                dir = path,
                 extensions = extensions,
                 fileSelected = fileSelected
             )
-            return res
-        } catch (e: Exception) {
-            throw e
+
+            is IDatabaseConnector -> connector.scanTables(
+                path = path,
+                tableSelected = fileSelected
+            )
+
+            else -> throw IllegalArgumentException("Unsupported connector type: ${connector::class.simpleName}")
         }
     }
 }

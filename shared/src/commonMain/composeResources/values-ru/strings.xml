@@ -91,10 +91,13 @@
     <string name="MainScreen-SourceType-FileShare">Файловая система</string>
     <string name="MainScreen-SourceType-S3">AWS S3</string>
     <string name="MainScreen-SourceType-HTTP">HTTP</string>
+    <string name="MainScreen-SourceType-Postgres">SQL Database</string>
     <string name="MainScreen-Placeholder-HTTP">Введите URL через пробел или точку с запятой (;)</string>
+    <string name="MainScreen-Placeholder-Postgres">Схема для сканирования (необязательно, например public)</string>
     <string name="MainScreen-Hint-FileShare">Папка, файлы или txt/csv с путями</string>
     <string name="MainScreen-Hint-S3">Путь внутри bucket (например folder/subfolder/)</string>
     <string name="MainScreen-Hint-HTTP">Один или несколько URL (http:// или https://)</string>
+    <string name="MainScreen-Hint-Postgres">Имя схемы для ограничения сканирования или пустое значение для всех таблиц</string>
     <string name="MainScreen-QuickStart-Title">Быстрый старт</string>
     <string name="MainScreen-QuickStart-Step1">1. Выберите тип источника</string>
     <string name="MainScreen-QuickStart-Step2">2. Укажите путь или URL</string>
@@ -114,6 +117,7 @@
     <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>
     <string name="MainScreen-ScanHint-S3">Введите путь выше и настройте подключение S3 во вкладке «Параметры сканирования», чтобы активировать кнопку</string>
     <string name="MainScreen-ScanHint-HTTP">Введите один или несколько URL выше, чтобы активировать кнопку «Сканировать»</string>
+    <string name="MainScreen-ScanHint-Postgres">Настройте подключение SQL Database во вкладке параметров сканирования, чтобы активировать кнопку</string>
 
     <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
     <string name="ScanSettings-FileExtensions">Расширения файлов для сканирования</string>

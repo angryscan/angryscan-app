@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,7 +40,8 @@ import kotlinx.coroutines.delay
 private enum class SourceType(val tooltip: String) {
     FileShare("File share"),
     S3("AWS S3"),
-    HTTP("Web scanning")
+    HTTP("Web scanning"),
+    Postgres("SQL Database")
 }
 
 @Composable
@@ -54,6 +56,7 @@ fun SourceSelector(
         destination?.hasRoute(MainScreenConnector.FileShare::class) == true -> MainScreenConnector.FileShare
         destination?.hasRoute(MainScreenConnector.S3::class) == true -> MainScreenConnector.S3
         destination?.hasRoute(MainScreenConnector.HTTP::class) == true -> MainScreenConnector.HTTP
+        destination?.hasRoute(MainScreenConnector.Postgres::class) == true -> MainScreenConnector.Postgres
         else -> MainScreenConnector.FileShare
     }
 
@@ -96,6 +99,15 @@ fun SourceSelector(
                     }
                 }
             )
+            FloatingSourceIcon(
+                isSelected = selectedRoute == MainScreenConnector.Postgres,
+                sourceType = SourceType.Postgres,
+                onClick = {
+                    if (selectedRoute != MainScreenConnector.Postgres) {
+                        navController.navigate(MainScreenConnector.Postgres)
+                    }
+                }
+            )
         }
     }
 }
@@ -135,6 +147,7 @@ private fun FloatingSourceIcon(
         SourceType.FileShare -> Icons.Outlined.FolderOpen to "File share"
         SourceType.S3 -> Icons.Outlined.Cloud to "AWS S3"
         SourceType.HTTP -> Icons.Outlined.Link to "Web scanning"
+        SourceType.Postgres -> Icons.Outlined.Storage to "SQL Database"
     }
 
     val density = LocalDensity.current

@@ -27,6 +27,7 @@ import org.angryscan.app.ui.windows.screens.main.components.SourceSelectorTabs
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
+import org.angryscan.app.ui.windows.screens.main.subscreens.PostgresScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,8 +52,6 @@ private val MainContentVerticalSpacing = 18.dp
 fun MainScreen(
     showScan:(taskId:Int) -> Unit
 ) {
-    var scanStateExpanded by remember { mutableStateOf(false) }
-
     val navController = rememberNavController()
 
     var sidebarExtraContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
@@ -61,6 +60,7 @@ fun MainScreen(
     val settingsTransition = updateTransition(targetState = true, label = "settings")
     val backStackEntry by navController.currentBackStackEntryAsState()
     val isS3Source = backStackEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
+    val isPostgresSource = backStackEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -130,7 +130,11 @@ fun MainScreen(
                         modifier = Modifier.padding(bottom = MainContentVerticalSpacing)
                     )
                     Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                        SettingsBox(transition = settingsTransition, isS3Source = isS3Source)
+                        SettingsBox(
+                            transition = settingsTransition,
+                            isS3Source = isS3Source,
+                            isPostgresSource = isPostgresSource
+                        )
                     }
                 }
             }
@@ -192,7 +196,6 @@ fun MainScreen(
                         FileShareScreen(
                             navController = navController,
                             expandScanState = { taskId ->
-                                scanStateExpanded = false
                                 showScan(taskId)
                             },
                             setSidebarContent = { content -> sidebarExtraContent = content },
@@ -203,7 +206,6 @@ fun MainScreen(
                         S3Screen(
                             navController = navController,
                             expandScanState = { taskId ->
-                                scanStateExpanded = false
                                 showScan(taskId)
                             },
                             setSidebarContent = { content -> sidebarExtraContent = content },
@@ -214,7 +216,15 @@ fun MainScreen(
                         HTTPScreen(
                             navController = navController,
                             expandScanState = { taskId ->
-                                scanStateExpanded = false
+                                showScan(taskId)
+                            },
+                            setSidebarContent = { content -> sidebarExtraContent = content },
+                            setBottomBarContent = { content -> bottomBarContent = content }
+                        )
+                    }
+                    composable<MainScreenConnector.Postgres> {
+                        PostgresScreen(
+                            expandScanState = { taskId ->
                                 showScan(taskId)
                             },
                             setSidebarContent = { content -> sidebarExtraContent = content },
