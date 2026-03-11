@@ -389,4 +389,6 @@
     <string name="Validation-NoExtensionsMessage">Пожалуйста, выберите хотя бы одно расширение файла для сканирования.</string>
     <string name="Validation-NoMatchersTitle">Не выбраны функции детектирования</string>
     <string name="Validation-NoMatchersMessage">Пожалуйста, выберите хотя бы одну функцию детектирования для сканирования.</string>
+    <string name="Validation-PostgresConnectionTitle">Ошибка подключения к базе данных</string>
+    <string name="Validation-PostgresConnectionMessage">Не удалось подключиться к базе данных. Проверьте корректность данных для подключения к БД.</string>
 </resources>

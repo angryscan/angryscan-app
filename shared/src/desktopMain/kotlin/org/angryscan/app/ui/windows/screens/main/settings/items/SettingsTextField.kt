@@ -16,7 +16,8 @@ fun SettingsTextField(
     placeholder: String,
     value: Any,
     onValueChange: (String) -> Unit,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    isError: Boolean = false
 ) {
     OutlinedTextField(
         value = value.toString(),
@@ -25,6 +26,7 @@ fun SettingsTextField(
         placeholder = { Text(placeholder, style = MaterialTheme.typography.bodyMedium) },
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyMedium,
-        visualTransformation = if(isPassword) PasswordVisualTransformation() else VisualTransformation.None
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        isError = isError
     )
 }

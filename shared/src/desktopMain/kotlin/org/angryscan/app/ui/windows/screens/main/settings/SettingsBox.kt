@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.*
@@ -33,13 +34,28 @@ enum class SettingsTab { Scan, Files, Detect, Signatures }
 fun SettingsBox(
     transition: Transition<Boolean>,
     isS3Source: Boolean = false,
-    isPostgresSource: Boolean = false
+    isPostgresSource: Boolean = false,
+    postgresConnectionBlinkSignal: Int = 0
 ) {
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
     val fastScan by scanSettings.fastScan
     var selectedTab by remember { mutableIntStateOf(SettingsTab.Scan.ordinal) }
     val scrollState = rememberScrollState()
+    var postgresFieldsBlinking by remember { mutableStateOf(false) }
+
+    LaunchedEffect(postgresConnectionBlinkSignal) {
+        if (postgresConnectionBlinkSignal == 0) {
+            return@LaunchedEffect
+        }
+
+        repeat(3) {
+            postgresFieldsBlinking = true
+            delay(360)
+            postgresFieldsBlinking = false
+            delay(280)
+        }
+    }
 
     val colorScheme = MaterialTheme.colorScheme
     AnimatedVisibility(
@@ -234,7 +250,7 @@ fun SettingsBox(
                                     }
                                 }
                                 if (isPostgresSource) {
-                                    var sqlScreenState by remember {screenStateSettings.sqlScreenState}
+                                    var sqlScreenState by remember { screenStateSettings.sqlScreenState }
 
                                     Text(
                                         text = "SQL Database connection",
@@ -249,7 +265,8 @@ fun SettingsBox(
                                             onValueChange = {
                                                 sqlScreenState = sqlScreenState.copy(host = it)
                                                 screenStateSettings.save()
-                                            }
+                                            },
+                                            isError = postgresFieldsBlinking
                                         )
                                         SettingsTextField(
                                             placeholder = "Port",
@@ -259,7 +276,8 @@ fun SettingsBox(
                                                     sqlScreenState = sqlScreenState.copy(port = port)
                                                     screenStateSettings.save()
                                                 }
-                                            }
+                                            },
+                                            isError = postgresFieldsBlinking
                                         )
                                         SettingsTextField(
                                             placeholder = "Database",
@@ -267,7 +285,8 @@ fun SettingsBox(
                                             onValueChange = {
                                                 sqlScreenState = sqlScreenState.copy(database = it)
                                                 screenStateSettings.save()
-                                            }
+                                            },
+                                            isError = postgresFieldsBlinking
                                         )
                                         SettingsTextField(
                                             placeholder = "User",
@@ -275,7 +294,8 @@ fun SettingsBox(
                                             onValueChange = {
                                                 sqlScreenState = sqlScreenState.copy(user = it)
                                                 screenStateSettings.save()
-                                            }
+                                            },
+                                            isError = postgresFieldsBlinking
                                         )
                                         SettingsTextField(
                                             placeholder = "Password",
@@ -284,7 +304,8 @@ fun SettingsBox(
                                                 sqlScreenState = sqlScreenState.copy(password = it)
                                                 screenStateSettings.save()
                                             },
-                                            isPassword = true
+                                            isPassword = true,
+                                            isError = postgresFieldsBlinking
                                         )
                                         SettingsTextField(
                                             placeholder = "Rows to scan",

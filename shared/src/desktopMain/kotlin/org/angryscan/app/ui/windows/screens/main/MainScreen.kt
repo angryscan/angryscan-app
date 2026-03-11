@@ -6,7 +6,14 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +37,8 @@ import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.PostgresScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
 import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.launch
+import org.angryscan.app.resources.close
 
 /**
  * Вариант селектора источника данных.
@@ -61,6 +70,11 @@ fun MainScreen(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val isS3Source = backStackEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
     val isPostgresSource = backStackEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
+
+    var postgresConnectionBlinkSignal by remember { mutableIntStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val closeLabel = stringResource(Res.string.close)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -133,7 +147,8 @@ fun MainScreen(
                         SettingsBox(
                             transition = settingsTransition,
                             isS3Source = isS3Source,
-                            isPostgresSource = isPostgresSource
+                            isPostgresSource = isPostgresSource,
+                            postgresConnectionBlinkSignal = postgresConnectionBlinkSignal
                         )
                     }
                 }
@@ -228,13 +243,66 @@ fun MainScreen(
                                 showScan(taskId)
                             },
                             setSidebarContent = { content -> sidebarExtraContent = content },
-                            setBottomBarContent = { content -> bottomBarContent = content }
+                            setBottomBarContent = { content -> bottomBarContent = content },
+                            onPostgresConnectionError = {
+                                postgresConnectionBlinkSignal++
+                            },
+                            showErrorSnackbar = { message ->
+                                coroutineScope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar(
+                                        message = message,
+                                        actionLabel = closeLabel,
+                                        duration = SnackbarDuration.Long
+                                    )
+                                }
+                            }
                         )
                     }
                 }
             }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            snackbar = { snackbarData ->
+                Snackbar(
+                    dismissAction = {
+                        snackbarData.visuals.actionLabel?.let { actionLabel ->
+                            androidx.compose.material3.TextButton(
+                                onClick = { snackbarData.performAction() }
+                            ) {
+                                Text(
+                                    text = actionLabel,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    },
+                    actionOnNewLine = false,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    actionContentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    dismissActionContentColor = MaterialTheme.colorScheme.onErrorContainer
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text(snackbarData.visuals.message)
+                    }
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 24.dp, vertical = 24.dp)
+        )
 
         if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.FloatingIcons) {
             SourceSelector(

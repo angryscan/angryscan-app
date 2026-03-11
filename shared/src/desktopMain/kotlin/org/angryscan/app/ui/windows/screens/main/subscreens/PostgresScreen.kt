@@ -17,6 +17,7 @@ import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.connectors.ConnectorPostgres
+import org.angryscan.app.scan.common.connectors.PostgresConnectionValidator
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
@@ -26,7 +27,9 @@ import org.koin.compose.koinInject
 fun PostgresScreen(
     expandScanState: (Int) -> Unit,
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
-    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
+    onPostgresConnectionError: () -> Unit = {},
+    showErrorSnackbar: (String) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
     val scanSettings = koinInject<ScanSettings>()
@@ -38,6 +41,7 @@ fun PostgresScreen(
 
     val noMatchersTitle = stringResource(Res.string.Validation_NoMatchersTitle)
     val noMatchersMessage = stringResource(Res.string.Validation_NoMatchersMessage)
+    val postgresConnectionErrorMessage = stringResource(Res.string.Validation_PostgresConnectionMessage)
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -128,6 +132,19 @@ fun PostgresScreen(
                         }
 
                         coroutineScope.launch {
+                            val port = sqlScreenState.port.toIntOrNull() ?: 5432
+                            val connectionError = PostgresConnectionValidator.validate(
+                                host = sqlScreenState.host,
+                                port = port,
+                                database = sqlScreenState.database,
+                                user = sqlScreenState.user,
+                                password = sqlScreenState.password
+                            )
+                            if (connectionError != null) {
+                                onPostgresConnectionError()
+                                showErrorSnackbar(postgresConnectionErrorMessage)
+                                return@launch
+                            }
                             val task = scanService.createTask(
                                 name = "${sqlScreenState.host}:${sqlScreenState.port}/${sqlScreenState.database}" + if (sqlScreenState.schema.isNotEmpty())
                                     " schema: ${sqlScreenState.schema}" else "",
@@ -137,7 +154,7 @@ fun PostgresScreen(
                                 fastScan = scanSettings.fastScan.value,
                                 connector = ConnectorPostgres(
                                     host = sqlScreenState.host,
-                                    port = sqlScreenState.port.toIntOrNull() ?: 5432,
+                                    port = port,
                                     database = sqlScreenState.database,
                                     user = sqlScreenState.user,
                                     password = sqlScreenState.password,
