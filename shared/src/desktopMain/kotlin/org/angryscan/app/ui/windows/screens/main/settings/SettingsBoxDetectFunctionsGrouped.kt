@@ -83,7 +83,7 @@ fun SettingsBoxDetectFunctionsGrouped(scanSettings: ScanSettings) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             CountryFilterChips(
                 selectedCountry = selectedCountry,

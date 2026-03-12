@@ -8,25 +8,19 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 import org.angryscan.app.resources.MainScreen_SettingsTitle
 import org.angryscan.app.resources.MainScreen_SidebarTitle
 import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.close
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenSidebar
 import org.angryscan.app.ui.windows.screens.main.components.SourceSelector
@@ -37,8 +31,6 @@ import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.PostgresScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
 import org.jetbrains.compose.resources.stringResource
-import kotlinx.coroutines.launch
-import org.angryscan.app.resources.close
 
 /**
  * Вариант селектора источника данных.
@@ -67,9 +59,7 @@ fun MainScreen(
     var bottomBarContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
 
     val settingsTransition = updateTransition(targetState = true, label = "settings")
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val isS3Source = backStackEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
-    val isPostgresSource = backStackEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
+
 
     var postgresConnectionBlinkSignal by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -146,8 +136,7 @@ fun MainScreen(
                     Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                         SettingsBox(
                             transition = settingsTransition,
-                            isS3Source = isS3Source,
-                            isPostgresSource = isPostgresSource,
+                            navController = navController,
                             postgresConnectionBlinkSignal = postgresConnectionBlinkSignal
                         )
                     }
