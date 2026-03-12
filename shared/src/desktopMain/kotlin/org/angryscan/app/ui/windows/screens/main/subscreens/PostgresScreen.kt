@@ -73,8 +73,8 @@ fun PostgresScreen(
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(72.dp),
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {

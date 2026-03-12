@@ -1,5 +1,6 @@
 package org.angryscan.app.di
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalRippleConfiguration
@@ -41,6 +42,22 @@ fun PreviewModule(
             colorScheme = colors,
             content = content,
             shapes = AppShapes
+        )
+    }
+}
+
+@Composable
+fun PreviewModuleAll(
+    content: @Composable () -> Unit
+){
+    Column {
+        PreviewModule(
+            isDarkTheme = false,
+            content = content
+        )
+        PreviewModule(
+            isDarkTheme = true,
+            content = content
         )
     }
 }
