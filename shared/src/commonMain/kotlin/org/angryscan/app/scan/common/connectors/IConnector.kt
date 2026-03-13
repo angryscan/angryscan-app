@@ -22,4 +22,7 @@ interface IDatabaseConnector : IConnector {
     ): ObjectCounter
 
     suspend fun getTableContent(tablePath: String): String
+
+    /** Returns table rows as list of column-name to string value. Used for per-column scanning. */
+    suspend fun getTableContentStructured(tablePath: String): List<Map<String, String>>
 }

@@ -350,6 +350,10 @@
     <string name="ScanResultScreen-ClipboardCopiedMessage">Copied to clipboard</string>
 
     <string name="Result-ColumnFile">File</string>
+    <string name="Result-CardSchema">Schema</string>
+    <string name="Result-CardTable">Table</string>
+    <string name="Result-ColumnTable">Table</string>
+    <string name="Result-ColumnColumn">Column</string>
     <string name="Result-ColumnAttributes">Attributes</string>
     <string name="Result-ColumnCount">Count</string>
     <string name="Result-ColumnSize">Size</string>

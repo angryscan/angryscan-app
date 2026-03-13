@@ -76,6 +76,29 @@ class ConnectorPostgres(
         }
     }
 
+    override suspend fun getTableContentStructured(tablePath: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
+        val (schema, table) = parseTablePath(tablePath)
+        openConnection().use { connection ->
+            connection.prepareStatement(
+                """SELECT * FROM ${escapeIdentifier(schema)}.${escapeIdentifier(table)} LIMIT ?"""
+            ).use { statement ->
+                statement.setInt(1, rowLimit)
+                statement.executeQuery().use { resultSet ->
+                    val metaData = resultSet.metaData
+                    val columnCount = metaData.columnCount
+                    val columnLabels = (1..columnCount).map { metaData.getColumnLabel(it) }
+                    buildList {
+                        while (resultSet.next()) {
+                            add(columnLabels.associateWith { col ->
+                                resultSet.getString(col) ?: ""
+                            })
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun buildTablesQuery(schemas: List<String>): String {
         val schemaFilter = if (schemas.isNotEmpty()) {
             "AND t.table_schema IN (${schemas.joinToString(",") { "?" }})"

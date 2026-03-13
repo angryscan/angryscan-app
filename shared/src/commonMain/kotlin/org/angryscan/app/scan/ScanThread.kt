@@ -7,6 +7,8 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.DocumentWithColumns
+import org.angryscan.app.scan.common.IScanResult
 import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
@@ -136,7 +138,7 @@ class ScanThread : KoinComponent {
 
                 var fileObject: File? = null
                 var fileTypes: List<IFileType> = emptyList()
-                var tableContent: String? = null
+                var structuredRows: List<Map<String, String>>? = null
 
                 val requireKeywords = when (connector) {
                     is IFileConnector -> {
@@ -148,7 +150,7 @@ class ScanThread : KoinComponent {
                     }
 
                     is IDatabaseConnector -> {
-                        tableContent = connector.getTableContent(filePath)
+                        structuredRows = connector.getTableContentStructured(filePath)
                         false
                     }
 
@@ -184,7 +186,7 @@ class ScanThread : KoinComponent {
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
-                    val scanRes = try {
+                    val scanRes: IScanResult? = try {
                         when {
                             fileObject != null -> {
                                 val scanResults = fileTypes.map { ft ->
@@ -204,10 +206,10 @@ class ScanThread : KoinComponent {
                                 }
                             }
 
-                            tableContent != null -> {
-                                DatabaseContentScanner.scanContent(
+                            structuredRows != null -> {
+                                DatabaseContentScanner.scanContentStructured(
                                     path = filePath,
-                                    content = tableContent,
+                                    rows = structuredRows,
                                     engines = engines
                                 )
                             }
@@ -222,13 +224,32 @@ class ScanThread : KoinComponent {
 
                     if (scanRes != null && !scanRes.skipped()) {
                         database.transaction {
-                            scanRes.getDocumentFields().forEach { field ->
-                                TaskFileScanResults.insert {
-                                    it[file] = fileId
-                                    it[matcher] = matchers[field.key] ?: 0
-                                    it[count] = field.value
+                            when (scanRes) {
+                                is DocumentWithColumns -> {
+                                    scanRes.columnFields.forEach { (columnName, fields) ->
+                                        fields.forEach { (matcher, cnt) ->
+                                            TaskFileScanResults.insert {
+                                                it[file] = fileId
+                                                it[TaskFileScanResults.matcher] = matchers[matcher] ?: 0
+                                                it[count] = cnt
+                                                it[TaskFileScanResults.columnName] = columnName
+                                            }
+                                        }
+                                    }
+                                    scanRes.getDocumentFields().forEach { (matcher, count) ->
+                                        taskEntity.addFoundAttribute(matcher, count)
+                                    }
                                 }
-                                taskEntity.addFoundAttribute(field.key, field.value)
+                                else -> {
+                                    scanRes.getDocumentFields().forEach { field ->
+                                        TaskFileScanResults.insert {
+                                            it[file] = fileId
+                                            it[matcher] = matchers[field.key] ?: 0
+                                            it[count] = field.value
+                                        }
+                                        taskEntity.addFoundAttribute(field.key, field.value)
+                                    }
+                                }
                             }
                             if (!scanRes.isEmpty()) {
                                 taskEntity.incrementFoundFiles()
@@ -260,9 +281,9 @@ class ScanThread : KoinComponent {
                         }
                     }
 
-                    tableContent != null -> {
+                    structuredRows != null -> {
                         logger.debug {
-                            "Scanned database table $filePath with content length ${tableContent.length} in $timer ms"
+                            "Scanned database table $filePath with ${structuredRows.size} rows in $timer ms"
                         }
                     }
                 }

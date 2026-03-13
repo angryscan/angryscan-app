@@ -35,6 +35,7 @@ import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorS3
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.ui.dialogs.DesktopAlertDialog
@@ -585,13 +586,22 @@ fun ScanResultScreen(
                 }
             }
 
-            ResultTable(
-                taskFilesViewModel = taskFilesViewModel,
-                task = task,
-                selectedAttributes = selectedAttributes,
-                scanSettings = scanSettings,
-                modifier = Modifier.weight(1f)
-            )
+            when (task.dbTask.connector) {
+                is IDatabaseConnector -> SqlResultTable(
+                    taskFilesViewModel = taskFilesViewModel,
+                    task = task,
+                    selectedAttributes = selectedAttributes,
+                    scanSettings = scanSettings,
+                    modifier = Modifier.weight(1f)
+                )
+                else -> ResultTable(
+                    taskFilesViewModel = taskFilesViewModel,
+                    task = task,
+                    selectedAttributes = selectedAttributes,
+                    scanSettings = scanSettings,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }

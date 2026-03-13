@@ -683,7 +683,7 @@ fun ResultTable(
                                         .weight(0.75f)
                                 ) {
                                     file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
-                                        AttributeCard(
+                                        AttributeChip(
                                             attribute = attr.first,
                                             count = attr.second,
                                             onClick = {

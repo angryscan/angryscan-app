@@ -260,7 +260,7 @@ fun ScanTaskCard(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
-                            AttributeCard(attr.first, attr.second)
+                            AttributeChip(attr.first, attr.second)
                         }
                     }
                 }

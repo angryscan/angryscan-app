@@ -344,6 +344,10 @@
     <string name="ScanResultScreen-ClipboardCopiedMessage">Скопировано в буфер обмена</string>
 
     <string name="Result-ColumnFile">Файл</string>
+    <string name="Result-CardSchema">Схема</string>
+    <string name="Result-CardTable">Таблица</string>
+    <string name="Result-ColumnTable">Таблица</string>
+    <string name="Result-ColumnColumn">Колонка</string>
     <string name="Result-ColumnAttributes">Что найдено</string>
     <string name="Result-ColumnCount">Кол-во</string>
     <string name="Result-ColumnSize">Размер</string>
