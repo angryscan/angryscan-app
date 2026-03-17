@@ -35,6 +35,7 @@ import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.common.connectionPort
 import org.angryscan.app.common.missingRequiredConnectionFields
+import org.angryscan.app.common.updatedHighlightedConnectionFields
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.S3Screen_Tooltip_ConnectionSettings
 import org.angryscan.app.resources.ScanSettings_PostgresConnectionSuccess
@@ -197,7 +198,7 @@ fun SettingsBoxScan(
 
             fun updateSqlScreenState(newState: ScreenStateSettings.PostgresScreenState) {
                 sqlScreenState = newState
-                postgresMissingFields = newState.missingRequiredConnectionFields()
+                postgresMissingFields = newState.updatedHighlightedConnectionFields(postgresMissingFields)
                 screenStateSettings.save()
             }
 
