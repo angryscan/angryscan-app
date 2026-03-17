@@ -401,6 +401,9 @@
     <string name="Validation-NoExtensionsMessage">Please select at least one file extension to scan.</string>
     <string name="Validation-NoMatchersTitle">No detection functions selected</string>
     <string name="Validation-NoMatchersMessage">Please select at least one detection function to scan.</string>
+    <string name="ScanSettings-PostgresTestConnection">Test connection</string>
+    <string name="ScanSettings-PostgresTestingConnection">Testing connection...</string>
+    <string name="ScanSettings-PostgresConnectionSuccess">Connection established successfully.</string>
     <string name="Validation-PostgresConnectionTitle">Database connection failed</string>
     <string name="Validation-PostgresConnectionMessage">Could not connect to the database. Check that the database connection data is correct.</string>
 </resources>

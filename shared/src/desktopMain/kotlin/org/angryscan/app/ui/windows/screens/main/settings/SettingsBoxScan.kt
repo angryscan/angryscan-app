@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -17,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,14 +29,22 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.angryscan.app.common.PostgresConnectionRequiredField
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.common.connectionPort
+import org.angryscan.app.common.missingRequiredConnectionFields
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.S3Screen_Tooltip_ConnectionSettings
+import org.angryscan.app.resources.ScanSettings_PostgresConnectionSuccess
+import org.angryscan.app.resources.ScanSettings_PostgresTestConnection
 import org.angryscan.app.resources.ScanSettings_FastScan
 import org.angryscan.app.resources.ScanSettings_Tooltip_FastScan
+import org.angryscan.app.resources.Validation_PostgresConnectionMessage
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.settings.items.SettingsTextField
+import org.angryscan.app.scan.common.connectors.PostgresConnectionValidator
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -43,15 +53,23 @@ fun SettingsBoxScan(
     scanSettings: ScanSettings,
     navController: NavController,
     postgresConnectionBlinkSignal: Int,
-    selectedTab: Int
+    selectedTab: Int,
+    showSnackbar: suspend (message: String, isError: Boolean) -> Unit = { _, _ -> }
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val isS3Source = backStackEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
     val isPostgresSource = backStackEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
     val screenStateSettings = koinInject<ScreenStateSettings>()
     val fastScan by scanSettings.fastScan
+    val coroutineScope = rememberCoroutineScope()
 
     var postgresFieldsBlinking by remember { mutableStateOf(false) }
+    var postgresConnectionTestInProgress by remember { mutableStateOf(false) }
+    var postgresMissingFields by remember { mutableStateOf(emptySet<PostgresConnectionRequiredField>()) }
+
+    val postgresConnectionSuccessMessage = stringResource(Res.string.ScanSettings_PostgresConnectionSuccess)
+    val postgresConnectionErrorMessage = stringResource(Res.string.Validation_PostgresConnectionMessage)
+    val postgresTestConnectionLabel = stringResource(Res.string.ScanSettings_PostgresTestConnection)
 
     LaunchedEffect(postgresConnectionBlinkSignal) {
         if (postgresConnectionBlinkSignal == 0) {
@@ -177,6 +195,12 @@ fun SettingsBoxScan(
         if (isPostgresSource) {
             var sqlScreenState by remember { screenStateSettings.sqlScreenState }
 
+            fun updateSqlScreenState(newState: ScreenStateSettings.PostgresScreenState) {
+                sqlScreenState = newState
+                postgresMissingFields = newState.missingRequiredConnectionFields()
+                screenStateSettings.save()
+            }
+
             Text(
                 text = "SQL Database connection",
                 style = MaterialTheme.typography.titleSmall,
@@ -188,60 +212,86 @@ fun SettingsBoxScan(
                     placeholder = "Host",
                     value = sqlScreenState.host,
                     onValueChange = {
-                        sqlScreenState = sqlScreenState.copy(host = it)
-                        screenStateSettings.save()
+                        updateSqlScreenState(sqlScreenState.copy(host = it))
                     },
-                    isError = postgresFieldsBlinking
+                    isError = postgresFieldsBlinking || PostgresConnectionRequiredField.HOST in postgresMissingFields
                 )
                 SettingsTextField(
                     placeholder = "Port",
                     value = sqlScreenState.port,
                     onValueChange = { port ->
                         port.toIntOrNull()?.let {
-                            sqlScreenState = sqlScreenState.copy(port = port)
-                            screenStateSettings.save()
+                            updateSqlScreenState(sqlScreenState.copy(port = port))
                         }
                     },
-                    isError = postgresFieldsBlinking
+                    isError = postgresFieldsBlinking || PostgresConnectionRequiredField.PORT in postgresMissingFields
                 )
                 SettingsTextField(
                     placeholder = "Database",
                     value = sqlScreenState.database,
                     onValueChange = {
-                        sqlScreenState = sqlScreenState.copy(database = it)
-                        screenStateSettings.save()
+                        updateSqlScreenState(sqlScreenState.copy(database = it))
                     },
-                    isError = postgresFieldsBlinking
+                    isError = postgresFieldsBlinking || PostgresConnectionRequiredField.DATABASE in postgresMissingFields
                 )
                 SettingsTextField(
                     placeholder = "User",
                     value = sqlScreenState.user,
                     onValueChange = {
-                        sqlScreenState = sqlScreenState.copy(user = it)
-                        screenStateSettings.save()
+                        updateSqlScreenState(sqlScreenState.copy(user = it))
                     },
-                    isError = postgresFieldsBlinking
+                    isError = postgresFieldsBlinking || PostgresConnectionRequiredField.USER in postgresMissingFields
                 )
                 SettingsTextField(
                     placeholder = "Password",
                     value = sqlScreenState.password,
                     onValueChange = {
-                        sqlScreenState = sqlScreenState.copy(password = it)
-                        screenStateSettings.save()
+                        updateSqlScreenState(sqlScreenState.copy(password = it))
                     },
                     isPassword = true,
-                    isError = postgresFieldsBlinking
+                    isError = postgresFieldsBlinking || PostgresConnectionRequiredField.PASSWORD in postgresMissingFields
                 )
                 SettingsTextField(
                     placeholder = "Rows to scan",
                     value = sqlScreenState.rowLimit,
                     onValueChange = { rowLimit ->
                         rowLimit.toIntOrNull()?.let {
-                            sqlScreenState = sqlScreenState.copy(rowLimit = rowLimit)
-                            screenStateSettings.save()
+                            updateSqlScreenState(sqlScreenState.copy(rowLimit = rowLimit))
                         }
                     }
                 )
+                Button(
+                    onClick = {
+                        val missingFields = sqlScreenState.missingRequiredConnectionFields()
+                        postgresMissingFields = missingFields
+                        if (missingFields.isNotEmpty()) {
+                            return@Button
+                        }
+
+                        postgresConnectionTestInProgress = true
+                        coroutineScope.launch {
+                            val validationError = PostgresConnectionValidator.validate(
+                                host = sqlScreenState.host,
+                                port = sqlScreenState.connectionPort(),
+                                database = sqlScreenState.database,
+                                user = sqlScreenState.user,
+                                password = sqlScreenState.password
+                            )
+                            postgresConnectionTestInProgress = false
+                            if (validationError == null) {
+                                showSnackbar(postgresConnectionSuccessMessage, false)
+                            } else {
+                                showSnackbar(postgresConnectionErrorMessage, true)
+                            }
+                        }
+                    },
+                    enabled = !postgresConnectionTestInProgress,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Text(postgresTestConnectionLabel)
+                }
             }
         }
     }

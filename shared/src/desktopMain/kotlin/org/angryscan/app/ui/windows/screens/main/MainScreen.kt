@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,6 +66,17 @@ fun MainScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val closeLabel = stringResource(Res.string.close)
+
+    suspend fun showMainSnackbar(message: String, isError: Boolean) {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showSnackbar(
+            visuals = MainScreenSnackbarVisuals(
+                message = message,
+                actionLabel = closeLabel,
+                isError = isError
+            )
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -137,7 +149,8 @@ fun MainScreen(
                         SettingsBox(
                             transition = settingsTransition,
                             navController = navController,
-                            postgresConnectionBlinkSignal = postgresConnectionBlinkSignal
+                            postgresConnectionBlinkSignal = postgresConnectionBlinkSignal,
+                            showSnackbar = ::showMainSnackbar
                         )
                     }
                 }
@@ -238,12 +251,7 @@ fun MainScreen(
                             },
                             showErrorSnackbar = { message ->
                                 coroutineScope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    snackbarHostState.showSnackbar(
-                                        message = message,
-                                        actionLabel = closeLabel,
-                                        duration = SnackbarDuration.Long
-                                    )
+                                    showMainSnackbar(message, true)
                                 }
                             }
                         )
@@ -256,10 +264,12 @@ fun MainScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             snackbar = { snackbarData ->
+                val visuals = snackbarData.visuals as? MainScreenSnackbarVisuals
+                val isError = visuals?.isError != false
                 Snackbar(
                     dismissAction = {
                         snackbarData.visuals.actionLabel?.let { actionLabel ->
-                            androidx.compose.material3.TextButton(
+                            TextButton(
                                 onClick = { snackbarData.performAction() }
                             ) {
                                 Text(
@@ -270,19 +280,19 @@ fun MainScreen(
                         }
                     },
                     actionOnNewLine = false,
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    actionContentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    dismissActionContentColor = MaterialTheme.colorScheme.onErrorContainer
+                    containerColor = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionContentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                    dismissActionContentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.ErrorOutline,
+                            imageVector = if (isError) Icons.Outlined.ErrorOutline else Icons.Outlined.CheckCircleOutline,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
+                            tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
                         Text(snackbarData.visuals.message)
                     }
@@ -303,4 +313,12 @@ fun MainScreen(
         }
     }
 }
+
+private data class MainScreenSnackbarVisuals(
+    override val message: String,
+    override val actionLabel: String? = null,
+    val isError: Boolean,
+    override val withDismissAction: Boolean = true,
+    override val duration: SnackbarDuration = SnackbarDuration.Long
+) : SnackbarVisuals
 

@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.common.connectionPort
+import org.angryscan.app.common.hasRequiredConnectionSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.connectors.ConnectorPostgres
@@ -116,11 +118,7 @@ fun PostgresScreen(
                 }
             }
 
-            val postgresScanEnabled = sqlScreenState.host.isNotBlank() &&
-                    sqlScreenState.port.toIntOrNull() != null &&
-                    sqlScreenState.database.isNotBlank() &&
-                    sqlScreenState.user.isNotBlank() &&
-                    sqlScreenState.password.isNotBlank()
+            val postgresScanEnabled = sqlScreenState.hasRequiredConnectionSettings()
 
             if (postgresScanEnabled) {
                 Button(
@@ -132,7 +130,7 @@ fun PostgresScreen(
                         }
 
                         coroutineScope.launch {
-                            val port = sqlScreenState.port.toIntOrNull() ?: 5432
+                            val port = sqlScreenState.connectionPort()
                             val connectionError = PostgresConnectionValidator.validate(
                                 host = sqlScreenState.host,
                                 port = port,

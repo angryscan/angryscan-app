@@ -31,7 +31,8 @@ enum class SettingsTab { Scan, Files, Detect, Signatures }
 fun SettingsBox(
     transition: Transition<Boolean>,
     navController: NavController,
-    postgresConnectionBlinkSignal: Int = 0
+    postgresConnectionBlinkSignal: Int = 0,
+    showSnackbar: suspend (message: String, isError: Boolean) -> Unit = { _, _ -> }
 ) {
     val scanSettings = koinInject<ScanSettings>()
     var selectedTab by remember { mutableIntStateOf(SettingsTab.Scan.ordinal) }
@@ -128,7 +129,13 @@ fun SettingsBox(
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         when (selectedTab) {
-                            SettingsTab.Scan.ordinal -> SettingsBoxScan(scanSettings, navController, postgresConnectionBlinkSignal, selectedTab)
+                            SettingsTab.Scan.ordinal -> SettingsBoxScan(
+                                scanSettings = scanSettings,
+                                navController = navController,
+                                postgresConnectionBlinkSignal = postgresConnectionBlinkSignal,
+                                selectedTab = selectedTab,
+                                showSnackbar = showSnackbar
+                            )
                             SettingsTab.Files.ordinal -> SettingsBoxExtensionsSelection(scanSettings)
                             SettingsTab.Detect.ordinal -> SettingsBoxDetectFunctionsGrouped(scanSettings)
                             SettingsTab.Signatures.ordinal -> SettingsBoxUserSignature(scanSettings)
