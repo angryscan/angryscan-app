@@ -29,20 +29,40 @@ fun LoggingSettings(modifier: Modifier = Modifier) {
         title = stringResource(Res.string.SettingsScreen_Logging),
         modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
+        LoggingSettingsContent(
+            debugModeEnabled = debugModeEnabled,
+            onDebugModeChange = {
+                debugModeEnabled = it
+                appSettings.save()
+            },
+            onOpenFolder = { Desktop.getDesktop().open(AppFiles.LoggingDir.toFile()) }
+        )
+    }
+}
+
+@Composable
+fun LoggingSettingsContent(
+    debugModeEnabled: Boolean,
+    onDebugModeChange: (Boolean) -> Unit,
+    onOpenFolder: () -> Unit,
+    showDescription: Boolean = true,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showDescription) {
             Text(
                 text = stringResource(Res.string.SettingsScreen_LoggingDescription),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(
-                modifier = Modifier.height(34.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        }
+        Row(
+            modifier = Modifier.height(34.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -54,20 +74,14 @@ fun LoggingSettings(modifier: Modifier = Modifier) {
 
                 Switch(
                     checked = debugModeEnabled,
-                    onCheckedChange = {
-                        debugModeEnabled = it
-                        appSettings.save()
-                    }
+                    onCheckedChange = onDebugModeChange
                 )
             }
 
             SettingsButton(
-                onClick = {
-                    Desktop.getDesktop().open(AppFiles.LoggingDir.toFile())
-                },
+                onClick = onOpenFolder,
                 text = stringResource(Res.string.SettingsScreen_OpenFolder)
             )
-            }
         }
     }
 }
