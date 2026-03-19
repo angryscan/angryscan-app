@@ -2,12 +2,9 @@ package org.angryscan.app.scan
 
 import androidx.lifecycle.ViewModel
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -418,11 +415,12 @@ class TaskEntityViewModel(
             if (_state.value == TaskState.PENDING || _state.value == TaskState.SEARCHING || rescan) {
                 if (_state.value != TaskState.SEARCHING)
                     setState(TaskState.SEARCHING)
+                val fileCreationJobs = mutableListOf<Job>()
                 val filesCounters = path.split(";")
                     .map { dir ->
                         try {
                             scanObjects(dir, extensions) {
-                                taskScope.launch {
+                                fileCreationJobs.add(taskScope.launch {
                                     database.transaction {
                                         TaskFile.new {
                                             this.task = dbTask
@@ -431,7 +429,7 @@ class TaskEntityViewModel(
                                             this.size = it.size
                                         }
                                     }
-                                }
+                                })
                             }
                         } catch (e: Exception) {
                             logger.error { "Failed to scan directory: $dir. ${e.message}" }
@@ -439,6 +437,8 @@ class TaskEntityViewModel(
                             return@launch
                         }
                     }
+                fileCreationJobs.joinAll()
+
                 val directorySize = ObjectCounter()
                 filesCounters.forEach {
                     directorySize.plus(it)

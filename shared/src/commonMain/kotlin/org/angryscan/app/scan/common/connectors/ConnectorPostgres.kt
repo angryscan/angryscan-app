@@ -7,6 +7,7 @@ import org.angryscan.app.scan.common.ObjectCounter
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
+import java.util.Properties
 
 @Serializable
 class ConnectorPostgres(
@@ -134,8 +135,15 @@ class ConnectorPostgres(
         return tablePath.substring(0, separatorIndex) to tablePath.substring(separatorIndex + 1)
     }
 
-    private fun openConnection(): Connection =
-        DriverManager.getConnection(jdbcUrl, user, password)
+    private fun openConnection(): Connection {
+        val props = Properties().apply {
+            setProperty("user", user)
+            setProperty("password", password)
+            setProperty("connectTimeout", "10")
+            setProperty("socketTimeout", "30")
+        }
+        return DriverManager.getConnection(jdbcUrl, props)
+    }
 
     private fun escapeIdentifier(value: String): String =
         "\"" + value.replace("\"", "\"\"") + "\""

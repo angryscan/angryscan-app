@@ -106,6 +106,24 @@ class ScanThread : KoinComponent {
                 if (dbFile == null) {
                     scanningFileId.set(-1)
 
+                    val rescuedPending = database.transaction {
+                        TaskFiles.update(
+                            where = {
+                                TaskFiles.task.eq(taskEntity.dbTask.id) and
+                                        TaskFiles.state.eq(TaskState.PENDING)
+                            }
+                        ) {
+                            it[state] = TaskState.SEARCHING
+                        }
+                    }
+
+                    if (rescuedPending > 0) {
+                        logger.debug { "Rescued $rescuedPending PENDING files for task ${taskEntity.id.value}" }
+                        continue
+                    }
+
+                    taskEntity.checkProgress()
+
                     retryCount++
                     if (retryCount > 3) {
                         _started.set(false)
