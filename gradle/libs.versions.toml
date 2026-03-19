@@ -17,6 +17,7 @@ hyperscan-windows = "5.4.0-2.0.0"
 clikt = "5.0.3"
 mordant = "3.0.2"
 knotify = "0.4.3"
+testcontainers = "2.0.3"
 #Angryscan libraries
 gitleaks = "0.1.1"
 core = "1.4.8"
@@ -87,6 +88,11 @@ clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref
 mordant-coroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", version.ref = "mordant" }
 mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
+
+#Testcontainers
+testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql", version.ref = "testcontainers" }
 
 #Angryscan libraries
 angryscan-core = { module = "org.angryscan:core", version.ref = "core" }

@@ -92,6 +92,9 @@ kotlin {
                 implementation(compose.desktop.uiTestJUnit4)
                 implementation(libs.koin.test)
                 implementation(libs.koin.test.junit4)
+                implementation(libs.testcontainers.core)
+                implementation(libs.testcontainers.postgresql)
+                implementation(libs.testcontainers.mysql)
             }
         }
         @Suppress("Unused")

@@ -12,18 +12,15 @@ import org.angryscan.app.scan.common.IScanResult
 import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
-import org.angryscan.app.scan.common.files.types.*
-import org.angryscan.app.scan.engine.fallback
-import org.angryscan.app.scan.engine.getEngine
-import org.angryscan.app.scan.engine.inappropriateMatchers
-import org.angryscan.common.engine.IScanEngine
-import java.io.File
+import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.engine.ScanEnginesFactory
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
@@ -175,30 +172,11 @@ class ScanThread : KoinComponent {
                     else -> true
                 }
 
-                val engines: MutableList<IScanEngine> = mutableListOf()
-                scanSettings.value.engine.value
-                    .getEngine(matchers.map { it.key }, requireKeywords = requireKeywords)
-                    .let {
-                        if (it.matchers.isNotEmpty())
-                            engines.add(it)
-                    }
-                val iMatchers = if (engines.isNotEmpty())
-                    engines[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
-                else
-                    matchers.map { it.key }.toMutableList()
-
-                if (iMatchers.isNotEmpty()) {
-                    var fbe = scanSettings.value.engine.value.fallback()
-                    do {
-                        val e = fbe
-                            .getEngine(iMatchers, requireKeywords = requireKeywords)
-                        if (e.matchers.isNotEmpty()) {
-                            engines.add(e)
-                            iMatchers.removeAll(e.matchers)
-                        }
-                        fbe = e.fallback()
-                    } while (iMatchers.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
-                }
+                val engines = ScanEnginesFactory.build(
+                    preferredEngine = scanSettings.value.engine.value,
+                    matchers = matchers.map { it.key },
+                    requireKeywords = requireKeywords
+                )
 
 
                 scanningFileId.set(fileId)
