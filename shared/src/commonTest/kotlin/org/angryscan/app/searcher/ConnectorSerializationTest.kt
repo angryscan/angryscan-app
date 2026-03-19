@@ -31,21 +31,69 @@ internal class ConnectorSerializationTest {
     }
 
     @Test
+    fun `ConnectorMySQL is serialized polymorphically`() {
+        val connector: IConnector = ConnectorMySQL(
+            host = "localhost",
+            port = 3306,
+            database = "scanner",
+            user = "root",
+            password = "secret",
+            rowLimit = 1000
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val mysql = assertIs<ConnectorMySQL>(decoded)
+
+        assertEquals("localhost", mysql.host)
+        assertEquals(3306, mysql.port)
+        assertEquals("scanner", mysql.database)
+        assertEquals("root", mysql.user)
+        assertEquals("secret", mysql.password)
+        assertEquals(1000, mysql.rowLimit)
+    }
+
+    @Test
+    fun `ConnectorSqlite is serialized polymorphically`() {
+        val connector: IConnector = ConnectorSqlite(
+            filePath = "/path/to/db.sqlite",
+            rowLimit = 500
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val sqlite = assertIs<ConnectorSqlite>(decoded)
+
+        assertEquals("/path/to/db.sqlite", sqlite.filePath)
+        assertEquals(500, sqlite.rowLimit)
+    }
+
+    @Test
     fun `connectors expose correct runtime contracts`() {
         assertIs<IFileConnector>(ConnectorFileShare())
         assertIs<IFileConnector>(ConnectorS3("access", "secret", "http://localhost:9000", "bucket"))
         assertIs<IFileConnector>(ConnectorHTTP())
         assertIs<IFileConnector>(ConnectorAIModels())
 
-        val postgres = ConnectorPostgres(
+        assertIs<IDatabaseConnector>(ConnectorPostgres(
             host = "localhost",
             port = 5432,
             database = "scanner",
             user = "postgres",
             password = "secret",
             rowLimit = 1000
-        )
-
-        assertIs<IDatabaseConnector>(postgres)
+        ))
+        assertIs<IDatabaseConnector>(ConnectorMySQL(
+            host = "localhost",
+            port = 3306,
+            database = "scanner",
+            user = "root",
+            password = "secret",
+            rowLimit = 1000
+        ))
+        assertIs<IDatabaseConnector>(ConnectorSqlite(
+            filePath = "/path/to/db.sqlite",
+            rowLimit = 1000
+        ))
     }
 }

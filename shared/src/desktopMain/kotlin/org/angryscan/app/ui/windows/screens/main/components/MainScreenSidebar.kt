@@ -1,8 +1,14 @@
 package org.angryscan.app.ui.windows.screens.main.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,12 +37,25 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import org.angryscan.app.common.DatabaseType
+import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.db_mysql_logo
+import org.angryscan.app.resources.db_postgresql_logo
+import org.angryscan.app.resources.db_sqlite_logo
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 
 private val SIDEBAR_WIDTH = 420.dp
 private val ITEM_HEIGHT = 56.dp
+private val SUB_ITEM_HEIGHT = 44.dp
 private val ACCENT_BAR_WIDTH = 4.dp
 private val ITEM_RADIUS = 14.dp
+private val SUB_ITEM_RADIUS = 10.dp
+private val DB_TYPE_ICON_BOX_SIZE = 28.dp
 private val CONTAINER_RADIUS = 24.dp
+private val DB_TYPE_INDENT = 28.dp
 
 @Composable
 fun MainScreenSidebar(
@@ -57,6 +76,10 @@ fun MainScreenSidebar(
 
     val colorScheme = MaterialTheme.colorScheme
     val containerShape = RoundedCornerShape(CONTAINER_RADIUS)
+    val screenStateSettings = koinInject<ScreenStateSettings>()
+    val sqlScreenState by screenStateSettings.sqlScreenState
+    val currentDbType = sqlScreenState.databaseType
+
     Column(
         modifier = modifier
             .width(SIDEBAR_WIDTH)
@@ -111,6 +134,41 @@ fun MainScreenSidebar(
                 }
             }
         )
+        // Expandable DB type sub-menu: appears below "SQL Database" when selected
+        AnimatedVisibility(
+            visible = selectedRoute == MainScreenConnector.Postgres,
+            enter = expandVertically(animationSpec = tween(280)) + fadeIn(animationSpec = tween(220)),
+            exit = shrinkVertically(animationSpec = tween(240)) + fadeOut(animationSpec = tween(180))
+        ) {
+            Column(
+                modifier = Modifier.padding(start = DB_TYPE_INDENT, top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                DatabaseType.entries.forEach { dbType ->
+                    SidebarDbTypeItem(
+                        label = dbType.name,
+                        iconDrawable = when (dbType) {
+                            DatabaseType.PostgreSQL -> Res.drawable.db_postgresql_logo
+                            DatabaseType.MySQL -> Res.drawable.db_mysql_logo
+                            DatabaseType.SQLite -> Res.drawable.db_sqlite_logo
+                        },
+                        isSelected = currentDbType == dbType,
+                        onClick = {
+                            val defaultPort = when (dbType) {
+                                DatabaseType.PostgreSQL -> "5432"
+                                DatabaseType.MySQL -> "3306"
+                                DatabaseType.SQLite -> sqlScreenState.port
+                            }
+                            screenStateSettings.sqlScreenState.value = sqlScreenState.copy(
+                                databaseType = dbType,
+                                port = defaultPort
+                            )
+                            screenStateSettings.save()
+                        }
+                    )
+                }
+            }
+        }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -203,5 +261,96 @@ private fun SidebarNavItem(
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
             )
         }
+    }
+}
+
+@Composable
+private fun SidebarDbTypeItem(
+    label: String,
+    iconDrawable: DrawableResource,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    val backgroundColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            else -> androidx.compose.ui.graphics.Color.Transparent
+        },
+        animationSpec = tween(200),
+        label = "dbTypeBg"
+    )
+    val accentWidth by animateDpAsState(
+        targetValue = if (isSelected) ACCENT_BAR_WIDTH else 0.dp,
+        animationSpec = tween(200),
+        label = "dbTypeAccent"
+    )
+    val colorScheme = MaterialTheme.colorScheme
+    val itemShape = RoundedCornerShape(SUB_ITEM_RADIUS)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(SUB_ITEM_HEIGHT)
+            .clip(itemShape)
+            .background(backgroundColor)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (accentWidth > 0.dp) {
+            Box(
+                modifier = Modifier
+                    .width(accentWidth)
+                    .fillMaxHeight()
+                    .background(
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(2.dp)
+                    )
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+        } else {
+            Spacer(modifier = Modifier.width(10.dp + ACCENT_BAR_WIDTH))
+        }
+        // Underlay that changes color; icon keeps original (multicolor) SVG colors
+        val iconUnderlayColor by animateColorAsState(
+            targetValue = when {
+                isSelected -> colorScheme.primaryContainer.copy(alpha = 0.5f)
+                isHovered -> colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                else -> colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            },
+            animationSpec = tween(200),
+            label = "iconUnderlay"
+        )
+        Box(
+            modifier = Modifier
+                .size(DB_TYPE_ICON_BOX_SIZE)
+                .clip(RoundedCornerShape(6.dp))
+                .background(iconUnderlayColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(iconDrawable),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected)
+                colorScheme.primary
+            else
+                colorScheme.onSurface.copy(alpha = 0.8f)
+        )
     }
 }

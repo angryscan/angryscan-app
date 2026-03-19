@@ -56,6 +56,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 
 sql-sqlite = { module = "io.github.willena:sqlite-jdbc", version = "3.49.1.0" }
 sql-postgresql = { module = "org.postgresql:postgresql", version = "42.7.5" }
+sql-mysql = { module = "com.mysql:mysql-connector-j", version = "9.1.0" }
 sql-flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }

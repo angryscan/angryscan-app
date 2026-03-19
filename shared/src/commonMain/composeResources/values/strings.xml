@@ -120,6 +120,7 @@
     <string name="MainScreen-ScanHint-S3">Enter path above and set S3 connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-ScanHint-HTTP">Enter one or more URLs above to enable Scan</string>
     <string name="MainScreen-ScanHint-Postgres">Set SQL Database connection in Scan options tab to enable Scan</string>
+    <string name="MainScreen-ScanHint-SqlDatabase">Set SQL Database connection in Scan options tab to enable Scan</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">File extensions to scan</string>

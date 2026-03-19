@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,15 +12,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
+import org.angryscan.app.common.DatabaseType
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.common.connectionPort
 import org.angryscan.app.common.hasRequiredConnectionSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.common.connectors.ConnectorMySQL
 import org.angryscan.app.scan.common.connectors.ConnectorPostgres
-import org.angryscan.app.scan.common.connectors.PostgresConnectionValidator
+import org.angryscan.app.scan.common.connectors.ConnectorSqlite
+import org.angryscan.app.scan.common.connectors.DatabaseConnectionValidator
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
@@ -30,7 +38,7 @@ fun PostgresScreen(
     expandScanState: (Int) -> Unit,
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
     setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
-    onPostgresConnectionError: () -> Unit = {},
+    onSqlConnectionError: () -> Unit = {},
     showErrorSnackbar: (String) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
@@ -46,6 +54,17 @@ fun PostgresScreen(
     val postgresConnectionErrorMessage = stringResource(Res.string.Validation_PostgresConnectionMessage)
 
     val coroutineScope = rememberCoroutineScope()
+
+    val filePickerLauncher = rememberFilePickerLauncher(
+        type = FileKitType.File(extensions = listOf("db")),
+        mode = FileKitMode.Single,
+        title = "Select SQLite database"
+    ) { result ->
+        result?.path?.let { path ->
+            sqlScreenState = sqlScreenState.copy(filePath = path)
+            coroutineScope.launch { screenStateSettings.save() }
+        }
+    }
 
     setSidebarContent { }
     setBottomBarContent {
@@ -80,35 +99,99 @@ fun PostgresScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedTextField(
-                        value = sqlScreenState.schema,
-                        onValueChange = {
-                            sqlScreenState = sqlScreenState.copy(schema = it)
-                            coroutineScope.launch {
-                                screenStateSettings.save()
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 40.dp),
-                        placeholder = {
-                            Text(
-                                stringResource(Res.string.MainScreen_Placeholder_Postgres),
-                                style = MaterialTheme.typography.bodyMedium
+                    when (sqlScreenState.databaseType) {
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL -> {
+                            OutlinedTextField(
+                                value = sqlScreenState.host,
+                                onValueChange = {
+                                    sqlScreenState = sqlScreenState.copy(host = it)
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                modifier = Modifier.weight(0.4f).heightIn(min = 40.dp),
+                                placeholder = { Text("Host", style = MaterialTheme.typography.bodyMedium) },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
                             )
-                        },
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        isError = selectPathError,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                        )
-                    )
+                            OutlinedTextField(
+                                value = sqlScreenState.port,
+                                onValueChange = {
+                                    sqlScreenState = sqlScreenState.copy(port = it)
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                modifier = Modifier.weight(0.2f).heightIn(min = 40.dp),
+                                placeholder = { Text("Port", style = MaterialTheme.typography.bodyMedium) },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            )
+                            OutlinedTextField(
+                                value = sqlScreenState.database,
+                                onValueChange = {
+                                    sqlScreenState = sqlScreenState.copy(database = it)
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                modifier = Modifier.weight(0.4f).heightIn(min = 40.dp),
+                                placeholder = { Text("Database", style = MaterialTheme.typography.bodyMedium) },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            )
+                        }
+                        DatabaseType.SQLite -> {
+                            OutlinedTextField(
+                                value = sqlScreenState.filePath,
+                                onValueChange = {
+                                    sqlScreenState = sqlScreenState.copy(filePath = it)
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                placeholder = { Text("Path to .db file", style = MaterialTheme.typography.bodyMedium) },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            )
+                            IconButton(onClick = { filePickerLauncher.launch() }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.FileOpen,
+                                    contentDescription = "Select file",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
                     Icon(
                         imageVector = Icons.Outlined.Storage,
                         contentDescription = null,
@@ -118,9 +201,9 @@ fun PostgresScreen(
                 }
             }
 
-            val postgresScanEnabled = sqlScreenState.hasRequiredConnectionSettings()
+            val sqlScanEnabled = sqlScreenState.hasRequiredConnectionSettings()
 
-            if (postgresScanEnabled) {
+            if (sqlScanEnabled) {
                 Button(
                     enabled = true,
                     onClick = {
@@ -130,34 +213,59 @@ fun PostgresScreen(
                         }
 
                         coroutineScope.launch {
-                            val port = sqlScreenState.connectionPort()
-                            val connectionError = PostgresConnectionValidator.validate(
+                            val connectionError = DatabaseConnectionValidator.validate(
+                                databaseType = sqlScreenState.databaseType,
                                 host = sqlScreenState.host,
-                                port = port,
+                                port = sqlScreenState.connectionPort(),
                                 database = sqlScreenState.database,
                                 user = sqlScreenState.user,
-                                password = sqlScreenState.password
+                                password = sqlScreenState.password,
+                                filePath = sqlScreenState.filePath
                             )
                             if (connectionError != null) {
-                                onPostgresConnectionError()
+                                onSqlConnectionError()
                                 showErrorSnackbar(postgresConnectionErrorMessage)
                                 return@launch
                             }
-                            val task = scanService.createTask(
-                                name = "${sqlScreenState.host}:${sqlScreenState.port}/${sqlScreenState.database}" + if (sqlScreenState.schema.isNotEmpty())
-                                    " schema: ${sqlScreenState.schema}" else "",
-                                path = sqlScreenState.schema,
-                                extensions = scanSettings.extensions,
-                                matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorPostgres(
+                            val connector = when (sqlScreenState.databaseType) {
+                                DatabaseType.PostgreSQL -> ConnectorPostgres(
                                     host = sqlScreenState.host,
-                                    port = port,
+                                    port = sqlScreenState.connectionPort(),
                                     database = sqlScreenState.database,
                                     user = sqlScreenState.user,
                                     password = sqlScreenState.password,
                                     rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
                                 )
+                                DatabaseType.MySQL -> ConnectorMySQL(
+                                    host = sqlScreenState.host,
+                                    port = sqlScreenState.connectionPort(),
+                                    database = sqlScreenState.database,
+                                    user = sqlScreenState.user,
+                                    password = sqlScreenState.password,
+                                    rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
+                                )
+                                DatabaseType.SQLite -> ConnectorSqlite(
+                                    filePath = sqlScreenState.filePath,
+                                    rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
+                                )
+                            }
+                            val taskName = when (sqlScreenState.databaseType) {
+                                DatabaseType.PostgreSQL, DatabaseType.MySQL ->
+                                    "${sqlScreenState.host}:${sqlScreenState.port}/${sqlScreenState.database}" +
+                                        if (sqlScreenState.schema.isNotEmpty()) " schema: ${sqlScreenState.schema}" else ""
+                                DatabaseType.SQLite -> sqlScreenState.filePath
+                            }
+                            val path = when (sqlScreenState.databaseType) {
+                                DatabaseType.PostgreSQL, DatabaseType.MySQL -> sqlScreenState.schema
+                                DatabaseType.SQLite -> ""
+                            }
+                            val task = scanService.createTask(
+                                name = taskName,
+                                path = path,
+                                extensions = scanSettings.extensions,
+                                matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                fastScan = scanSettings.fastScan.value,
+                                connector = connector
                             )
                             scanService.startTask(task)
                             task.id.value?.let { expandScanState(it) }
@@ -179,7 +287,7 @@ fun PostgresScreen(
                 }
             } else {
                 DescriptionTooltip(
-                    description = stringResource(Res.string.MainScreen_ScanHint_Postgres),
+                    description = stringResource(Res.string.MainScreen_ScanHint_SqlDatabase),
                     delay = 400
                 ) {
                     Button(

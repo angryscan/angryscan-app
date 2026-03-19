@@ -6,10 +6,10 @@ import java.sql.DriverManager
 import java.sql.SQLException
 
 /**
- * Validates PostgreSQL connection parameters before creating a scan task.
+ * Validates MySQL connection parameters before creating a scan task.
  * Returns [DatabaseConnectionError] with field hint on failure, null on success.
  */
-internal object PostgresConnectionValidator {
+internal object MySqlConnectionValidator {
 
     suspend fun validate(
         host: String,
@@ -18,7 +18,7 @@ internal object PostgresConnectionValidator {
         user: String,
         password: String
     ): DatabaseConnectionError? = withContext(Dispatchers.IO) {
-        val jdbcUrl = "jdbc:postgresql://$host:$port/$database"
+        val jdbcUrl = "jdbc:mysql://$host:$port/$database"
         try {
             DriverManager.getConnection(jdbcUrl, user, password).use { conn ->
                 conn.createStatement().use { stmt ->
@@ -36,23 +36,21 @@ internal object PostgresConnectionValidator {
         }
     }
 
-    /** Exposed for unit testing error message mapping. */
     internal fun parseConnectionError(e: SQLException): DatabaseConnectionError {
         val msg = (e.message ?: "").lowercase()
         val field = when {
-            msg.contains("password authentication failed") ||
+            msg.contains("access denied") ||
             msg.contains("authentication failed") ||
-            msg.contains("no password was provided") ||
-            msg.contains("password authentication failed for user") ->
+            msg.contains("password") && msg.contains("failed") ->
                 DatabaseConnectionErrorField.USER_PASSWORD
             msg.contains("connection refused") ||
             msg.contains("could not connect") ||
             msg.contains("connection timed out") ||
-            msg.contains("could not translate host") ->
+            msg.contains("unknown host") ->
                 DatabaseConnectionErrorField.HOST
-            msg.contains("database") && msg.contains("does not exist") ->
+            msg.contains("unknown database") ->
                 DatabaseConnectionErrorField.DATABASE
-            msg.contains("role") && msg.contains("does not exist") ->
+            msg.contains("access denied for user") ->
                 DatabaseConnectionErrorField.USER
             else ->
                 DatabaseConnectionErrorField.HOST

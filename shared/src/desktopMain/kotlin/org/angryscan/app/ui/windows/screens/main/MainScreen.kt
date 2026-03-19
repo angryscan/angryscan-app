@@ -62,7 +62,7 @@ fun MainScreen(
     val settingsTransition = updateTransition(targetState = true, label = "settings")
 
 
-    var postgresConnectionBlinkSignal by remember { mutableIntStateOf(0) }
+    var sqlConnectionBlinkSignal by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val closeLabel = stringResource(Res.string.close)
@@ -149,7 +149,7 @@ fun MainScreen(
                         SettingsBox(
                             transition = settingsTransition,
                             navController = navController,
-                            postgresConnectionBlinkSignal = postgresConnectionBlinkSignal,
+                            sqlConnectionBlinkSignal = sqlConnectionBlinkSignal,
                             showSnackbar = ::showMainSnackbar
                         )
                     }
@@ -246,8 +246,8 @@ fun MainScreen(
                             },
                             setSidebarContent = { content -> sidebarExtraContent = content },
                             setBottomBarContent = { content -> bottomBarContent = content },
-                            onPostgresConnectionError = {
-                                postgresConnectionBlinkSignal++
+                            onSqlConnectionError = {
+                                sqlConnectionBlinkSignal++
                             },
                             showErrorSnackbar = { message ->
                                 coroutineScope.launch {

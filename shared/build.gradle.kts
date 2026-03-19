@@ -28,6 +28,7 @@ kotlin {
 
                 implementation(libs.sql.sqlite)
                 implementation(libs.sql.postgresql)
+                implementation(libs.sql.mysql)
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)
