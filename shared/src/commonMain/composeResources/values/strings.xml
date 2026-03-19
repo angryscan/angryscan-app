@@ -114,6 +114,18 @@
     <string name="MainScreen-ScanHint-FileShare">Select or enter path above to enable Scan</string>
     <string name="MainScreen-ScanHint-S3">Enter path above and set S3 connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-ScanHint-HTTP">Enter one or more URLs above to enable Scan</string>
+    <string name="MainLayout-AdvancedSettings">Advanced scan settings</string>
+    <string name="MainLayout-AdvancedSettingsHint">File types, detection rules, signatures, fast scan, S3 connection</string>
+    <string name="MainLayout-AdvancedSettingsExpand">Show</string>
+    <string name="MainLayout-AdvancedSettingsCollapse">Hide</string>
+    <string name="MainLayout-CollapsedAreaHint">Use «Show» above when you need file types, detection rules, or S3 credentials.</string>
+    <string name="MainLayout-PathCardAdvanced">More scan options</string>
+    <string name="MainLayout-PathCardTitle">Scan parameters</string>
+    <string name="MainLayout-PathCardSubtitle">File types, detection rules, user signatures</string>
+    <string name="MainLayout-PathCardActionCustomize">Customize</string>
+    <string name="MainLayout-PathCardActionHide">Hide</string>
+    <string name="MainLayout-SourceSectionTitle">Scan from</string>
+    <string name="MainLayout-SourceSectionSubtitle">Local folder, S3 bucket, or HTTP URLs</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">File extensions to scan</string>

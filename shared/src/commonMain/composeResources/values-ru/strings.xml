@@ -112,6 +112,18 @@
     <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>
     <string name="MainScreen-ScanHint-S3">Введите путь выше и настройте подключение S3 во вкладке «Параметры сканирования», чтобы активировать кнопку</string>
     <string name="MainScreen-ScanHint-HTTP">Введите один или несколько URL выше, чтобы активировать кнопку «Сканировать»</string>
+    <string name="MainLayout-AdvancedSettings">Расширенные настройки сканирования</string>
+    <string name="MainLayout-AdvancedSettingsHint">Типы файлов, правила обнаружения, подписи, быстрый скан, подключение S3</string>
+    <string name="MainLayout-AdvancedSettingsExpand">Показать</string>
+    <string name="MainLayout-AdvancedSettingsCollapse">Скрыть</string>
+    <string name="MainLayout-CollapsedAreaHint">Нажмите «Показать» выше, если нужны типы файлов, правила поиска или доступ к S3.</string>
+    <string name="MainLayout-PathCardAdvanced">Доп. настройки сканирования</string>
+    <string name="MainLayout-PathCardTitle">Параметры сканирования</string>
+    <string name="MainLayout-PathCardSubtitle">Типы файлов, правила поиска, пользовательские подписи</string>
+    <string name="MainLayout-PathCardActionCustomize">Настроить</string>
+    <string name="MainLayout-PathCardActionHide">Скрыть</string>
+    <string name="MainLayout-SourceSectionTitle">Сканировать из</string>
+    <string name="MainLayout-SourceSectionSubtitle">Папка на диске, бакет S3 или URL по HTTP</string>
 
     <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
     <string name="ScanSettings-FileExtensions">Расширения файлов для сканирования</string>

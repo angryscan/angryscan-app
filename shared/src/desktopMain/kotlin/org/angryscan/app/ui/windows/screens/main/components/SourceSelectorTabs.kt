@@ -1,7 +1,10 @@
 package org.angryscan.app.ui.windows.screens.main.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -11,16 +14,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
@@ -28,11 +30,15 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import org.angryscan.app.resources.MainScreen_SourceType_FileShare
+import org.angryscan.app.resources.MainScreen_SourceType_HTTP
+import org.angryscan.app.resources.MainScreen_SourceType_S3
+import org.angryscan.app.resources.Res
+import org.jetbrains.compose.resources.stringResource
 
 /**
- * Селектор источника в виде табов: иконка + подпись в ряд.
- * File Share, AWS S3, HTTP — каждый таб занимает равную ширину.
- * (Для S3 используется Cloud; можно заменить на aws-s3.png через painterResource)
+ * Выбор источника данных: отличается от верхнего меню навигации —
+ * секция с подписью + компактные чипы с обводкой (secondary), не «второй ряд табов».
  */
 @Composable
 fun SourceSelectorTabs(
@@ -49,147 +55,198 @@ fun SourceSelectorTabs(
         else -> MainScreenConnector.FileShare
     }
 
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    val options = listOf(
+        Triple(
+            MainScreenConnector.FileShare,
+            Icons.Outlined.FolderOpen,
+            stringResource(Res.string.MainScreen_SourceType_FileShare)
+        ),
+        Triple(
+            MainScreenConnector.S3,
+            Icons.Outlined.Cloud,
+            stringResource(Res.string.MainScreen_SourceType_S3)
+        ),
+        Triple(
+            MainScreenConnector.HTTP,
+            Icons.Outlined.Link,
+            stringResource(Res.string.MainScreen_SourceType_HTTP)
+        )
+    )
+
+    SingleChoiceSegmentedButtonRow(
+        modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.FileShare,
-                label = "File Share",
-                sourceType = SourceSelectorTabType.FileShare,
+        options.forEachIndexed { index, (route, icon, label) ->
+            SegmentedButton(
+                selected = selectedRoute == route,
                 onClick = {
-                    if (selectedRoute != MainScreenConnector.FileShare) {
-                        navController.navigate(MainScreenConnector.FileShare)
-                    }
-                }
-            )
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.S3,
-                label = "AWS S3",
-                sourceType = SourceSelectorTabType.S3,
-                onClick = {
-                    if (selectedRoute != MainScreenConnector.S3) {
-                        navController.navigate(MainScreenConnector.S3)
-                    }
-                }
-            )
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.HTTP,
-                label = "HTTP",
-                sourceType = SourceSelectorTabType.HTTP,
-                onClick = {
-                    if (selectedRoute != MainScreenConnector.HTTP) {
-                        navController.navigate(MainScreenConnector.HTTP)
-                    }
-                }
+                    if (selectedRoute != route) navController.navigate(route)
+                },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                icon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                label = { Text(text = label, maxLines = 1) }
             )
         }
     }
 }
 
-private enum class SourceSelectorTabType { FileShare, S3, HTTP }
+@Composable
+fun SourceSelectorSideRail(
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val destination = backStackEntry?.destination
+
+    val selectedRoute = when {
+        destination?.hasRoute(MainScreenConnector.FileShare::class) == true -> MainScreenConnector.FileShare
+        destination?.hasRoute(MainScreenConnector.S3::class) == true -> MainScreenConnector.S3
+        destination?.hasRoute(MainScreenConnector.HTTP::class) == true -> MainScreenConnector.HTTP
+        else -> MainScreenConnector.FileShare
+    }
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SourceChip(
+            modifier = Modifier.weight(1f),
+            selected = selectedRoute == MainScreenConnector.FileShare,
+            label = stringResource(Res.string.MainScreen_SourceType_FileShare),
+            icon = Icons.Outlined.FolderOpen,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.FileShare) {
+                    navController.navigate(MainScreenConnector.FileShare)
+                }
+            }
+        )
+        SourceChip(
+            modifier = Modifier.weight(1f),
+            selected = selectedRoute == MainScreenConnector.S3,
+            label = stringResource(Res.string.MainScreen_SourceType_S3),
+            icon = Icons.Outlined.Cloud,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.S3) {
+                    navController.navigate(MainScreenConnector.S3)
+                }
+            }
+        )
+        SourceChip(
+            modifier = Modifier.weight(1f),
+            selected = selectedRoute == MainScreenConnector.HTTP,
+            label = stringResource(Res.string.MainScreen_SourceType_HTTP),
+            icon = Icons.Outlined.Link,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.HTTP) {
+                    navController.navigate(MainScreenConnector.HTTP)
+                }
+            }
+        )
+    }
+}
 
 @Composable
-private fun RowScope.SourceSelectorTabItem(
+private fun SourceChip(
     modifier: Modifier = Modifier,
-    isSelected: Boolean,
+    selected: Boolean,
     label: String,
-    sourceType: SourceSelectorTabType,
+    icon: ImageVector,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val cs = MaterialTheme.colorScheme
 
-    val alpha by animateFloatAsState(
+    val scale by animateFloatAsState(
         targetValue = when {
-            isSelected -> 1f
-            isHovered -> 0.9f
-            else -> 0.6f
+            selected -> 1f
+            hovered -> 1.02f
+            else -> 1f
         },
-        animationSpec = tween(200),
-        label = "alpha"
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "chipScale"
+    )
+
+    val bg by animateColorAsState(
+        targetValue = when {
+            selected -> cs.secondaryContainer.copy(alpha = 0.65f)
+            hovered -> cs.surfaceVariant.copy(alpha = 0.45f)
+            else -> Color.Transparent
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipBg"
+    )
+
+    val borderColor by animateColorAsState(
+        targetValue = when {
+            selected -> cs.secondary
+            hovered -> cs.secondary.copy(alpha = 0.45f)
+            else -> cs.outline.copy(alpha = 0.35f)
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipBorder"
+    )
+
+    val contentColor by animateColorAsState(
+        targetValue = when {
+            selected -> cs.onSecondaryContainer
+            else -> cs.onSurface.copy(alpha = if (hovered) 0.92f else 0.72f)
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipContent"
+    )
+
+    val iconTint by animateColorAsState(
+        targetValue = when {
+            selected -> cs.secondary
+            else -> cs.onSurfaceVariant.copy(alpha = if (hovered) 0.95f else 0.75f)
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "chipIcon"
     )
 
     Surface(
         modifier = modifier
-            .alpha(alpha)
+            .scale(scale)
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(14.dp),
-        color = when {
-            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-            isHovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-            else -> androidx.compose.ui.graphics.Color.Transparent
-        },
-        shadowElevation = if (isSelected) 2.dp else 0.dp,
-        tonalElevation = if (isSelected) 1.dp else 0.dp
+        shape = RoundedCornerShape(28.dp),
+        color = bg,
+        border = BorderStroke(
+            width = if (selected) 1.5.dp else 1.dp,
+            color = borderColor
+        ),
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 20.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            when (sourceType) {
-                SourceSelectorTabType.FileShare -> {
-                    Icon(
-                        imageVector = Icons.Outlined.FolderOpen,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.S3 -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Cloud,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.HTTP -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Link,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.size(12.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = iconTint
+            )
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1
             )
         }
     }

@@ -23,7 +23,9 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 private val ContainerShape = RoundedCornerShape(24.dp)
+private val EmbeddedShape = RoundedCornerShape(16.dp)
 private val ContentPadding = 12.dp
+private val EmbeddedContentPadding = 8.dp
 
 enum class SettingsTab { Scan, Files, Detect, Signatures }
 
@@ -31,7 +33,9 @@ enum class SettingsTab { Scan, Files, Detect, Signatures }
 @Composable
 fun SettingsBox(
     transition: Transition<Boolean>,
-    isS3Source: Boolean = false
+    isS3Source: Boolean = false,
+    /** Внутри карточки пути: компактнее, без лишней рамки */
+    embedded: Boolean = false
 ) {
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
@@ -40,6 +44,16 @@ fun SettingsBox(
     val scrollState = rememberScrollState()
 
     val colorScheme = MaterialTheme.colorScheme
+    val containerShape = if (embedded) EmbeddedShape else ContainerShape
+    val contentPad = if (embedded) EmbeddedContentPadding else ContentPadding
+    val tabsToShow = remember(embedded, isS3Source) {
+        if (embedded && !isS3Source) listOf(SettingsTab.Files, SettingsTab.Detect, SettingsTab.Signatures)
+        else listOf(SettingsTab.Scan, SettingsTab.Files, SettingsTab.Detect, SettingsTab.Signatures)
+    }
+    val selectedVisibleIndex = tabsToShow.indexOf(SettingsTab.entries.getOrElse(selectedTab) { SettingsTab.Files }).coerceIn(0, tabsToShow.size - 1)
+    LaunchedEffect(embedded, isS3Source, selectedTab) {
+        if (embedded && !isS3Source && selectedTab == SettingsTab.Scan.ordinal) selectedTab = SettingsTab.Files.ordinal
+    }
     AnimatedVisibility(
         visible = transition.currentState,
         enter = expandVertically(),
@@ -48,12 +62,18 @@ fun SettingsBox(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(ContainerShape)
-                .background(colorScheme.surface.copy(alpha = 0.6f))
-                .border(
-                    width = 1.dp,
-                    color = colorScheme.outlineVariant.copy(alpha = 0.25f),
-                    shape = ContainerShape
+                .then(
+                    if (embedded) Modifier
+                        .clip(EmbeddedShape)
+                        .background(colorScheme.surface.copy(alpha = 0.5f))
+                    else Modifier
+                        .clip(containerShape)
+                        .background(colorScheme.surface.copy(alpha = 0.6f))
+                        .border(
+                            width = 1.dp,
+                            color = colorScheme.outlineVariant.copy(alpha = 0.25f),
+                            shape = containerShape
+                        )
                 )
         ) {
             Column(
@@ -63,24 +83,27 @@ fun SettingsBox(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .background(
+                            if (embedded) colorScheme.primary.copy(alpha = 0.06f)
+                            else colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        )
                 ) {
                     TabRow(
-                        selectedTabIndex = selectedTab,
+                        selectedTabIndex = selectedVisibleIndex,
                         modifier = Modifier.fillMaxWidth(),
                         containerColor = Color.Transparent,
                         contentColor = colorScheme.primary,
                         divider = {},
                         indicator = { tabPositions ->
                             Box(Modifier.fillMaxWidth()) {
-                                if (selectedTab < tabPositions.size) {
-                                    val pos = tabPositions[selectedTab]
+                                if (selectedVisibleIndex < tabPositions.size) {
+                                    val pos = tabPositions[selectedVisibleIndex]
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.BottomStart)
                                             .offset(x = pos.left)
                                             .width(pos.width)
-                                            .height(3.dp)
+                                            .height(if (embedded) 2.5.dp else 3.dp)
                                             .clip(RoundedCornerShape(1.5.dp))
                                             .background(colorScheme.primary)
                                     )
@@ -88,26 +111,21 @@ fun SettingsBox(
                             }
                         }
                     ) {
-                        Tab(
-                            selected = selectedTab == SettingsTab.Scan.ordinal,
-                            onClick = { selectedTab = SettingsTab.Scan.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabScan), fontSize = 14.sp) }
-                        )
-                        Tab(
-                            selected = selectedTab == SettingsTab.Files.ordinal,
-                            onClick = { selectedTab = SettingsTab.Files.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabFiles), fontSize = 14.sp) }
-                        )
-                        Tab(
-                            selected = selectedTab == SettingsTab.Detect.ordinal,
-                            onClick = { selectedTab = SettingsTab.Detect.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabDetect), fontSize = 14.sp) }
-                        )
-                        Tab(
-                            selected = selectedTab == SettingsTab.Signatures.ordinal,
-                            onClick = { selectedTab = SettingsTab.Signatures.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabSignatures), fontSize = 14.sp) }
-                        )
+                        tabsToShow.forEachIndexed { index, tab ->
+                            Tab(
+                                selected = selectedTab == tab.ordinal,
+                                onClick = { selectedTab = tab.ordinal },
+                                text = {
+                                    val label = when (tab) {
+                                        SettingsTab.Scan -> stringResource(Res.string.ScanSettings_TabScan)
+                                        SettingsTab.Files -> stringResource(Res.string.ScanSettings_TabFiles)
+                                        SettingsTab.Detect -> stringResource(Res.string.ScanSettings_TabDetect)
+                                        SettingsTab.Signatures -> stringResource(Res.string.ScanSettings_TabSignatures)
+                                    }
+                                    Text(label, fontSize = if (embedded) 13.sp else 14.sp)
+                                }
+                            )
+                        }
                     }
                 }
                 HorizontalDivider(
@@ -120,46 +138,48 @@ fun SettingsBox(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = ContentPadding)
+                        .padding(horizontal = contentPad)
                 ) {
                     val scrollEnabled = selectedTab != SettingsTab.Files.ordinal
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .then(if (scrollEnabled) Modifier.verticalScroll(scrollState) else Modifier)
-                            .padding(vertical = ContentPadding),
+                            .padding(vertical = contentPad),
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         when (selectedTab) {
                             SettingsTab.Scan.ordinal -> {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = stringResource(Res.string.ScanSettings_FastScan),
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(
-                                            text = stringResource(Res.string.ScanSettings_Tooltip_FastScan),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                if (!embedded) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = stringResource(Res.string.ScanSettings_FastScan),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Spacer(Modifier.height(4.dp))
+                                            Text(
+                                                text = stringResource(Res.string.ScanSettings_Tooltip_FastScan),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontSize = 13.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Switch(
+                                            checked = fastScan,
+                                            onCheckedChange = {
+                                                scanSettings.fastScan.value = it
+                                                scanSettings.save()
+                                            }
                                         )
                                     }
-                                    Switch(
-                                        checked = fastScan,
-                                        onCheckedChange = {
-                                            scanSettings.fastScan.value = it
-                                            scanSettings.save()
-                                        }
-                                    )
                                 }
                                 // AWS S3 connection parameters — только когда выбран источник S3
                                 if (isS3Source) {

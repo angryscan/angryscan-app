@@ -44,7 +44,8 @@ fun FileShareScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
-    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
+    unifiedPathCard: UnifiedPathCardExtras? = null
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -229,6 +230,200 @@ fun FileShareScreen(
 
     setSidebarContent { }
     setBottomBarContent {
+        if (unifiedPathCard != null) {
+            val card = unifiedPathCard
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(72.dp)
+                            .then(
+                                if (selectPathError) Modifier.border(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                    RoundedCornerShape(20.dp)
+                                )
+                                else Modifier
+                            ),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        tonalElevation = 0.dp
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = path,
+                                onValueChange = { path = it; saveScreenState() },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                placeholder = {
+                                    Text(
+                                        text = when (selectionType) {
+                                            SelectionTypes.FileWithPaths -> stringResource(Res.string.MainScreen_SelectFileWithPathsPlaceholder)
+                                            else -> stringResource(Res.string.MainScreen_SelectPathPlaceholder)
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            )
+                            FilledTonalButton(
+                                onClick = {
+                                    when (selectionType) {
+                                        SelectionTypes.Folder -> folderPicker.launch()
+                                        SelectionTypes.File -> filePicker.launch()
+                                        SelectionTypes.FileWithPaths -> pathFilePicker.launch()
+                                    }
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.size(48.dp),
+                                contentPadding = PaddingValues(0.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = when (selectionType) {
+                                        SelectionTypes.Folder -> Icons.Outlined.FolderOpen
+                                        SelectionTypes.File -> Icons.Outlined.FileOpen
+                                        SelectionTypes.FileWithPaths -> Icons.Outlined.DocumentScanner
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Box {
+                                IconButton(
+                                    onClick = { dropdownExpanded = true },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.ArrowDropDown,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = dropdownExpanded,
+                                    onDismissRequest = { dropdownExpanded = false }
+                                ) {
+                                    typeOptions.forEach { (type, label) ->
+                                        DropdownMenuItem(
+                                            text = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                                            onClick = {
+                                                if (selectionType != type) path = ""
+                                                selectionType = type
+                                                scanSettings.save()
+                                                saveScreenState()
+                                                dropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (path.isNotEmpty()) {
+                        Button(
+                            enabled = true,
+                            onClick = {
+                                if (!path.split(";").map { File(it).exists() }.all { it }) {
+                                    scanNotCorrectPath = true
+                                    return@Button
+                                }
+                                if (!validateAndShowError()) return@Button
+                                val scanPath = if (selectionType == SelectionTypes.FileWithPaths) {
+                                    File(path).readLines().joinToString(separator = ";")
+                                } else path
+                                saveScreenState()
+                                scanSettings.save()
+                                screenStateSettings.fileShareScreenState.matchers.clear()
+                                screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+                                screenStateSettings.save()
+                                coroutineScope.launch {
+                                    val task = scanService.createTask(
+                                        name = if (selectionType == SelectionTypes.FileWithPaths) path else null,
+                                        path = scanPath,
+                                        extensions = scanSettings.extensions.toList(),
+                                        matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
+                                        fastScan = scanSettings.fastScan.value,
+                                        connector = ConnectorFileShare()
+                                    )
+                                    scanService.startTask(task)
+                                    task.id.value?.let { expandScanState(it) }
+                                }
+                            },
+                            modifier = ScanButtonModifier(
+                                isReady = true,
+                                modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                            ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                            shape = RoundedCornerShape(20.dp),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 0.dp,
+                                disabledElevation = 0.dp
+                            ),
+                            colors = startScanButtonColors()
+                        ) {
+                            StartScanButtonContent()
+                        }
+                    } else {
+                        DescriptionTooltip(
+                            description = stringResource(Res.string.MainScreen_ScanHint_FileShare),
+                            delay = 400
+                        ) {
+                            Button(
+                                enabled = false,
+                                onClick = { },
+                                modifier = ScanButtonModifier(
+                                    isReady = false,
+                                    modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                                ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
+                                shape = RoundedCornerShape(20.dp),
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 0.dp,
+                                    pressedElevation = 0.dp,
+                                    disabledElevation = 0.dp
+                                ),
+                                colors = startScanButtonColors()
+                            ) {
+                                StartScanButtonContent()
+                            }
+                        }
+                    }
+                }
+                InlineAdvancedSettingsInPathCard(
+                    expanded = card.advancedExpanded,
+                    onExpandedChange = card.onAdvancedExpandedChange,
+                    settingsContent = card.settingsContent,
+                    maxHeight = card.maxAdvancedHeight,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,7 +433,7 @@ fun FileShareScreen(
         ) {
             Surface(
                 modifier = Modifier
-                    .weight(0.5f)
+                    .weight(1f)
                     .height(72.dp)
                     .then(
                         if (selectPathError) Modifier.border(
@@ -374,10 +569,10 @@ fun FileShareScreen(
                             task.id.value?.let { expandScanState(it) }
                         }
                     },
-                        modifier = ScanButtonModifier(
-                            isReady = true,
-                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                        ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                    modifier = ScanButtonModifier(
+                        isReady = true,
+                        modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
                     shape = RoundedCornerShape(20.dp),
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 0.dp,
@@ -412,6 +607,7 @@ fun FileShareScreen(
                     }
                 }
             }
+        }
         }
     }
 

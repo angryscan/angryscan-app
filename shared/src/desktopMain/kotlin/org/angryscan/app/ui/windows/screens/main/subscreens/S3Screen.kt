@@ -34,7 +34,8 @@ fun S3Screen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
-    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
+    unifiedPathCard: UnifiedPathCardExtras? = null
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -217,111 +218,216 @@ fun S3Screen(
 
     setSidebarContent { }
     setBottomBarContent {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .weight(0.5f)
-                    .height(72.dp)
-                    .then(
-                        if (selectPathError) Modifier.border(
-                            2.dp,
-                            MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            MaterialTheme.shapes.medium
-                        )
-                        else Modifier
-                    ),
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                tonalElevation = 0.dp
-            ) {
+        val s3ScanEnabled = path.isNotEmpty() && endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()
+        if (unifiedPathCard != null) {
+            val card = unifiedPathCard
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = path,
-                        onValueChange = { path = it; saveScreenState() },
-                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                        placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.small,
-                        isError = selectPathError,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                        )
-                    )
-                    Icon(imageVector = Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                    IconButton(
-                        onClick = {
-                            if (endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()) {
-                                selectPathDialog = true
-                            } else {
-                                incorrectConnection = true
-                            }
-                        },
-                        modifier = Modifier.size(40.dp)
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(72.dp)
+                            .then(
+                                if (selectPathError) Modifier.border(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                    MaterialTheme.shapes.medium
+                                )
+                                else Modifier
+                            ),
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        tonalElevation = 0.dp
                     ) {
-                        Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = path,
+                                onValueChange = { path = it; saveScreenState() },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = MaterialTheme.shapes.small,
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                    errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            )
+                            Icon(imageVector = Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                            IconButton(
+                                onClick = {
+                                    if (endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()) {
+                                        selectPathDialog = true
+                                    } else {
+                                        incorrectConnection = true
+                                    }
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                    if (s3ScanEnabled) {
+                        Button(
+                            onClick = {
+                                if (!validateAndShowError()) return@Button
+                                saveScreenState()
+                                coroutineScope.launch {
+                                    val task = scanService.createTask(
+                                        path = path,
+                                        extensions = scanSettings.extensions,
+                                        matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                        fastScan = scanSettings.fastScan.value,
+                                        connector = ConnectorS3(endpointStr = endpoint, accessKey = accessKey, secretKey = secretKey, bucketStr = bucket)
+                                    )
+                                    scanService.startTask(task)
+                                    task.id.value?.let { expandScanState(it) }
+                                }
+                            },
+                            modifier = ScanButtonModifier(
+                                isReady = true,
+                                modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                            ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                            shape = RoundedCornerShape(20.dp),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 0.dp,
+                                disabledElevation = 0.dp
+                            ),
+                            colors = startScanButtonColors()
+                        ) {
+                            StartScanButtonContent()
+                        }
+                    } else {
+                        DescriptionTooltip(
+                            description = stringResource(Res.string.MainScreen_ScanHint_S3),
+                            delay = 400
+                        ) {
+                            Button(
+                                enabled = false,
+                                onClick = { },
+                                modifier = ScanButtonModifier(
+                                    isReady = false,
+                                    modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                                ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
+                                shape = RoundedCornerShape(20.dp),
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 0.dp,
+                                    pressedElevation = 0.dp,
+                                    disabledElevation = 0.dp
+                                ),
+                                colors = startScanButtonColors()
+                            ) {
+                                StartScanButtonContent()
+                            }
+                        }
                     }
                 }
+                InlineAdvancedSettingsInPathCard(
+                    expanded = card.advancedExpanded,
+                    onExpandedChange = card.onAdvancedExpandedChange,
+                    settingsContent = card.settingsContent,
+                    maxHeight = card.maxAdvancedHeight,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-            val s3ScanEnabled = path.isNotEmpty() && endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()
-            if (s3ScanEnabled) {
-                Button(
-                    enabled = true,
-                    onClick = {
-                        if (!validateAndShowError()) return@Button
-                        saveScreenState()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                path = path,
-                                extensions = scanSettings.extensions,
-                                matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorS3(endpointStr = endpoint, accessKey = accessKey, secretKey = secretKey, bucketStr = bucket)
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(72.dp)
+                        .then(
+                            if (selectPathError) Modifier.border(
+                                2.dp,
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                MaterialTheme.shapes.medium
                             )
-                            scanService.startTask(task)
-                            task.id.value?.let { expandScanState(it) }
+                            else Modifier
+                        ),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    tonalElevation = 0.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = path,
+                            onValueChange = { path = it; saveScreenState() },
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.small,
+                            isError = selectPathError,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            )
+                        )
+                        Icon(imageVector = Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                        IconButton(
+                            onClick = {
+                                if (endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()) {
+                                    selectPathDialog = true
+                                } else {
+                                    incorrectConnection = true
+                                }
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
                         }
-                    },
-                    modifier = ScanButtonModifier(
-                        isReady = true,
-                        modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        disabledElevation = 0.dp
-                    ),
-                    colors = startScanButtonColors()
-                ) {
-                    StartScanButtonContent()
+                    }
                 }
-            } else {
-                DescriptionTooltip(
-                    description = stringResource(Res.string.MainScreen_ScanHint_S3),
-                    delay = 400
-                ) {
+                if (s3ScanEnabled) {
                     Button(
-                        enabled = false,
-                        onClick = { },
+                        onClick = {
+                            if (!validateAndShowError()) return@Button
+                            saveScreenState()
+                            coroutineScope.launch {
+                                val task = scanService.createTask(
+                                    path = path,
+                                    extensions = scanSettings.extensions,
+                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                    fastScan = scanSettings.fastScan.value,
+                                    connector = ConnectorS3(endpointStr = endpoint, accessKey = accessKey, secretKey = secretKey, bucketStr = bucket)
+                                )
+                                scanService.startTask(task)
+                                task.id.value?.let { expandScanState(it) }
+                            }
+                        },
                         modifier = ScanButtonModifier(
-                            isReady = false,
+                            isReady = true,
                             modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                        ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
+                        ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
                         shape = RoundedCornerShape(20.dp),
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 0.dp,
@@ -331,6 +437,29 @@ fun S3Screen(
                         colors = startScanButtonColors()
                     ) {
                         StartScanButtonContent()
+                    }
+                } else {
+                    DescriptionTooltip(
+                        description = stringResource(Res.string.MainScreen_ScanHint_S3),
+                        delay = 400
+                    ) {
+                        Button(
+                            enabled = false,
+                            onClick = { },
+                            modifier = ScanButtonModifier(
+                                isReady = false,
+                                modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                            ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
+                            shape = RoundedCornerShape(20.dp),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 0.dp,
+                                disabledElevation = 0.dp
+                            ),
+                            colors = startScanButtonColors()
+                        ) {
+                            StartScanButtonContent()
+                        }
                     }
                 }
             }
