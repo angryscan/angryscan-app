@@ -129,86 +129,101 @@ fun ScanTaskCard(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            val innerCardShape = RoundedCornerShape(14.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(innerCardShape)
+                    .background(colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                val pathInteractionSource = remember { MutableInteractionSource() }
-                val pathHovered by pathInteractionSource.collectIsHoveredAsState()
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .hoverable(pathInteractionSource)
-                        .clickable(onClick = onClick)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .padding(vertical = 2.dp)
-                        .padding(end = 12.dp)
-                ) {
-                    Text(
-                        text = when {
-                            name != null && path.isNotBlank() && path != name -> "$name · $path"
-                            else -> (name ?: path)
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colorScheme.onSurface,
-                        textDecoration = if (pathHovered) TextDecoration.Underline else TextDecoration.None,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    val sourceLabel = when (taskEntity.dbTask.connector) {
-                        is ConnectorS3 -> "S3"
-                        is ConnectorHTTP -> "HTTP"
-                        is ConnectorFileShare -> "File share"
-                        else -> null
-                    }
-                    if (sourceLabel != null) {
+                    val pathInteractionSource = remember { MutableInteractionSource() }
+                    val pathHovered by pathInteractionSource.collectIsHoveredAsState()
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(colorScheme.outlineVariant.copy(alpha = 0.3f))
-                                .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                                .wrapContentWidth(Alignment.Start)
+                                .widthIn(max = maxWidth)
+                                .hoverable(pathInteractionSource)
+                                .clickable(onClick = onClick)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .padding(vertical = 2.dp)
                         ) {
                             Text(
-                                text = sourceLabel,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = colorScheme.onSurfaceVariant
+                                text = when {
+                                    name != null && path.isNotBlank() && path != name -> "$name · $path"
+                                    else -> (name ?: path)
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                color = colorScheme.onSurface,
+                                textDecoration = if (pathHovered) TextDecoration.Underline else TextDecoration.None,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(state.color().copy(alpha = 0.2f))
-                            .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = state.text(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = state.color()
-                        )
-                    }
-                    if (fastScan) {
-                        val fastScanColor = Color(0xFFE65100) // Orange, distinct from status/source
+                        val sourceLabel = when (taskEntity.dbTask.connector) {
+                            is ConnectorS3 -> "S3"
+                            is ConnectorHTTP -> "HTTP"
+                            is ConnectorFileShare -> "File share"
+                            else -> null
+                        }
+                        if (sourceLabel != null) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                    .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = sourceLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(fastScanColor.copy(alpha = 0.2f))
-                                .border(1.dp, fastScanColor.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
+                                .background(state.color().copy(alpha = 0.2f))
+                                .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = "Fast scan",
+                                text = state.text(),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = fastScanColor
+                                color = state.color()
                             )
+                        }
+                        if (fastScan) {
+                            val fastScanColor = Color(0xFFE65100) // Orange, distinct from status/source
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(fastScanColor.copy(alpha = 0.2f))
+                                    .border(1.dp, fastScanColor.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = "Fast scan",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = fastScanColor
+                                )
+                            }
                         }
                     }
                 }

@@ -121,10 +121,11 @@ fun SettingsBox(
                         .fillMaxSize()
                         .padding(horizontal = ContentPadding)
                 ) {
+                    val scrollEnabled = selectedTab != SettingsTab.Files.ordinal
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(scrollState)
+                            .then(if (scrollEnabled) Modifier.verticalScroll(scrollState) else Modifier)
                             .padding(vertical = ContentPadding),
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
@@ -142,17 +143,19 @@ fun SettingsBox(
                         }
                     }
 
-                    VerticalScrollbar(
-                        adapter = rememberScrollbarAdapter(scrollState),
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .fillMaxHeight()
-                            .width(8.dp),
-                        style = LocalScrollbarStyle.current.copy(
-                            hoverColor = MaterialTheme.colorScheme.primary,
-                            unhoverColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                    if (scrollEnabled) {
+                        VerticalScrollbar(
+                            adapter = rememberScrollbarAdapter(scrollState),
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .fillMaxHeight()
+                                .width(8.dp),
+                            style = LocalScrollbarStyle.current.copy(
+                                hoverColor = MaterialTheme.colorScheme.primary,
+                                unhoverColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            )
                         )
-                    )
+                    }
                 }
             }
         }

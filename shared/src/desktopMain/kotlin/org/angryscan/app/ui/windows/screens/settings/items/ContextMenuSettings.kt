@@ -2,10 +2,12 @@ package org.angryscan.app.ui.windows.screens.settings.items
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.SettingsScreen_ContextMenu
@@ -20,21 +22,33 @@ fun ContextMenuSettings() {
 
     if (ContextMenu.supported()) {
         SettingsRow(title = stringResource(Res.string.SettingsScreen_ContextMenu)) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = stringResource(Res.string.SettingsScreen_ContextMenuExplorer))
-
-                Switch(
-                    checked = contextMenuEnabled,
-                    onCheckedChange = {
-                        contextMenuEnabled = it
-                        ContextMenu.enabled = it
-                    }
-                )
-            }
+            ContextMenuSettingsContent(
+                contextMenuEnabled = contextMenuEnabled,
+                onContextMenuChange = {
+                    contextMenuEnabled = it
+                    ContextMenu.enabled = it
+                }
+            )
         }
+    }
+}
+
+@Composable
+fun ContextMenuSettingsContent(
+    contextMenuEnabled: Boolean,
+    onContextMenuChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = stringResource(Res.string.SettingsScreen_ContextMenuExplorer))
+
+        Switch(
+            checked = contextMenuEnabled,
+            onCheckedChange = onContextMenuChange
+        )
     }
 }
 

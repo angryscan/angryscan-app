@@ -35,10 +35,10 @@ fun SettingsBoxExtensionsSelection(scanSettings: ScanSettings) {
 
     val groups = remember {
         listOf(
-            FileTypeGroup(Res.string.ScanSettings_FileExtensions_Group_Documents, setOf("DOCX", "DOC", "ODT", "PDF")),
+            // NOTE: "txt" is an extension inside TextType (name = "Text"), so we include TextType in Documents.
+            FileTypeGroup(Res.string.ScanSettings_FileExtensions_Group_Documents, setOf("DOCX", "DOC", "ODT", "PDF", "Text")),
             FileTypeGroup(Res.string.ScanSettings_FileExtensions_Group_Spreadsheets, setOf("XLSX", "XLS", "ODS")),
             FileTypeGroup(Res.string.ScanSettings_FileExtensions_Group_Presentations, setOf("PPTX", "PPT", "ODP")),
-            FileTypeGroup(Res.string.ScanSettings_FileExtensions_Group_Text, setOf("Text")),
             FileTypeGroup(Res.string.ScanSettings_FileExtensions_Group_Archives, setOf("ZIP", "RAR"))
         )
     }
@@ -56,54 +56,61 @@ fun SettingsBoxExtensionsSelection(scanSettings: ScanSettings) {
             )
         }
     ) {
-        groups.forEach { group ->
-            val groupTypes = fileTypeEntries.filter { it.name in group.typeNames }
-            if (groupTypes.isEmpty()) return@forEach
-            val groupAllSelected = groupTypes.all { scanSettings.extensions.contains(it) }
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            groups.forEach { group ->
+                val groupTypes = fileTypeEntries.filter { it.name in group.typeNames }
+                if (groupTypes.isEmpty()) return@forEach
+                val groupAllSelected = groupTypes.all { scanSettings.extensions.contains(it) }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(group.titleRes),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                SelectAllOrDiscardAllText(
-                    allSelected = groupAllSelected,
-                    onClick = {
-                        if (groupAllSelected) {
-                            groupTypes.forEach { scanSettings.extensions.remove(it) }
-                        } else {
-                            groupTypes.forEach { ft ->
-                                if (ft !in scanSettings.extensions) scanSettings.extensions.add(ft)
-                            }
-                        }
-                        scanSettings.save()
-                    }
-                )
-            }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                for (fileType in groupTypes) {
-                    val selected = scanSettings.extensions.contains(fileType)
-                    FilterChip(
-                        selected = selected,
-                        onClick = {
-                            if (selected) scanSettings.extensions.remove(fileType)
-                            else scanSettings.extensions.add(fileType)
-                            scanSettings.save()
-                        },
-                        label = { Text(text = fileType.name, fontSize = 13.sp) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 0.dp, bottom = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(group.titleRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    SelectAllOrDiscardAllText(
+                        allSelected = groupAllSelected,
+                        onClick = {
+                            if (groupAllSelected) {
+                                groupTypes.forEach { scanSettings.extensions.remove(it) }
+                            } else {
+                                groupTypes.forEach { ft ->
+                                    if (ft !in scanSettings.extensions) scanSettings.extensions.add(ft)
+                                }
+                            }
+                            scanSettings.save()
+                        }
+                    )
+                }
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
+                    for (fileType in groupTypes) {
+                        val selected = scanSettings.extensions.contains(fileType)
+                        FilterChip(
+                            modifier = Modifier.height(28.dp),
+                            selected = selected,
+                            onClick = {
+                                if (selected) scanSettings.extensions.remove(fileType)
+                                else scanSettings.extensions.add(fileType)
+                                scanSettings.save()
+                            },
+                            label = { Text(text = fileType.name, fontSize = 12.sp) }
+                        )
+                    }
                 }
             }
         }

@@ -139,7 +139,7 @@
     <string name="SettingsScreen-LoggingDescription">Режим отладки и расположение файлов логов.</string>
     <string name="SettingsScreen-OpenFolder">Открыть папку</string>
     <string name="SettingsScreen-ScanEngine">Движок сканирования</string>
-    <string name="SettingsScreen-ScanEngineDescription">Движок поиска по файлам. HyperScan быстрее, Kotlin — более универсален.</string>
+    <string name="SettingsScreen-ScanEngineDescription">Движок поиска по файлам.</string>
     <string name="ScanSettings-DebugMode">Собирать отладочную информацию</string>
 
 

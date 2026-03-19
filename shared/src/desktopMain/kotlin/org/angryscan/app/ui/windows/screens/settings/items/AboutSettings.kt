@@ -3,7 +3,7 @@ package org.angryscan.app.ui.windows.screens.settings.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -27,33 +27,10 @@ fun AboutSettings(modifier: Modifier = Modifier) {
     val licenseDialogState = rememberDialogState(width = 600.dp, height = 590.dp)
 
     SettingsRow(title = stringResource(Res.string.SideMenu_AboutPage), modifier = modifier) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Text(
-                text = stringResource(Res.string.AboutScreen_Description),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = stringResource(Res.string.AboutScreen_Version, AppVersion),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SettingsButton(
-                    onClick = { showContactDialog = true },
-                    text = stringResource(Res.string.ContactDialog_Title)
-                )
-
-                SettingsButton(
-                    onClick = { showLicenseDialog = true },
-                    text = stringResource(Res.string.LicenseDialog_Title)
-                )
-            }
-        }
+        AboutSettingsContent(
+            onOpenContact = { showContactDialog = true },
+            onOpenLicense = { showLicenseDialog = true }
+        )
     }
 
     if (showContactDialog) {
@@ -68,6 +45,43 @@ fun AboutSettings(modifier: Modifier = Modifier) {
             onCloseRequest = { showLicenseDialog = false },
             dialogState = licenseDialogState
         )
+    }
+}
+
+@Composable
+fun AboutSettingsContent(
+    onOpenContact: () -> Unit,
+    onOpenLicense: () -> Unit,
+    showDescription: Boolean = true,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showDescription) {
+            Text(
+                text = stringResource(Res.string.AboutScreen_Description),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        Text(
+            text = stringResource(Res.string.AboutScreen_Version, AppVersion),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SettingsButton(
+                onClick = onOpenContact,
+                text = stringResource(Res.string.ContactDialog_Title)
+            )
+
+            SettingsButton(
+                onClick = onOpenLicense,
+                text = stringResource(Res.string.LicenseDialog_Title)
+            )
+        }
     }
 }
 

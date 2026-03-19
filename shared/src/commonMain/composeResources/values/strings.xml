@@ -321,7 +321,7 @@
     <string name="SettingsScreen-LoggingDescription">Debug mode and log files location.</string>
     <string name="SettingsScreen-OpenFolder">Open folder</string>
     <string name="SettingsScreen-ScanEngine">Scan engine</string>
-    <string name="SettingsScreen-ScanEngineDescription">Engine used to search files. HyperScan is faster; Kotlin is more portable.</string>
+    <string name="SettingsScreen-ScanEngineDescription">Engine used to search files.</string>
 
     <string name="ThemeType-Light">Light</string>
     <string name="ThemeType-Dark">Dark</string>
@@ -332,7 +332,7 @@
     <string name="Task-PausedAt">Paused:</string>
     <string name="Task-Progress">Progress: %1$s%</string>
     <string name="Task-TotalFiles">Total files</string>
-    <string name="Task-SelectedFiles">Selected files</string>
+    <string name="Task-SelectedFiles">Files to scan</string>
     <string name="Task-FoundFiles">Found files</string>
     <string name="Task-FolderSize">Folder size</string>
     <string name="Task-FoundAttributes">Found attributes:</string>

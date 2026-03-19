@@ -30,42 +30,56 @@ fun LanguageSettings(modifier: Modifier = Modifier) {
 
     key(language) {
         SettingsRow(title = stringResource(Res.string.SettingsScreen_Language), modifier = modifier) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Text(
-                    text = stringResource(Res.string.SettingsScreen_LanguageDescription),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val minCellWidth = 180.dp
-                val columns = (maxWidth / minCellWidth).toInt().coerceAtLeast(1)
-                val rows = (AppSettings.LanguageType.entries.size + columns - 1) / columns
-                val height = (34 * rows + (8 * (rows - 1).coerceAtLeast(0))).dp
+            LanguageSettingsContent(
+                language = language,
+                onLanguageSelect = { lang ->
+                    language = lang
+                    appSettings.save()
+                    Locale.setDefault(Locale.forLanguageTag(lang.locale))
+                }
+            )
+        }
+    }
+}
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(columns),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier
-                        .height(height)
-                        .fillMaxWidth()
-                ) {
+@Composable
+fun LanguageSettingsContent(
+    language: AppSettings.LanguageType,
+    onLanguageSelect: (AppSettings.LanguageType) -> Unit,
+    showDescription: Boolean = true,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showDescription) {
+            Text(
+                text = stringResource(Res.string.SettingsScreen_LanguageDescription),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val minCellWidth = 180.dp
+            val columns = (maxWidth / minCellWidth).toInt().coerceAtLeast(1)
+            val rows = (AppSettings.LanguageType.entries.size + columns - 1) / columns
+            val height = (34 * rows + (8 * (rows - 1).coerceAtLeast(0))).dp
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .height(height)
+                    .fillMaxWidth()
+            ) {
                 items(AppSettings.LanguageType.entries) { lang ->
                     SettingsSelector(
                         selected = lang == language,
-                        onClick = {
-                            language = lang
-                            appSettings.save()
-                            Locale.setDefault(Locale.forLanguageTag(lang.locale))
-                        },
+                        onClick = { onLanguageSelect(lang) },
                         text = lang.text
                     )
                 }
-            }
-            }
             }
         }
     }

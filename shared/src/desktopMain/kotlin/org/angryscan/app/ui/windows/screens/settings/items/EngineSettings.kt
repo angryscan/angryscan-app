@@ -35,17 +35,36 @@ fun EngineSettings(modifier: Modifier = Modifier) {
         title = stringResource(Res.string.SettingsScreen_ScanEngine),
         modifier = modifier
     ) {
-        val engines: List<KClass<out IScanEngine>> = listOf(HyperScanEngine::class, KotlinEngine::class)
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
+        EngineSettingsContent(
+            engine = engine,
+            onEngineSelect = { eng ->
+                engine = eng
+                scanSettings.save()
+            }
+        )
+    }
+}
+
+@Composable
+fun EngineSettingsContent(
+    engine: KClass<out IScanEngine>,
+    onEngineSelect: (KClass<out IScanEngine>) -> Unit,
+    showDescription: Boolean = true,
+) {
+    val engines: List<KClass<out IScanEngine>> = listOf(HyperScanEngine::class, KotlinEngine::class)
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showDescription) {
             Text(
                 text = stringResource(Res.string.SettingsScreen_ScanEngineDescription),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val minCellWidth = 180.dp
             val columns = (maxWidth / minCellWidth).toInt().coerceAtLeast(1)
             val rows = (engines.size + columns - 1) / columns
@@ -59,17 +78,13 @@ fun EngineSettings(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
             ) {
                 items(engines) { eng ->
-                SettingsSelector(
-                    selected = eng == engine,
-                    onClick = {
-                        engine = eng
-                        scanSettings.save()
-                    },
-                    text = eng.composableName()
-                )
+                    SettingsSelector(
+                        selected = eng == engine,
+                        onClick = { onEngineSelect(eng) },
+                        text = eng.composableName()
+                    )
                 }
             }
-        }
         }
     }
 }

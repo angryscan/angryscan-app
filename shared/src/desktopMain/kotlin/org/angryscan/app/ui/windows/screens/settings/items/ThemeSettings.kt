@@ -29,15 +29,33 @@ fun ThemeSettings(modifier: Modifier = Modifier) {
     var theme by remember { appSettings.theme }
 
     SettingsRow(title = stringResource(Res.string.SettingsScreen_Theme), modifier = modifier) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-                Text(
-                    text = stringResource(Res.string.SettingsScreen_ThemeDescription),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        ThemeSettingsContent(
+            theme = theme,
+            onThemeSelect = { th ->
+                theme = th
+                appSettings.save()
+            }
+        )
+    }
+}
+
+@Composable
+fun ThemeSettingsContent(
+    theme: AppSettings.ThemeType,
+    onThemeSelect: (AppSettings.ThemeType) -> Unit,
+    showDescription: Boolean = true,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showDescription) {
+            Text(
+                text = stringResource(Res.string.SettingsScreen_ThemeDescription),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val minCellWidth = 180.dp
             val columns = (maxWidth / minCellWidth).toInt().coerceAtLeast(1)
@@ -52,16 +70,13 @@ fun ThemeSettings(modifier: Modifier = Modifier) {
                     .height(height)
                     .fillMaxWidth()
             ) {
-            items(AppSettings.ThemeType.entries) { th ->
-                SettingsSelector(
-                    text = th.composableName(),
-                    icon = th.icon(),
-                    selected = th == theme,
-                    onClick = {
-                        theme = th
-                        appSettings.save()
-                    }
-                )
+                items(AppSettings.ThemeType.entries) { th ->
+                    SettingsSelector(
+                        text = th.composableName(),
+                        icon = th.icon(),
+                        selected = th == theme,
+                        onClick = { onThemeSelect(th) }
+                    )
 //                Box(
 //                    modifier = Modifier
 //                        .size(width = 150.dp, height = 34.dp)
@@ -103,9 +118,8 @@ fun ThemeSettings(modifier: Modifier = Modifier) {
 //                        )
 //                    }
 //                }
+                }
             }
-        }
-        }
         }
     }
 }
