@@ -25,9 +25,6 @@ import org.koin.compose.koinInject
 private val ContainerShape = RoundedCornerShape(24.dp)
 private val ContentPadding = 12.dp
 
-enum class SettingsTab { Scan, Files, Detect, Signatures }
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsBox(
     transition: Transition<Boolean>,
@@ -36,16 +33,99 @@ fun SettingsBox(
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
     val fastScan by scanSettings.fastScan
-    var selectedTab by remember { mutableIntStateOf(SettingsTab.Scan.ordinal) }
-    val scrollState = rememberScrollState()
+    val editorScrollState = rememberScrollState()
+    val profilesScrollState = rememberScrollState()
+    val profiles = screenStateSettings.scanProfiles
+    var selectedProfileName by remember { mutableStateOf(screenStateSettings.activeScanProfileName) }
+    var saveAsDialogVisible by remember { mutableStateOf(false) }
+    var newProfileName by remember { mutableStateOf("") }
 
     val colorScheme = MaterialTheme.colorScheme
+    val selectedProfile = profiles.firstOrNull { it.name == selectedProfileName }
+        ?: profiles.firstOrNull()
+
+    if (selectedProfile == null) return
+
+    fun buildProfile(name: String): ScreenStateSettings.ScanProfile = ScreenStateSettings.ScanProfile(
+        name = name,
+        fastScan = scanSettings.fastScan.value,
+        extensions = scanSettings.extensions.toMutableList(),
+        matchers = scanSettings.matchers.toMutableList(),
+        userSignatures = scanSettings.userSignatures.toMutableList()
+    )
+
+    fun applyProfile(profile: ScreenStateSettings.ScanProfile) {
+        scanSettings.fastScan.value = profile.fastScan
+        scanSettings.extensions.clear()
+        scanSettings.extensions.addAll(profile.extensions)
+        scanSettings.matchers.clear()
+        scanSettings.matchers.addAll(profile.matchers)
+        scanSettings.userSignatures.clear()
+        scanSettings.userSignatures.addAll(profile.userSignatures)
+        scanSettings.save()
+    }
+
+    fun updateSelectedProfileFromCurrent() {
+        val index = profiles.indexOfFirst { it.name == selectedProfileName }
+        if (index >= 0) {
+            profiles[index] = buildProfile(selectedProfileName)
+            screenStateSettings.activeScanProfileName = selectedProfileName
+            screenStateSettings.save()
+        }
+    }
+
+    LaunchedEffect(profiles.size) {
+        if (profiles.none { it.name == selectedProfileName } && profiles.isNotEmpty()) {
+            selectedProfileName = profiles.first().name
+        }
+    }
+
+    if (saveAsDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { saveAsDialogVisible = false },
+            title = { Text(stringResource(Res.string.ScanSettings_Profiles_NewDialogTitle)) },
+            text = {
+                OutlinedTextField(
+                    value = newProfileName,
+                    onValueChange = { newProfileName = it },
+                    singleLine = true,
+                    placeholder = { Text(stringResource(Res.string.ScanSettings_Profiles_NamePlaceholder)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val finalName = newProfileName.trim()
+                        if (finalName.isNotEmpty()) {
+                            val existingIndex = profiles.indexOfFirst { it.name == finalName }
+                            if (existingIndex >= 0) {
+                                profiles[existingIndex] = buildProfile(finalName)
+                            } else {
+                                profiles.add(buildProfile(finalName))
+                            }
+                            selectedProfileName = finalName
+                            screenStateSettings.activeScanProfileName = finalName
+                            screenStateSettings.save()
+                        }
+                        saveAsDialogVisible = false
+                    }
+                ) { Text(stringResource(Res.string.Common_Save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { saveAsDialogVisible = false }) {
+                    Text(stringResource(Res.string.Common_Cancel))
+                }
+            }
+        )
+    }
+
     AnimatedVisibility(
         visible = transition.currentState,
         enter = expandVertically(),
         exit = shrinkVertically()
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(ContainerShape)
@@ -56,204 +136,275 @@ fun SettingsBox(
                     shape = ContainerShape
                 )
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
+            Surface(
+                modifier = Modifier
+                    .width(300.dp)
+                    .fillMaxHeight(),
+                color = colorScheme.surfaceVariant.copy(alpha = 0.28f)
             ) {
-                // Шапка: табы в отдельной полоске с мягким фоном
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                ) {
-                    TabRow(
-                        selectedTabIndex = selectedTab,
-                        modifier = Modifier.fillMaxWidth(),
-                        containerColor = Color.Transparent,
-                        contentColor = colorScheme.primary,
-                        divider = {},
-                        indicator = { tabPositions ->
-                            Box(Modifier.fillMaxWidth()) {
-                                if (selectedTab < tabPositions.size) {
-                                    val pos = tabPositions[selectedTab]
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.BottomStart)
-                                            .offset(x = pos.left)
-                                            .width(pos.width)
-                                            .height(3.dp)
-                                            .clip(RoundedCornerShape(1.5.dp))
-                                            .background(colorScheme.primary)
-                                    )
-                                }
-                            }
-                        }
-                    ) {
-                        Tab(
-                            selected = selectedTab == SettingsTab.Scan.ordinal,
-                            onClick = { selectedTab = SettingsTab.Scan.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabScan), fontSize = 14.sp) }
-                        )
-                        Tab(
-                            selected = selectedTab == SettingsTab.Files.ordinal,
-                            onClick = { selectedTab = SettingsTab.Files.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabFiles), fontSize = 14.sp) }
-                        )
-                        Tab(
-                            selected = selectedTab == SettingsTab.Detect.ordinal,
-                            onClick = { selectedTab = SettingsTab.Detect.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabDetect), fontSize = 14.sp) }
-                        )
-                        Tab(
-                            selected = selectedTab == SettingsTab.Signatures.ordinal,
-                            onClick = { selectedTab = SettingsTab.Signatures.ordinal },
-                            text = { Text(stringResource(Res.string.ScanSettings_TabSignatures), fontSize = 14.sp) }
-                        )
-                    }
-                }
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    thickness = 1.dp
-                )
-
-                // Контент выбранной секции — один скролл
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = ContentPadding)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val scrollEnabled = selectedTab != SettingsTab.Files.ordinal
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (scrollEnabled) Modifier.verticalScroll(scrollState) else Modifier)
-                            .padding(vertical = ContentPadding),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    Text(
+                        text = stringResource(Res.string.ScanSettings_Profiles_Title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colorScheme.onSurface
+                    )
+                    Text(
+                        text = selectedProfileName.ifBlank { stringResource(Res.string.ScanSettings_Profiles_Current) },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    FilledTonalButton(
+                        onClick = {
+                            newProfileName = selectedProfileName
+                            saveAsDialogVisible = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        when (selectedTab) {
-                            SettingsTab.Scan.ordinal -> {
-                                Row(
+                        Text(stringResource(Res.string.ScanSettings_Profiles_SaveAs))
+                    }
+                    HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Text(
+                        text = stringResource(Res.string.ScanSettings_Profiles_ScrollHint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 132.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(profilesScrollState)
+                                .padding(end = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            profiles.forEach { profile ->
+                                val isSelected = profile.name == selectedProfileName
+                                Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            selectedProfileName = profile.name
+                                            applyProfile(profile)
+                                            screenStateSettings.activeScanProfileName = profile.name
+                                            screenStateSettings.save()
+                                        },
+                                    color = if (isSelected)
+                                        colorScheme.primary.copy(alpha = 0.12f)
+                                    else
+                                        Color.Transparent
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = stringResource(Res.string.ScanSettings_FastScan),
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(
-                                            text = stringResource(Res.string.ScanSettings_Tooltip_FastScan),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    Switch(
-                                        checked = fastScan,
-                                        onCheckedChange = {
-                                            scanSettings.fastScan.value = it
-                                            scanSettings.save()
-                                        }
-                                    )
-                                }
-                                // AWS S3 connection parameters — только когда выбран источник S3
-                                if (isS3Source) {
-                                    var s3Endpoint by remember { mutableStateOf(screenStateSettings.s3ScreenState.endpoint) }
-                                    var s3Bucket by remember { mutableStateOf(screenStateSettings.s3ScreenState.bucket) }
-                                    var s3AccessKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.accessKey) }
-                                    var s3SecretKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.secretKey) }
-                                    LaunchedEffect(selectedTab, isS3Source) {
-                                        if (selectedTab == SettingsTab.Scan.ordinal && isS3Source) {
-                                            s3Endpoint = screenStateSettings.s3ScreenState.endpoint
-                                            s3Bucket = screenStateSettings.s3ScreenState.bucket
-                                            s3AccessKey = screenStateSettings.s3ScreenState.accessKey
-                                            s3SecretKey = screenStateSettings.s3ScreenState.secretKey
-                                        }
-                                    }
                                     Text(
-                                        text = stringResource(Res.string.S3Screen_Tooltip_ConnectionSettings),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                        text = profile.name,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (isSelected) colorScheme.primary else colorScheme.onSurface
                                     )
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(
-                                            value = s3Endpoint,
-                                            onValueChange = {
-                                                s3Endpoint = it
-                                                screenStateSettings.s3ScreenState.endpoint = it
-                                                screenStateSettings.save()
-                                            },
-                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                                            placeholder = { Text("Endpoint", style = MaterialTheme.typography.bodyMedium) },
-                                            singleLine = true,
-                                            textStyle = MaterialTheme.typography.bodyMedium
-                                        )
-                                        OutlinedTextField(
-                                            value = s3Bucket,
-                                            onValueChange = {
-                                                s3Bucket = it
-                                                screenStateSettings.s3ScreenState.bucket = it
-                                                screenStateSettings.save()
-                                            },
-                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                                            placeholder = { Text("Bucket", style = MaterialTheme.typography.bodyMedium) },
-                                            singleLine = true,
-                                            textStyle = MaterialTheme.typography.bodyMedium
-                                        )
-                                        OutlinedTextField(
-                                            value = s3AccessKey,
-                                            onValueChange = {
-                                                s3AccessKey = it
-                                                screenStateSettings.s3ScreenState.accessKey = it
-                                                screenStateSettings.save()
-                                            },
-                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                                            placeholder = { Text("Access key", style = MaterialTheme.typography.bodyMedium) },
-                                            singleLine = true,
-                                            textStyle = MaterialTheme.typography.bodyMedium
-                                        )
-                                        OutlinedTextField(
-                                            value = s3SecretKey,
-                                            onValueChange = {
-                                                s3SecretKey = it
-                                                screenStateSettings.s3ScreenState.secretKey = it
-                                                screenStateSettings.save()
-                                            },
-                                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                                            placeholder = { Text("Secret key", style = MaterialTheme.typography.bodyMedium) },
-                                            singleLine = true,
-                                            textStyle = MaterialTheme.typography.bodyMedium,
-                                            visualTransformation = PasswordVisualTransformation()
-                                        )
-                                    }
                                 }
                             }
-                            SettingsTab.Files.ordinal -> SettingsBoxExtensionsSelection(scanSettings)
-                            SettingsTab.Detect.ordinal -> SettingsBoxDetectFunctionsGrouped(scanSettings)
-                            SettingsTab.Signatures.ordinal -> SettingsBoxUserSignature(scanSettings)
                         }
-                    }
-
-                    if (scrollEnabled) {
                         VerticalScrollbar(
-                            adapter = rememberScrollbarAdapter(scrollState),
+                            adapter = rememberScrollbarAdapter(profilesScrollState),
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .fillMaxHeight()
                                 .width(8.dp),
                             style = LocalScrollbarStyle.current.copy(
-                                hoverColor = MaterialTheme.colorScheme.primary,
-                                unhoverColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                hoverColor = colorScheme.primary,
+                                unhoverColor = colorScheme.outline.copy(alpha = 0.35f)
                             )
                         )
                     }
+                    HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    OutlinedButton(
+                        onClick = { applyProfile(selectedProfile) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(Res.string.ScanSettings_Profiles_Apply))
+                    }
+                    TextButton(
+                        onClick = { updateSelectedProfileFromCurrent() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(Res.string.ScanSettings_Profiles_Update))
+                    }
+                    TextButton(
+                        enabled = profiles.size > 1,
+                        onClick = {
+                            val toDelete = selectedProfileName
+                            profiles.removeAll { it.name == toDelete }
+                            selectedProfileName = profiles.firstOrNull()?.name ?: "Default"
+                            screenStateSettings.activeScanProfileName = selectedProfileName
+                            screenStateSettings.save()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(Res.string.ScanSettings_Profiles_Delete))
+                    }
                 }
+            }
+
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight(),
+                color = colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 1.dp
+            )
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = ContentPadding, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = selectedProfileName,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(Res.string.ScanSettings_Profiles_Current),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, bottom = 8.dp),
+                        color = colorScheme.outlineVariant.copy(alpha = 0.45f),
+                        thickness = 1.dp
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(editorScrollState)
+                            .padding(vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SettingsSectionCard(
+                            title = stringResource(Res.string.ScanSettings_FastScan),
+                            titleTrailing = {
+                                Switch(
+                                    checked = fastScan,
+                                    onCheckedChange = {
+                                        scanSettings.fastScan.value = it
+                                        scanSettings.save()
+                                    }
+                                )
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.ScanSettings_Tooltip_FastScan),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (isS3Source) {
+                            var s3Endpoint by remember { mutableStateOf(screenStateSettings.s3ScreenState.endpoint) }
+                            var s3Bucket by remember { mutableStateOf(screenStateSettings.s3ScreenState.bucket) }
+                            var s3AccessKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.accessKey) }
+                            var s3SecretKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.secretKey) }
+                            Text(
+                                text = stringResource(Res.string.S3Screen_Tooltip_ConnectionSettings),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = s3Endpoint,
+                                    onValueChange = {
+                                        s3Endpoint = it
+                                        screenStateSettings.s3ScreenState.endpoint = it
+                                        screenStateSettings.save()
+                                    },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                    placeholder = { Text("Endpoint", style = MaterialTheme.typography.bodyMedium) },
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium
+                                )
+                                OutlinedTextField(
+                                    value = s3Bucket,
+                                    onValueChange = {
+                                        s3Bucket = it
+                                        screenStateSettings.s3ScreenState.bucket = it
+                                        screenStateSettings.save()
+                                    },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                    placeholder = { Text("Bucket", style = MaterialTheme.typography.bodyMedium) },
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium
+                                )
+                                OutlinedTextField(
+                                    value = s3AccessKey,
+                                    onValueChange = {
+                                        s3AccessKey = it
+                                        screenStateSettings.s3ScreenState.accessKey = it
+                                        screenStateSettings.save()
+                                    },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                    placeholder = { Text("Access key", style = MaterialTheme.typography.bodyMedium) },
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium
+                                )
+                                OutlinedTextField(
+                                    value = s3SecretKey,
+                                    onValueChange = {
+                                        s3SecretKey = it
+                                        screenStateSettings.s3ScreenState.secretKey = it
+                                        screenStateSettings.save()
+                                    },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                    placeholder = { Text("Secret key", style = MaterialTheme.typography.bodyMedium) },
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    visualTransformation = PasswordVisualTransformation()
+                                )
+                            }
+                        }
+
+                        SettingsBoxExtensionsSelection(scanSettings)
+                        SettingsBoxDetectFunctionsGrouped(scanSettings)
+                        SettingsBoxUserSignature(scanSettings)
+                    }
+                }
+
+                VerticalScrollbar(
+                    adapter = rememberScrollbarAdapter(editorScrollState),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .width(8.dp),
+                    style = LocalScrollbarStyle.current.copy(
+                        hoverColor = MaterialTheme.colorScheme.primary,
+                        unhoverColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                    )
+                )
             }
         }
     }

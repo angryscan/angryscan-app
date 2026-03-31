@@ -229,26 +229,39 @@ fun FileShareScreen(
 
     setSidebarContent { }
     setBottomBarContent {
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 0.dp, vertical = 0.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 0.dp, vertical = 0.dp)
         ) {
+            val controlHeight = 68.dp
+            val controlShape = RoundedCornerShape(18.dp)
+            val scanButtonWidth = when {
+                maxWidth >= 1500.dp -> 240.dp
+                maxWidth < 1200.dp -> 220.dp
+                else -> 232.dp
+            }
+            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
+            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+            val pathMaxWidth = if (maxWidth >= 1500.dp) 820.dp else 760.dp
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(controlGap, Alignment.CenterHorizontally)
+            ) {
             Surface(
                 modifier = Modifier
-                    .weight(0.5f)
-                    .height(72.dp)
+                    .widthIn(min = pathMinWidth, max = pathMaxWidth)
+                    .height(controlHeight)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
                             MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            RoundedCornerShape(20.dp)
+                            controlShape
                         )
                         else Modifier
                     ),
-                shape = RoundedCornerShape(20.dp),
+                shape = controlShape,
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 tonalElevation = 0.dp
             ) {
@@ -262,7 +275,7 @@ fun FileShareScreen(
                     OutlinedTextField(
                         value = path,
                         onValueChange = { path = it; saveScreenState() },
-                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                         placeholder = {
                             Text(
                                 text = when (selectionType) {
@@ -376,9 +389,9 @@ fun FileShareScreen(
                     },
                         modifier = ScanButtonModifier(
                             isReady = true,
-                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
                         ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = controlShape,
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 0.dp,
                         pressedElevation = 0.dp,
@@ -398,9 +411,9 @@ fun FileShareScreen(
                         onClick = { },
                         modifier = ScanButtonModifier(
                             isReady = false,
-                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
                         ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = controlShape,
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 0.dp,
                             pressedElevation = 0.dp,
@@ -411,6 +424,7 @@ fun FileShareScreen(
                         StartScanButtonContent()
                     }
                 }
+            }
             }
         }
     }

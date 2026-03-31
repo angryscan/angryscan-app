@@ -78,7 +78,7 @@
 
     <string name="MainScreen-SelectPathPlaceholder">Укажите пути для сканирования через точку с запятой (;)</string>
     <string name="MainScreen-SelectFileWithPathsPlaceholder">Укажите файл с путями</string>
-    <string name="MainScreen-ScanStartButton">СКАНИРОВАТЬ</string>
+    <string name="MainScreen-ScanStartButton">Сканировать</string>
     <string name="MainScreen-ScanCurrentState">Текущие сканирования (%1$d)</string>
     <string name="MainScreen-SelectTypeFolder">Папка</string>
     <string name="MainScreen-SelectTypeFile">Файлы</string>
@@ -99,41 +99,16 @@
     <string name="MainScreen-QuickStart-Step3">3. Настройте и запустите сканирование</string>
     <string name="MainScreen-RecentScans-Title">Недавние сканирования</string>
     <string name="MainScreen-RecentScans-Empty">Пока нет сканирований</string>
-    <string name="ScansPage-FilterByStatus">Фильтр по статусу</string>
-    <string name="ScansPage-FilterAll">Все</string>
-    <string name="ScansPage-ResultCount">%1$d скан(ов)</string>
-    <string name="ScansPage-EmptyHint">Запустите сканирование на вкладке «Главная»</string>
-    <string name="ScansPage-NoMatches">Нет сканов по выбранным фильтрам</string>
-    <string name="ScansPage-SearchPlaceholder">Поиск по имени, пути или атрибутам…</string>
-    <string name="ScansPage-Loading">Загрузка…</string>
-    <string name="ScansPage-FastScanLabel">Быстрое сканирование</string>
-    <string name="MainScreen-SidebarTitle">Источник данных</string>
-    <string name="MainScreen-SettingsTitle">Настройки сканирования</string>
-    <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>
-    <string name="MainScreen-ScanHint-S3">Введите путь выше и настройте подключение S3 во вкладке «Параметры сканирования», чтобы активировать кнопку</string>
-    <string name="MainScreen-ScanHint-HTTP">Введите один или несколько URL выше, чтобы активировать кнопку «Сканировать»</string>
 
-    <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
-    <string name="ScanSettings-FileExtensions">Расширения файлов для сканирования</string>
-    <string name="ScanSettings-FileExtensions-Selection">Выбор</string>
-    <string name="ScanSettings-FileExtensions-Group-Documents">Документы</string>
-    <string name="ScanSettings-FileExtensions-Group-Spreadsheets">Таблицы</string>
-    <string name="ScanSettings-FileExtensions-Group-Presentations">Презентации</string>
-    <string name="ScanSettings-FileExtensions-Group-Text">Текст</string>
-    <string name="ScanSettings-FileExtensions-Group-Archives">Архивы</string>
-    <string name="ScanSettings-DetectFunctions">Правила и паттерны детектирования</string>
+    <string name="ScanSettings-FastScan">Быстрое сканирование</string>
+    <string name="ScanSettings-FileExtensions">Расширения файлов</string>
+    <string name="ScanSettings-DetectFunctions">Функции детектирования</string>
     <string name="ScanSettings-UserSignatures">Пользовательские сигнатуры</string>
-    <string name="ScanSettings-TabScan">Настройки сканирования</string>
-    <string name="ScanSettings-TabFiles">Типы файлов</string>
-    <string name="ScanSettings-TabDetect">Правила детектирования</string>
-    <string name="ScanSettings-TabSignatures">Пользовательские сигнатуры</string>
     <string name="ScanSettings-SelectAll">Выбрать все</string>
-    <string name="ScanSettings-DiscardAll">Сбросить все</string>
     <string name="SettingsScreen-Logging">Журналирование</string>
-    <string name="SettingsScreen-LoggingDescription">Режим отладки и расположение файлов логов.</string>
     <string name="SettingsScreen-OpenFolder">Открыть папку</string>
     <string name="SettingsScreen-ScanEngine">Движок сканирования</string>
-    <string name="SettingsScreen-ScanEngineDescription">Движок поиска по файлам.</string>
+    <string name="SettingsScreen-OpenCanvasHint">Все настройки доступны на этом экране.</string>
     <string name="ScanSettings-DebugMode">Собирать отладочную информацию</string>
 
 
@@ -300,15 +275,10 @@
     <string name="MatcherCountry-International-Short">Межд.</string>
 
     <string name="SettingsScreen-ThreadsCount">Количество потоков</string>
-    <string name="SettingsScreen-RecommendedThreads">Рекомендуется: %1$d потоков</string>
     <string name="SettingsScreen-ContextMenu">Контекстное меню</string>
     <string name="SettingsScreen-ContextMenuExplorer">Файловый проводник</string>
     <string name="SettingsScreen-Language">Язык</string>
-    <string name="SettingsScreen-LanguageDescription">Язык интерфейса приложения.</string>
-    <string name="SettingsScreen-LanguageRestartNote">Для полного применения может потребоваться перезапуск.</string>
     <string name="SettingsScreen-Theme">Тема</string>
-    <string name="SettingsScreen-ThemeDescription">Светлая, тёмная или как в системе.</string>
-    <string name="SettingsScreen-ThemeAppliedNote">Применяется сразу.</string>
 
     <string name="ThemeType-Light">Светлая</string>
     <string name="ThemeType-Dark">Тёмная</string>

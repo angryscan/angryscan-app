@@ -6,12 +6,15 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.common.files.types.*
+import org.angryscan.app.scan.functions.CertDetectFun
+import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.serializers.MutableStateSerializer
 import org.angryscan.app.serializers.PolymorphicFormatter
 import org.angryscan.app.ui.components.SelectionTypes
 import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.matchers.UserSignature
+import org.angryscan.common.matchers.*
+import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
@@ -71,9 +74,100 @@ class ScreenStateSettings : KoinComponent {
         var fastScan: MutableState<Boolean> = mutableStateOf(false)
     )
 
+    @Serializable
+    data class ScanProfile(
+        var name: String = "Default",
+        var fastScan: Boolean = false,
+        @Serializable
+        val extensions: MutableList<IFileType> = mutableListOf(),
+        @Serializable
+        val matchers: MutableList<IMatcher> = mutableListOf(),
+        @Serializable
+        val userSignatures: MutableList<UserSignature> = mutableListOf()
+    )
+
     var fileShareScreenState = FileShareScreenState()
     var s3ScreenState = S3ScreenState()
     var httpScreenState = HTTPScreenState()
+    var scanProfiles: MutableList<ScanProfile> = mutableStateListOf()
+    var activeScanProfileName: String = "Default"
+
+    private fun defaultProfileExtensions(): MutableList<IFileType> = IFileType.getAll()
+        .filter { it !in CertFileType.entries + CodeFileType.entries }
+        .toMutableList()
+
+    private fun defaultScanProfiles(): MutableList<ScanProfile> {
+        val defaultExtensions = defaultProfileExtensions()
+        return mutableListOf(
+            ScanProfile(
+                name = "Sensitive data",
+                fastScan = false,
+                extensions = defaultExtensions.toMutableList(),
+                matchers = mutableListOf(
+                    Phone, PhoneUS, SNILS, SSN, Passport, PassportUS,
+                    INN, DriverLicense, DriverLicenseUS, FullName, FullNameUS,
+                    Address, AddressUS, Birthday, Email
+                )
+            ),
+            ScanProfile(
+                name = "Banking secrecy",
+                fastScan = false,
+                extensions = defaultExtensions.toMutableList(),
+                matchers = mutableListOf(
+                    CardNumber(), CVV, BankAccount, BankAccountLE, RTN, EIN, ITIN
+                )
+            ),
+            ScanProfile(
+                name = "IT assets + secrets",
+                fastScan = true,
+                extensions = defaultExtensions.toMutableList(),
+                matchers = mutableListOf(
+                    IPv4, IPv6, CodeDetectFun, CertDetectFun, HashData, GitleaksMatcher
+                )
+            ),
+            ScanProfile(
+                name = "Documents only",
+                fastScan = false,
+                extensions = mutableListOf(
+                    DOCType, DOCXType, ODTType, PDFType,
+                    XLSType, XLSXType, ODSType,
+                    PPTType, PPTXType, ODPType,
+                    TextType
+                ),
+                matchers = mutableListOf(
+                    Email, Phone, PhoneUS, CardNumber(), CVV,
+                    FullName, FullNameUS, Passport, PassportUS, INN, SSN
+                )
+            )
+        )
+    }
+
+    private fun ensureSystemProfilesPresent() {
+        scanProfiles.forEach { profile ->
+            when (profile.name) {
+                "Personal data ALL", "Персональные данные ALL", "Personal data", "Персональные данные" -> profile.name = "Sensitive data"
+                "Banking secrecy ALL", "Банковская тайна ALL" -> profile.name = "Banking secrecy"
+            }
+        }
+        val deprecatedLocalizedProfileNames = setOf(
+            "Personal data RU",
+            "Personal data US",
+            "Banking secrecy RU",
+            "Banking secrecy US",
+            "Персональные данные RU",
+            "Персональные данные US",
+            "Банковская тайна RU",
+            "Банковская тайна US"
+        )
+        scanProfiles.removeAll { it.name in deprecatedLocalizedProfileNames }
+        val existingNames = scanProfiles.map { it.name }.toMutableSet()
+        defaultScanProfiles().forEach { profile ->
+            if (profile.name !in existingNames) {
+                scanProfiles.add(profile)
+                existingNames.add(profile.name)
+            }
+        }
+    }
 
     constructor() {
         val userSignatureSettings by inject<UserSignatureSettings>()
@@ -122,11 +216,46 @@ class ScreenStateSettings : KoinComponent {
                     prop.httpScreenState.userSignatures.filter { it in userSignatureSettings.userSignatures }
                 )
                 this.httpScreenState.fastScan = prop.httpScreenState.fastScan
+
+                this.scanProfiles.clear()
+                this.scanProfiles.addAll(
+                    prop.scanProfiles.map { profile ->
+                        profile.copy(
+                            userSignatures = profile.userSignatures
+                                .filter { it in userSignatureSettings.userSignatures }
+                                .toMutableList(),
+                            matchers = profile.matchers.distinct().toMutableList(),
+                            extensions = profile.extensions.toMutableList()
+                        )
+                    }
+                )
+                if (this.scanProfiles.isEmpty()) {
+                    this.scanProfiles.addAll(defaultScanProfiles())
+                }
+                this.activeScanProfileName =
+                    if (prop.activeScanProfileName.isNotBlank()) prop.activeScanProfileName
+                    else this.scanProfiles.first().name
+                ensureSystemProfilesPresent()
+                if (this.scanProfiles.none { it.name == this.activeScanProfileName }) {
+                    this.activeScanProfileName = this.scanProfiles.first().name
+                }
             }
         } catch (e: Exception) {
             logger.error(e) {
                 "Failed to load ScreenStateSettings. Loading defaults."
             }
+            if (scanProfiles.isEmpty()) {
+                scanProfiles.addAll(defaultScanProfiles())
+                activeScanProfileName = scanProfiles.first().name
+            }
+        }
+        if (scanProfiles.isEmpty()) {
+            scanProfiles.addAll(defaultScanProfiles())
+            activeScanProfileName = scanProfiles.first().name
+        }
+        ensureSystemProfilesPresent()
+        if (scanProfiles.none { it.name == activeScanProfileName }) {
+            activeScanProfileName = scanProfiles.first().name
         }
     }
 

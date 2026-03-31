@@ -42,25 +42,35 @@ fun SettingsBoxDetectFunctionsGrouped(scanSettings: ScanSettings) {
     val itAssetsName = stringResource(Res.string.DetectGroup_ITAssets)
     val cryptoName = stringResource(Res.string.DetectGroup_Crypto)
 
+    val personalDataNumbersMatchers = remember {
+        listOf(
+            Phone, PhoneUS, SNILS, SSN, Passport, PassportUS, OMS, INN, Birthday, DeathDate,
+            DriverLicense, RIN, MilitaryID, ResidencePermit, SberBook, SocialUserId, VIN,
+            VehicleRegNumber, LegalEntityId, OGRNIP, OKPO, StateRegContract, ExecDocNumber,
+            CadastralNumber, MedicareUS, OSAGOPolicy, EIN, ITIN, DriverLicenseUS, VisaNumberUS,
+            AlienRegistrationNumber, USCIS, SEVISID, DODID, NSN, TCN, NPI, APOFPODPO
+        )
+    }
+    val personalDataTextMatchers = remember {
+        listOf(
+            FullName, FullNameUS, Email, Address, Login, Password, Certificate, EducationDoc,
+            EducationLevel, EducationLicense, IdentityDocType, MaritalStatus, MilitaryRank,
+            SecurityAffiliation, Geo, LegalEntityName, AddressUS
+        )
+    }
+    val bankingSecrecyMatchers = remember { listOf(CardNumber(), CVV, BankAccount, BankAccountLE, RTN) }
+    val itAssetsMatchers = remember { listOf(IPv4, IPv6, CodeDetectFun, CertDetectFun, HashData, GitleaksMatcher) }
+    val cryptoMatchers = remember { listOf(CryptoWallet, CryptoSeedPhrase) }
+
     val matchersGroups = remember(
         personalDataNumbersName, personalDataTextName, bankingSecrecyName, itAssetsName, cryptoName
     ) {
         listOf(
-            MatchersGroup(name = personalDataNumbersName, matchers = listOf(
-                Phone, PhoneUS, SNILS, SSN, Passport, PassportUS, OMS, INN, Birthday, DeathDate,
-                DriverLicense, RIN, MilitaryID, ResidencePermit, SberBook, SocialUserId, VIN,
-                VehicleRegNumber, LegalEntityId, OGRNIP, OKPO, StateRegContract, ExecDocNumber,
-                CadastralNumber, MedicareUS, OSAGOPolicy, EIN, ITIN, DriverLicenseUS, VisaNumberUS,
-                AlienRegistrationNumber, USCIS, SEVISID, DODID, NSN, TCN, NPI, APOFPODPO
-            )),
-            MatchersGroup(name = personalDataTextName, matchers = listOf(
-                FullName, FullNameUS, Email, Address, Login, Password, Certificate, EducationDoc,
-                EducationLevel, EducationLicense, IdentityDocType, MaritalStatus, MilitaryRank,
-                SecurityAffiliation, Geo, LegalEntityName, AddressUS
-            )),
-            MatchersGroup(name = bankingSecrecyName, matchers = listOf(CardNumber(), CVV, BankAccount, BankAccountLE, RTN)),
-            MatchersGroup(name = itAssetsName, matchers = listOf(IPv4, IPv6, CodeDetectFun, CertDetectFun, HashData, GitleaksMatcher)),
-            MatchersGroup(name = cryptoName, matchers = listOf(CryptoWallet, CryptoSeedPhrase))
+            MatchersGroup(name = personalDataNumbersName, matchers = personalDataNumbersMatchers),
+            MatchersGroup(name = personalDataTextName, matchers = personalDataTextMatchers),
+            MatchersGroup(name = bankingSecrecyName, matchers = bankingSecrecyMatchers),
+            MatchersGroup(name = itAssetsName, matchers = itAssetsMatchers),
+            MatchersGroup(name = cryptoName, matchers = cryptoMatchers)
         )
     }
 
@@ -78,7 +88,6 @@ fun SettingsBoxDetectFunctionsGrouped(scanSettings: ScanSettings) {
         MatcherCountryMapping.filterMatchers(availableMatchers, selectedCountry)
     }
     val isAllSelected = countryMatchers.all { m -> detectFunctions.any { it::class == m::class } }
-
     SettingsSectionCard(title = stringResource(Res.string.ScanSettings_DetectFunctions)) {
         Row(
             modifier = Modifier.fillMaxWidth(),

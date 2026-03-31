@@ -217,24 +217,35 @@ fun S3Screen(
 
     setSidebarContent { }
     setBottomBarContent {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val controlHeight = 68.dp
+            val controlShape = RoundedCornerShape(18.dp)
+            val scanButtonWidth = when {
+                maxWidth >= 1500.dp -> 240.dp
+                maxWidth < 1200.dp -> 220.dp
+                else -> 232.dp
+            }
+            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
+            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+            val pathMaxWidth = if (maxWidth >= 1500.dp) 840.dp else 760.dp
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(controlGap, Alignment.CenterHorizontally)
+            ) {
             Surface(
                 modifier = Modifier
-                    .weight(0.5f)
-                    .height(72.dp)
+                    .widthIn(min = pathMinWidth, max = pathMaxWidth)
+                    .height(controlHeight)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
                             MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            MaterialTheme.shapes.medium
+                            controlShape
                         )
                         else Modifier
                     ),
-                shape = MaterialTheme.shapes.medium,
+                shape = controlShape,
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 tonalElevation = 0.dp
             ) {
@@ -248,7 +259,7 @@ fun S3Screen(
                     OutlinedTextField(
                         value = path,
                         onValueChange = { path = it; saveScreenState() },
-                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                         placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
                         textStyle = MaterialTheme.typography.bodyMedium,
                         singleLine = true,
@@ -298,9 +309,9 @@ fun S3Screen(
                     },
                     modifier = ScanButtonModifier(
                         isReady = true,
-                        modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                        modifier = Modifier.width(scanButtonWidth).height(controlHeight)
                     ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = controlShape,
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 0.dp,
                         pressedElevation = 0.dp,
@@ -320,9 +331,9 @@ fun S3Screen(
                         onClick = { },
                         modifier = ScanButtonModifier(
                             isReady = false,
-                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
+                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
                         ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = controlShape,
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 0.dp,
                             pressedElevation = 0.dp,
@@ -333,6 +344,7 @@ fun S3Screen(
                         StartScanButtonContent()
                     }
                 }
+            }
             }
         }
     }

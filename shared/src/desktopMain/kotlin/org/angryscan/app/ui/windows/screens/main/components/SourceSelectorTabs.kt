@@ -1,11 +1,14 @@
 package org.angryscan.app.ui.windows.screens.main.components
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cloud
@@ -13,17 +16,17 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -49,52 +52,44 @@ fun SourceSelectorTabs(
         else -> MainScreenConnector.FileShare
     }
 
-    Surface(
+    Row(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.FileShare,
-                label = "File Share",
-                sourceType = SourceSelectorTabType.FileShare,
-                onClick = {
-                    if (selectedRoute != MainScreenConnector.FileShare) {
-                        navController.navigate(MainScreenConnector.FileShare)
-                    }
+        SourceSelectorTabItem(
+            modifier = Modifier,
+            isSelected = selectedRoute == MainScreenConnector.FileShare,
+            label = "File Share",
+            sourceType = SourceSelectorTabType.FileShare,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.FileShare) {
+                    navController.navigate(MainScreenConnector.FileShare)
                 }
-            )
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.S3,
-                label = "AWS S3",
-                sourceType = SourceSelectorTabType.S3,
-                onClick = {
-                    if (selectedRoute != MainScreenConnector.S3) {
-                        navController.navigate(MainScreenConnector.S3)
-                    }
+            }
+        )
+        SourceSelectorTabItem(
+            modifier = Modifier,
+            isSelected = selectedRoute == MainScreenConnector.S3,
+            label = "AWS S3",
+            sourceType = SourceSelectorTabType.S3,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.S3) {
+                    navController.navigate(MainScreenConnector.S3)
                 }
-            )
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.HTTP,
-                label = "HTTP",
-                sourceType = SourceSelectorTabType.HTTP,
-                onClick = {
-                    if (selectedRoute != MainScreenConnector.HTTP) {
-                        navController.navigate(MainScreenConnector.HTTP)
-                    }
+            }
+        )
+        SourceSelectorTabItem(
+            modifier = Modifier,
+            isSelected = selectedRoute == MainScreenConnector.HTTP,
+            label = "HTTP",
+            sourceType = SourceSelectorTabType.HTTP,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.HTTP) {
+                    navController.navigate(MainScreenConnector.HTTP)
                 }
-            )
-        }
+            }
+        )
     }
 }
 
@@ -110,87 +105,136 @@ private fun RowScope.SourceSelectorTabItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
-
-    val alpha by animateFloatAsState(
+    val expanded = isHovered || isSelected
+    val highlightProgress by animateFloatAsState(
         targetValue = when {
             isSelected -> 1f
-            isHovered -> 0.9f
-            else -> 0.6f
+            isHovered -> 0.45f
+            else -> 0f
         },
-        animationSpec = tween(200),
-        label = "alpha"
+        animationSpec = spring(
+            dampingRatio = 0.96f,
+            stiffness = 340f
+        ),
+        label = "sourceHighlightProgress"
+    )
+    val animatedInnerWidth by animateDpAsState(
+        targetValue = if (expanded) 200.dp else 44.dp,
+        animationSpec = spring(
+            dampingRatio = 0.95f,
+            stiffness = 320f
+        ),
+        label = "sourceInnerWidth"
+    )
+    val labelAlpha by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = 0.95f,
+            stiffness = 340f
+        ),
+        label = "sourceLabelAlpha"
+    )
+    val animatedLabelWidth by animateDpAsState(
+        targetValue = if (expanded) 126.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = 0.95f,
+            stiffness = 320f
+        ),
+        label = "sourceLabelWidth"
+    )
+    val iconHaloSize by animateDpAsState(
+        targetValue = if (isSelected) 30.dp else if (isHovered) 26.dp else 22.dp,
+        animationSpec = spring(
+            dampingRatio = 0.96f,
+            stiffness = 360f
+        ),
+        label = "sourceIconHaloSize"
     )
 
-    Surface(
+    Box(
         modifier = modifier
-            .alpha(alpha)
+            .width(210.dp)
+            .height(44.dp)
+            .clip(RoundedCornerShape(14.dp))
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            ),
-        shape = RoundedCornerShape(14.dp),
-        color = when {
-            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-            isHovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-            else -> androidx.compose.ui.graphics.Color.Transparent
-        },
-        shadowElevation = if (isSelected) 2.dp else 0.dp,
-        tonalElevation = if (isSelected) 1.dp else 0.dp
+            )
+            .padding(horizontal = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 20.dp),
+                .fillMaxHeight()
+                .width(animatedInnerWidth)
+                .align(Alignment.Center)
+                .padding(horizontal = 10.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            when (sourceType) {
-                SourceSelectorTabType.FileShare -> {
-                    Icon(
-                        imageVector = Icons.Outlined.FolderOpen,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.S3 -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Cloud,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.HTTP -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Link,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
+            Box(
+                modifier = Modifier
+                    .size(iconHaloSize)
+                    .clip(CircleShape)
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.07f + 0.13f * highlightProgress)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                when (sourceType) {
+                    SourceSelectorTabType.FileShare -> {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = if (expanded) 0.9f else 0.72f)
+                        )
+                    }
+                    SourceSelectorTabType.S3 -> {
+                        Icon(
+                            imageVector = Icons.Outlined.Cloud,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = if (expanded) 0.9f else 0.72f)
+                        )
+                    }
+                    SourceSelectorTabType.HTTP -> {
+                        Icon(
+                            imageVector = Icons.Outlined.Link,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = if (expanded) 0.9f else 0.72f)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.size(12.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier = Modifier.width(animatedLabelWidth),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primary.copy(alpha = labelAlpha)
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f * labelAlpha)
+                )
+            }
         }
     }
 }
