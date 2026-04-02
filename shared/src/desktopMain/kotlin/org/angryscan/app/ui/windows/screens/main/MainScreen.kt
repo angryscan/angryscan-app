@@ -29,7 +29,7 @@ import org.angryscan.app.ui.windows.screens.main.components.SourceSelectorTabs
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
-import org.angryscan.app.ui.windows.screens.main.subscreens.PostgresScreen
+import org.angryscan.app.ui.windows.screens.main.subscreens.DatabaseScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
 import org.jetbrains.compose.resources.stringResource
 
@@ -240,7 +240,7 @@ fun MainScreen(
                         )
                     }
                     composable<MainScreenConnector.Postgres> {
-                        PostgresScreen(
+                        DatabaseScreen(
                             expandScanState = { taskId ->
                                 showScan(taskId)
                             },

@@ -109,4 +109,94 @@ internal class SqlDatabaseScreenStateConnectionTest {
             )
         )
     }
+
+    @Test
+    fun `GreenPlum requires same server fields as PostgreSQL`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.GreenPlum,
+            host = "localhost",
+            port = "5432",
+            database = "warehouse",
+            user = "gpadmin",
+            password = "secret"
+        )
+
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(5432, state.connectionPort())
+    }
+
+    @Test
+    fun `GreenPlum missing database is detected`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.GreenPlum,
+            host = "localhost",
+            port = "5432",
+            database = "",
+            user = "gpadmin",
+            password = "secret"
+        )
+
+        assertEquals(setOf(DatabaseConnectionRequiredField.DATABASE), state.missingRequiredConnectionFields())
+        assertFalse(state.hasRequiredConnectionSettings())
+    }
+
+    @Test
+    fun `GreenPlum default port is 5432`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.GreenPlum,
+            host = "localhost",
+            port = "invalid",
+            database = "warehouse",
+            user = "gpadmin",
+            password = "secret"
+        )
+
+        assertEquals(5432, state.connectionPort())
+    }
+
+    @Test
+    fun `Hive requires same server fields as PostgreSQL`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.Hive,
+            host = "localhost",
+            port = "10000",
+            database = "default",
+            user = "hive",
+            password = "hive"
+        )
+
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(10000, state.connectionPort())
+    }
+
+    @Test
+    fun `Hive missing user is detected`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.Hive,
+            host = "localhost",
+            port = "10000",
+            database = "default",
+            user = "",
+            password = "hive"
+        )
+
+        assertEquals(setOf(DatabaseConnectionRequiredField.USER), state.missingRequiredConnectionFields())
+        assertFalse(state.hasRequiredConnectionSettings())
+    }
+
+    @Test
+    fun `Hive default port is 10000`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.Hive,
+            host = "localhost",
+            port = "invalid",
+            database = "default",
+            user = "hive",
+            password = "hive"
+        )
+
+        assertEquals(10000, state.connectionPort())
+    }
 }

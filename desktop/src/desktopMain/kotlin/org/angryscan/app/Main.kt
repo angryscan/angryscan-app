@@ -79,7 +79,7 @@ suspend fun main(args: Array<String>) {
     System.setProperty(
         "skiko.renderApi",
         when (OS.currentOS()) {
-            OS.WINDOWS -> "OPENGL"
+            OS.WINDOWS -> "DIRECT3D"
             OS.LINUX -> "OPENGL"
             OS.MAC -> "METAL"
             else -> "OPENGL"

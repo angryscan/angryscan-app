@@ -9,5 +9,7 @@ import kotlinx.serialization.Serializable
 enum class DatabaseType {
     PostgreSQL,
     MySQL,
-    SQLite
+    SQLite,
+    GreenPlum,
+    Hive
 }

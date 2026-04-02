@@ -24,6 +24,8 @@ import org.angryscan.app.common.connectionPort
 import org.angryscan.app.common.hasRequiredConnectionSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.common.connectors.ConnectorGreenPlum
+import org.angryscan.app.scan.common.connectors.ConnectorHive
 import org.angryscan.app.scan.common.connectors.ConnectorMySQL
 import org.angryscan.app.scan.common.connectors.ConnectorPostgres
 import org.angryscan.app.scan.common.connectors.ConnectorSqlite
@@ -34,7 +36,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
-fun PostgresScreen(
+fun DatabaseScreen(
     expandScanState: (Int) -> Unit,
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
     setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
@@ -100,7 +102,7 @@ fun PostgresScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL -> {
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive -> {
                             OutlinedTextField(
                                 value = sqlScreenState.host,
                                 onValueChange = {
@@ -227,6 +229,7 @@ fun PostgresScreen(
                                 showErrorSnackbar(postgresConnectionErrorMessage)
                                 return@launch
                             }
+                            val rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
                             val connector = when (sqlScreenState.databaseType) {
                                 DatabaseType.PostgreSQL -> ConnectorPostgres(
                                     host = sqlScreenState.host,
@@ -234,7 +237,7 @@ fun PostgresScreen(
                                     database = sqlScreenState.database,
                                     user = sqlScreenState.user,
                                     password = sqlScreenState.password,
-                                    rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
+                                    rowLimit = rowLimit
                                 )
                                 DatabaseType.MySQL -> ConnectorMySQL(
                                     host = sqlScreenState.host,
@@ -242,21 +245,37 @@ fun PostgresScreen(
                                     database = sqlScreenState.database,
                                     user = sqlScreenState.user,
                                     password = sqlScreenState.password,
-                                    rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
+                                    rowLimit = rowLimit
+                                )
+                                DatabaseType.GreenPlum -> ConnectorGreenPlum(
+                                    host = sqlScreenState.host,
+                                    port = sqlScreenState.connectionPort(),
+                                    database = sqlScreenState.database,
+                                    user = sqlScreenState.user,
+                                    password = sqlScreenState.password,
+                                    rowLimit = rowLimit
+                                )
+                                DatabaseType.Hive -> ConnectorHive(
+                                    host = sqlScreenState.host,
+                                    port = sqlScreenState.connectionPort(),
+                                    database = sqlScreenState.database,
+                                    user = sqlScreenState.user,
+                                    password = sqlScreenState.password,
+                                    rowLimit = rowLimit
                                 )
                                 DatabaseType.SQLite -> ConnectorSqlite(
                                     filePath = sqlScreenState.filePath,
-                                    rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
+                                    rowLimit = rowLimit
                                 )
                             }
                             val taskName = when (sqlScreenState.databaseType) {
-                                DatabaseType.PostgreSQL, DatabaseType.MySQL ->
+                                DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive ->
                                     "${sqlScreenState.host}:${sqlScreenState.port}/${sqlScreenState.database}" +
                                         if (sqlScreenState.schema.isNotEmpty()) " schema: ${sqlScreenState.schema}" else ""
                                 DatabaseType.SQLite -> sqlScreenState.filePath
                             }
                             val path = when (sqlScreenState.databaseType) {
-                                DatabaseType.PostgreSQL, DatabaseType.MySQL -> sqlScreenState.schema
+                                DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive -> sqlScreenState.schema
                                 DatabaseType.SQLite -> ""
                             }
                             val task = scanService.createTask(

@@ -29,6 +29,7 @@ kotlin {
                 implementation(libs.sql.sqlite)
                 implementation(libs.sql.postgresql)
                 implementation(libs.sql.mysql)
+                implementation("org.apache.hive:hive-jdbc:4.2.0:standalone")
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)

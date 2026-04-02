@@ -69,6 +69,52 @@ internal class ConnectorSerializationTest {
     }
 
     @Test
+    fun `ConnectorGreenPlum is serialized polymorphically`() {
+        val connector: IConnector = ConnectorGreenPlum(
+            host = "localhost",
+            port = 5432,
+            database = "scanner",
+            user = "gpadmin",
+            password = "secret",
+            rowLimit = 1000
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val greenplum = assertIs<ConnectorGreenPlum>(decoded)
+
+        assertEquals("localhost", greenplum.host)
+        assertEquals(5432, greenplum.port)
+        assertEquals("scanner", greenplum.database)
+        assertEquals("gpadmin", greenplum.user)
+        assertEquals("secret", greenplum.password)
+        assertEquals(1000, greenplum.rowLimit)
+    }
+
+    @Test
+    fun `ConnectorHive is serialized polymorphically`() {
+        val connector: IConnector = ConnectorHive(
+            host = "localhost",
+            port = 10000,
+            database = "default",
+            user = "hive",
+            password = "hive",
+            rowLimit = 500
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val hive = assertIs<ConnectorHive>(decoded)
+
+        assertEquals("localhost", hive.host)
+        assertEquals(10000, hive.port)
+        assertEquals("default", hive.database)
+        assertEquals("hive", hive.user)
+        assertEquals("hive", hive.password)
+        assertEquals(500, hive.rowLimit)
+    }
+
+    @Test
     fun `connectors expose correct runtime contracts`() {
         assertIs<IFileConnector>(ConnectorFileShare())
         assertIs<IFileConnector>(ConnectorS3("access", "secret", "http://localhost:9000", "bucket"))
@@ -93,6 +139,22 @@ internal class ConnectorSerializationTest {
         ))
         assertIs<IDatabaseConnector>(ConnectorSqlite(
             filePath = "/path/to/db.sqlite",
+            rowLimit = 1000
+        ))
+        assertIs<IDatabaseConnector>(ConnectorGreenPlum(
+            host = "localhost",
+            port = 5432,
+            database = "scanner",
+            user = "gpadmin",
+            password = "secret",
+            rowLimit = 1000
+        ))
+        assertIs<IDatabaseConnector>(ConnectorHive(
+            host = "localhost",
+            port = 10000,
+            database = "default",
+            user = "hive",
+            password = "hive",
             rowLimit = 1000
         ))
     }

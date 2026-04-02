@@ -102,6 +102,8 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(ConnectorPostgres::class)
         subclass(ConnectorMySQL::class)
         subclass(ConnectorSqlite::class)
+        subclass(ConnectorGreenPlum::class)
+        subclass(ConnectorHive::class)
     }
     polymorphic(IScanEngine::class) {
         subclass(KotlinEngine::class)

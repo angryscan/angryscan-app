@@ -40,6 +40,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import org.angryscan.app.common.DatabaseType
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.db_greenplum_logo
+import org.angryscan.app.resources.db_hive_logo
 import org.angryscan.app.resources.db_mysql_logo
 import org.angryscan.app.resources.db_postgresql_logo
 import org.angryscan.app.resources.db_sqlite_logo
@@ -48,8 +50,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 
 private val SIDEBAR_WIDTH = 420.dp
-private val ITEM_HEIGHT = 56.dp
-private val SUB_ITEM_HEIGHT = 44.dp
+private val ITEM_HEIGHT = 44.dp
+private val SUB_ITEM_HEIGHT = 36.dp
 private val ACCENT_BAR_WIDTH = 4.dp
 private val ITEM_RADIUS = 14.dp
 private val SUB_ITEM_RADIUS = 10.dp
@@ -151,12 +153,16 @@ fun MainScreenSidebar(
                             DatabaseType.PostgreSQL -> Res.drawable.db_postgresql_logo
                             DatabaseType.MySQL -> Res.drawable.db_mysql_logo
                             DatabaseType.SQLite -> Res.drawable.db_sqlite_logo
+                            DatabaseType.GreenPlum -> Res.drawable.db_greenplum_logo
+                            DatabaseType.Hive -> Res.drawable.db_hive_logo
                         },
                         isSelected = currentDbType == dbType,
                         onClick = {
                             val defaultPort = when (dbType) {
                                 DatabaseType.PostgreSQL -> "5432"
                                 DatabaseType.MySQL -> "3306"
+                                DatabaseType.GreenPlum -> "5432"
+                                DatabaseType.Hive -> "10000"
                                 DatabaseType.SQLite -> sqlScreenState.port
                             }
                             screenStateSettings.sqlScreenState.value = sqlScreenState.copy(

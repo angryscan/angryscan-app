@@ -23,6 +23,10 @@ object DatabaseConnectionValidator {
                 PostgresConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.MySQL ->
                 MySqlConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.GreenPlum ->
+                GreenPlumConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.Hive ->
+                HiveConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.SQLite ->
                 SqliteConnectionValidator.validate(filePath)
         }
