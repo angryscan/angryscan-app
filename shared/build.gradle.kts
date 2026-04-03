@@ -5,6 +5,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kover)
 }
+
+configurations.configureEach {
+    exclude(group = "org.slf4j", module = "slf4j-simple")
+}
+
 kotlin {
     jvm("desktop")
     sourceSets {
