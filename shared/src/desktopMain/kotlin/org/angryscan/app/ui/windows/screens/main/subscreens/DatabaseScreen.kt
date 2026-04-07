@@ -24,6 +24,7 @@ import org.angryscan.app.common.connectionPort
 import org.angryscan.app.common.hasRequiredConnectionSettings
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.common.connectors.ConnectorCockroachDB
 import org.angryscan.app.scan.common.connectors.ConnectorGreenPlum
 import org.angryscan.app.scan.common.connectors.ConnectorHive
 import org.angryscan.app.scan.common.connectors.ConnectorMySQL
@@ -102,7 +103,7 @@ fun DatabaseScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive -> {
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB -> {
                             OutlinedTextField(
                                 value = sqlScreenState.host,
                                 onValueChange = {
@@ -263,19 +264,27 @@ fun DatabaseScreen(
                                     password = sqlScreenState.password,
                                     rowLimit = rowLimit
                                 )
+                                DatabaseType.CockroachDB -> ConnectorCockroachDB(
+                                    host = sqlScreenState.host,
+                                    port = sqlScreenState.connectionPort(),
+                                    database = sqlScreenState.database,
+                                    user = sqlScreenState.user,
+                                    password = sqlScreenState.password,
+                                    rowLimit = rowLimit
+                                )
                                 DatabaseType.SQLite -> ConnectorSqlite(
                                     filePath = sqlScreenState.filePath,
                                     rowLimit = rowLimit
                                 )
                             }
                             val taskName = when (sqlScreenState.databaseType) {
-                                DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive ->
+                                DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB ->
                                     "${sqlScreenState.host}:${sqlScreenState.port}/${sqlScreenState.database}" +
                                         if (sqlScreenState.schema.isNotEmpty()) " schema: ${sqlScreenState.schema}" else ""
                                 DatabaseType.SQLite -> sqlScreenState.filePath
                             }
                             val path = when (sqlScreenState.databaseType) {
-                                DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive -> sqlScreenState.schema
+                                DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB -> sqlScreenState.schema
                                 DatabaseType.SQLite -> ""
                             }
                             val task = scanService.createTask(

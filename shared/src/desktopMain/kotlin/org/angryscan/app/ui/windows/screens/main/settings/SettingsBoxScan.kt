@@ -208,7 +208,7 @@ fun SettingsBoxScan(
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 when (sqlScreenState.databaseType) {
-                    DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive -> {
+                    DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB -> {
                         SettingsTextField(
                             placeholder = "Schema (optional, e.g. public;auth)",
                             value = sqlScreenState.schema,

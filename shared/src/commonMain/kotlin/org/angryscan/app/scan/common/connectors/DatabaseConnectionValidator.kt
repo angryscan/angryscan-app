@@ -27,6 +27,8 @@ object DatabaseConnectionValidator {
                 GreenPlumConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.Hive ->
                 HiveConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.CockroachDB ->
+                CockroachDBConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.SQLite ->
                 SqliteConnectionValidator.validate(filePath)
         }

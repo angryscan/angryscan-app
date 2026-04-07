@@ -199,4 +199,49 @@ internal class SqlDatabaseScreenStateConnectionTest {
 
         assertEquals(10000, state.connectionPort())
     }
+
+    @Test
+    fun `CockroachDB requires same server fields as PostgreSQL`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.CockroachDB,
+            host = "localhost",
+            port = "26257",
+            database = "defaultdb",
+            user = "root",
+            password = "secret"
+        )
+
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(26257, state.connectionPort())
+    }
+
+    @Test
+    fun `CockroachDB missing database is detected`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.CockroachDB,
+            host = "localhost",
+            port = "26257",
+            database = "",
+            user = "root",
+            password = "secret"
+        )
+
+        assertEquals(setOf(DatabaseConnectionRequiredField.DATABASE), state.missingRequiredConnectionFields())
+        assertFalse(state.hasRequiredConnectionSettings())
+    }
+
+    @Test
+    fun `CockroachDB default port is 26257`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.CockroachDB,
+            host = "localhost",
+            port = "invalid",
+            database = "defaultdb",
+            user = "root",
+            password = ""
+        )
+
+        assertEquals(26257, state.connectionPort())
+    }
 }

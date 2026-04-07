@@ -11,5 +11,6 @@ enum class DatabaseType {
     MySQL,
     SQLite,
     GreenPlum,
-    Hive
+    Hive,
+    CockroachDB
 }
