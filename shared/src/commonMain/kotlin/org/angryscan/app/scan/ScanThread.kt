@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
@@ -53,7 +54,7 @@ class ScanThread : KoinComponent {
 
         scanThreadScope.launch {
             while (_started.get())
-                delay(1000)
+                delay(1000.milliseconds)
             logger.debug { "Scan thread [$scanThreadScope] stopped by request." }
         }.join()
     }
@@ -76,7 +77,7 @@ class ScanThread : KoinComponent {
                             break
                         }
                         engineCache.evictStale()
-                        delay(1000)
+                        delay(1000.milliseconds)
                         continue
                     }
 
@@ -100,7 +101,7 @@ class ScanThread : KoinComponent {
                             retryCount = 0
                             break
                         }
-                        delay(1000)
+                        delay(1000.milliseconds)
                         continue
                     }
 
