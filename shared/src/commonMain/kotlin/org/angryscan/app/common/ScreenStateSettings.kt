@@ -28,6 +28,8 @@ class ScreenStateSettings : KoinComponent {
 
     private val settingsFile: SettingsFile by inject()
 
+    private val appSettings: AppSettings by inject()
+
     @Serializable
     data class FileShareScreenState(
         var path: String = "",
@@ -92,9 +94,26 @@ class ScreenStateSettings : KoinComponent {
     var scanProfiles: MutableList<ScanProfile> = mutableStateListOf()
     var activeScanProfileName: String = "Default"
 
-    private fun defaultProfileExtensions(): MutableList<IFileType> = IFileType.getAll()
-        .filter { it !in CertFileType.entries + CodeFileType.entries }
-        .toMutableList()
+    private fun defaultProfileExtensions(): MutableList<IFileType> =
+        ScanSettingsDefaults.defaultExtensions().toMutableList()
+
+    /** Same defaults as [ScanSettings] first launch (extensions + matchers by app language). */
+    private fun seedDetectionSourcesFromDefaults() {
+        val ext = ScanSettingsDefaults.defaultExtensions()
+        val mat = ScanSettingsDefaults.defaultMatchers(appSettings)
+        fileShareScreenState.extensions.clear()
+        fileShareScreenState.extensions.addAll(ext)
+        fileShareScreenState.matchers.clear()
+        fileShareScreenState.matchers.addAll(mat)
+        s3ScreenState.extensions.clear()
+        s3ScreenState.extensions.addAll(ext)
+        s3ScreenState.matchers.clear()
+        s3ScreenState.matchers.addAll(mat)
+        httpScreenState.extensions.clear()
+        httpScreenState.extensions.addAll(ext)
+        httpScreenState.matchers.clear()
+        httpScreenState.matchers.addAll(mat)
+    }
 
     private fun defaultScanProfiles(): MutableList<ScanProfile> {
         val defaultExtensions = defaultProfileExtensions()
@@ -239,6 +258,8 @@ class ScreenStateSettings : KoinComponent {
                 if (this.scanProfiles.none { it.name == this.activeScanProfileName }) {
                     this.activeScanProfileName = this.scanProfiles.first().name
                 }
+            } else {
+                seedDetectionSourcesFromDefaults()
             }
         } catch (e: Exception) {
             logger.error(e) {
@@ -248,6 +269,7 @@ class ScreenStateSettings : KoinComponent {
                 scanProfiles.addAll(defaultScanProfiles())
                 activeScanProfileName = scanProfiles.first().name
             }
+            seedDetectionSourcesFromDefaults()
         }
         if (scanProfiles.isEmpty()) {
             scanProfiles.addAll(defaultScanProfiles())

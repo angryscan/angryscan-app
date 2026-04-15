@@ -3,8 +3,6 @@ package org.angryscan.app.ui.windows.screens.main.subscreens
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +31,8 @@ fun HTTPScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
-    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
+    setUnderSourceContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -80,10 +79,7 @@ fun HTTPScreen(
             val hasSavedDetectionSettings = screenStateSettings.httpScreenState.extensions.isNotEmpty() || 
                                            screenStateSettings.httpScreenState.matchers.isNotEmpty() || 
                                            screenStateSettings.httpScreenState.userSignatures.isNotEmpty()
-            val hasOtherSavedState = screenStateSettings.httpScreenState.path.isNotEmpty()
-            val hasSavedState = hasSavedDetectionSettings || hasOtherSavedState
-            
-            if (hasSavedState) {
+            if (hasSavedDetectionSettings) {
                 scanSettings.extensions.clear()
                 scanSettings.extensions.addAll(screenStateSettings.httpScreenState.extensions)
                 scanSettings.matchers.clear()
@@ -154,6 +150,7 @@ fun HTTPScreen(
     }
 
     setSidebarContent { }
+    setUnderSourceContent { }
     setBottomBarContent {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val controlHeight = 68.dp
@@ -162,18 +159,18 @@ fun HTTPScreen(
                 maxWidth >= 1500.dp -> 240.dp
                 maxWidth < 1200.dp -> 220.dp
                 else -> 232.dp
-            }
+            } * 0.75f
             val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
             val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
-            val pathMaxWidth = if (maxWidth >= 1500.dp) 840.dp else 760.dp
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(controlGap, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.spacedBy(controlGap, Alignment.Start)
             ) {
             Surface(
                 modifier = Modifier
-                    .widthIn(min = pathMinWidth, max = pathMaxWidth)
+                    .weight(1f)
+                    .widthIn(min = pathMinWidth)
                     .height(controlHeight)
                     .then(
                         if (selectPathError) Modifier.border(
@@ -191,9 +188,9 @@ fun HTTPScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                     OutlinedTextField(
                         value = path,
                         onValueChange = {
@@ -218,16 +215,13 @@ fun HTTPScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,
                             unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            disabledBorderColor = Color.Transparent,
+                            errorBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            errorContainerColor = Color.Transparent
                         )
-                    )
-                    Icon(
-                        imageVector = Icons.Outlined.Link,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

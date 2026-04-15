@@ -9,74 +9,228 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFilesViewModel
-import org.angryscan.app.scan.common.connectors.ConnectorFileShare
-import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.scan.common.connectors.ConnectorS3
-import org.angryscan.app.ui.extensions.color
-import org.angryscan.app.ui.extensions.text
+import org.angryscan.app.ui.extensions.toHumanReadable
+import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import kotlin.time.DurationUnit
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
-import kotlin.time.toDuration
+import kotlin.time.*
 
-val ScanListStatusColumnWidth = 156.dp
-val ScanListFoundColumnWidth = 118.dp
-val ScanListScoreColumnWidth = 96.dp
-val ScanListTimeColumnWidth = 118.dp
-val ScanListAttributesColumnWidth = 256.dp
+val ScanListFinishedColumnWidth = 92.dp
+val ScanListDurationColumnWidth = 104.dp
+val ScanListStatusColumnWidth = 110.dp
+val ScanListObjectSizeColumnWidth = 98.dp
+val ScanListPiiFoundColumnWidth = 92.dp
+val ScanListPiiSizeColumnWidth = 98.dp
+val ScanListPiiScoreColumnWidth = 92.dp
+val ScanListAttributesColumnWidth = 264.dp
 val ScanListChevronColumnWidth = 28.dp
 val ScanListRowHorizontalPadding = 12.dp
 val ScanListMainToMetricsGap = 12.dp
 val ScanListMetricsWidth =
-    ScanListStatusColumnWidth +
-        ScanListFoundColumnWidth +
-        ScanListScoreColumnWidth +
-        ScanListTimeColumnWidth +
+    ScanListFinishedColumnWidth +
+        ScanListDurationColumnWidth +
+        ScanListStatusColumnWidth +
+        ScanListObjectSizeColumnWidth +
+        ScanListPiiFoundColumnWidth +
+        ScanListPiiSizeColumnWidth +
+        ScanListPiiScoreColumnWidth +
+        ScanListAttributesColumnWidth +
         ScanListChevronColumnWidth
+
+@Composable
+fun ScanTaskHeaderRow(
+    modifier: Modifier = Modifier
+) {
+    ScanTaskHeaderRow(
+        modifier = modifier,
+        statusFilter = null,
+        statusCounts = null,
+        onStatusFilterChange = null
+    )
+}
+
+@Composable
+fun ScanTaskHeaderRow(
+    modifier: Modifier = Modifier,
+    statusFilter: StatusFilter? = null,
+    statusCounts: Map<StatusFilter, Int>? = null,
+    onStatusFilterChange: ((StatusFilter) -> Unit)? = null
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ScanListRowHorizontalPadding, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnFinishedTime), modifier = Modifier.width(ScanListFinishedColumnWidth), centered = false)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnDuration), modifier = Modifier.width(ScanListDurationColumnWidth), centered = true)
+        StatusHeaderCell(
+            modifier = Modifier.width(ScanListStatusColumnWidth),
+            statusFilter = statusFilter,
+            statusCounts = statusCounts,
+            onStatusFilterChange = onStatusFilterChange
+        )
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPath), modifier = Modifier.weight(1f).padding(end = 6.dp))
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnObjectSize), modifier = Modifier.width(ScanListObjectSizeColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiFound), modifier = Modifier.width(ScanListPiiFoundColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiSize), modifier = Modifier.width(ScanListPiiSizeColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiScore), modifier = Modifier.width(ScanListPiiScoreColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiAttributesFound), modifier = Modifier.width(ScanListAttributesColumnWidth), centered = true)
+        Spacer(modifier = Modifier.width(ScanListChevronColumnWidth))
+    }
+    HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.22f))
+}
+
+@Composable
+private fun StatusHeaderCell(
+    modifier: Modifier,
+    statusFilter: StatusFilter?,
+    statusCounts: Map<StatusFilter, Int>?,
+    onStatusFilterChange: ((StatusFilter) -> Unit)?
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    var expanded by remember { mutableStateOf(false) }
+    val clickable = statusFilter != null && onStatusFilterChange != null
+
+    Box(
+        modifier = modifier.heightIn(min = 22.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!clickable) {
+            Text(
+                text = stringResource(Res.string.ScansPage_ColumnStatus),
+                style = MaterialTheme.typography.labelMedium,
+                color = colorScheme.onSurfaceVariant.copy(alpha = 0.92f),
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { expanded = true }
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .padding(horizontal = 0.dp, vertical = 0.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = stringResource(Res.string.ScansPage_ColumnStatus),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.92f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Outlined.ArrowDropDown,
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                StatusFilter.entries.forEach { item ->
+                    val count = statusCounts?.get(item)
+                    DropdownMenuItem(
+                        leadingIcon = {
+                            if (statusFilter == item) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Check,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        text = {
+                            Text(
+                                text = if (count != null) "${item.label()} ($count)" else item.label()
+                            )
+                        },
+                        onClick = {
+                            onStatusFilterChange?.invoke(item)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeaderCell(
+    text: String,
+    modifier: Modifier,
+    centered: Boolean = false,
+) {
+    Box(modifier = modifier, contentAlignment = if (centered) Alignment.Center else Alignment.CenterStart) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.92f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = if (centered) TextAlign.Center else TextAlign.Start,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
 
 @OptIn(ExperimentalTime::class)
 @Composable
 fun ScanTaskCard(
     taskEntity: TaskEntityViewModel,
     onClick: () -> Unit,
-    currentTime: Instant
+    currentTime: Instant,
+    attributesExpanded: Boolean = false,
+    onAttributesExpandClick: (() -> Unit)? = null,
 ) {
     val state by taskEntity.state.collectAsState()
-    val fastScan by taskEntity.fastScan.collectAsState()
     val path by taskEntity.path.collectAsState()
     val name by taskEntity.name.collectAsState()
     val startedAt by taskEntity.startedAt.collectAsState()
     val finishedAt by taskEntity.finishedAt.collectAsState()
     val pausedAt by taskEntity.pausedAt.collectAsState()
     val foundFiles by taskEntity.foundFiles.collectAsState()
-    val totalFiles by taskEntity.totalFiles.collectAsState()
+    val folderSize by taskEntity.folderSize.collectAsState()
+    val foundFilesSize by taskEntity.foundFilesSize.collectAsState()
     val foundAttributes by taskEntity.foundAttributes.collectAsState()
 
     val pausedAtInstant = pausedAt?.toInstant(TimeZone.currentSystemDefault())
@@ -88,62 +242,38 @@ fun ScanTaskCard(
     val taskFilesViewModel = koinInject<TaskFilesViewModel> { parametersOf(taskEntity.dbTask) }
     val scoreSum by taskFilesViewModel.scoreSum.collectAsState()
 
-    val scanTime = if (startedAt != null) {
+    val scanDuration: Duration = if (startedAt != null) {
         when (state) {
             TaskState.COMPLETED -> finishedAt!!.toInstant(TimeZone.currentSystemDefault()) - startedAtInstant!! - deltaDuration
             TaskState.STOPPED, TaskState.PENDING -> (pausedAtInstant ?: startedAtInstant!!) - startedAtInstant!! - deltaDuration
             else -> currentTime - startedAtInstant!! - deltaDuration
         }
-            .toComponents { days, hours, minutes, seconds, _ ->
-                if (days > 0)
-                    "$days:$hours:${minutes.toString().padStart(2, '0')}" +
-                            ":${seconds.toString().padStart(2, '0')}"
-                else if (hours > 0)
-                    "$hours:${minutes.toString().padStart(2, '0')}" +
-                            ":${seconds.toString().padStart(2, '0')}"
-                else
-                    minutes.toString().padStart(2, '0') +
-                            ":${seconds.toString().padStart(2, '0')}"
-            }
     } else {
-        "00:00:00"
+        0L.toDuration(DurationUnit.SECONDS)
     }
 
     val rowShape = RoundedCornerShape(12.dp)
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val colorScheme = MaterialTheme.colorScheme
-    val sourceLabel = when (taskEntity.dbTask.connector) {
-        is ConnectorS3 -> stringResource(Res.string.MainScreen_SourceType_S3)
-        is ConnectorHTTP -> stringResource(Res.string.MainScreen_SourceType_HTTP)
-        is ConnectorFileShare -> stringResource(Res.string.MainScreen_SourceType_FileShare)
-        else -> stringResource(Res.string.ScansPage_SourceFallback)
+    val title = name ?: path.substringAfterLast('/').substringAfterLast('\\')
+    val finishedLabel = formatFinishedLabel(finishedAt, currentTime)
+    val durationLabel = formatShortDuration(scanDuration)
+    val statusLabel = taskStatusLabel(state)
+    val objectSizeLabel = compactSize(folderSize)
+    val piiSizeLabel = if (foundFilesSize > 0) compactSize(foundFilesSize.toHumanReadable()) else "-"
+    val riskLevelLabel = when {
+        scoreSum >= 500L -> stringResource(Res.string.ScansPage_RiskLevel_High)
+        scoreSum >= 100L -> stringResource(Res.string.ScansPage_RiskLevel_Medium)
+        else -> stringResource(Res.string.ScansPage_RiskLevel_Low)
     }
-    val title = name ?: path
-    val startFull = startedAt?.let(::formatDateTimeWithSeconds) ?: "-"
-    val finishFull = finishedAt?.let(::formatDateTimeWithSeconds) ?: "-"
-    val startTime = startedAt?.let(::formatTimeWithSeconds) ?: "-"
-    val finishTime = finishedAt?.let(::formatTimeWithSeconds) ?: "-"
-    val detailsTooltip = buildString {
-        append(stringResource(Res.string.ScansPage_StartLabel)).append(": ").append(startFull)
-        append('\n')
-        append(stringResource(Res.string.ScansPage_FinishLabel)).append(": ").append(finishFull)
-    }
-    val details = buildString {
-        append(stringResource(Res.string.ScansPage_StartLabel)).append(' ')
-        append(startTime)
-        append(" · ").append(stringResource(Res.string.ScansPage_FinishLabel)).append(' ')
-        append(finishTime)
-        append(" · ")
-        append(sourceLabel)
-        if (fastScan) append(" · ").append(stringResource(Res.string.ScansPage_SourceFast))
-    }
-    val filesLabel = "$foundFiles / $totalFiles"
+    val valueTextStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
     val sortedAttributes = remember(foundAttributes) {
         foundAttributes.toList().sortedByDescending { it.second }
     }
     val topAttributes = remember(sortedAttributes) { sortedAttributes.take(2) }
     val extraAttributesCount = (sortedAttributes.size - 2).coerceAtLeast(0)
+    val extraAttributes = remember(sortedAttributes) { sortedAttributes.drop(2) }
 
     Row(
         modifier = Modifier
@@ -151,13 +281,13 @@ fun ScanTaskCard(
             .hoverable(interactionSource = interactionSource)
             .clip(rowShape)
             .background(
-                if (isHovered) colorScheme.surfaceVariant.copy(alpha = 0.34f)
-                else colorScheme.surfaceVariant.copy(alpha = 0.16f),
+                if (isHovered) colorScheme.surfaceVariant.copy(alpha = 0.46f)
+                else colorScheme.surfaceVariant.copy(alpha = 0.28f),
                 rowShape
             )
             .border(
                 1.dp,
-                if (isHovered) colorScheme.outlineVariant.copy(alpha = 0.55f) else colorScheme.outlineVariant.copy(alpha = 0.26f),
+                if (isHovered) colorScheme.outlineVariant.copy(alpha = 0.7f) else colorScheme.outlineVariant.copy(alpha = 0.48f),
                 rowShape
             )
             .clickable(onClick = onClick)
@@ -165,40 +295,149 @@ fun ScanTaskCard(
             .padding(horizontal = ScanListRowHorizontalPadding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
+        Box(
+            modifier = Modifier
+                .width(ScanListFinishedColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = finishedLabel,
+                style = valueTextStyle,
+                color = colorScheme.onSurface,
+                maxLines = 1
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .width(ScanListDurationColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = durationLabel,
+                style = valueTextStyle,
+                color = colorScheme.onSurface,
+                maxLines = 1
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .width(ScanListStatusColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = statusLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .padding(end = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+            contentAlignment = Alignment.CenterStart
         ) {
-            val titleInteractionSource = remember { MutableInteractionSource() }
-            val isTitleHovered by titleInteractionSource.collectIsHoveredAsState()
             DescriptionTooltip(description = path) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (isTitleHovered) colorScheme.primary else colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .hoverable(interactionSource = titleInteractionSource)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                )
-            }
-            DescriptionTooltip(description = detailsTooltip) {
-                Text(
-                    text = details,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.92f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                        .fillMaxWidth()
+                        .pointerHoverIcon(PointerIcon.Hand),
+                    textAlign = TextAlign.Start
                 )
             }
         }
 
         Box(
-            modifier = Modifier.width(ScanListAttributesColumnWidth),
+            modifier = Modifier
+                .width(ScanListObjectSizeColumnWidth)
+                .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = objectSizeLabel,
+                style = valueTextStyle,
+                color = colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .width(ScanListPiiFoundColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            DescriptionTooltip(
+                description = stringResource(Res.string.ScansPage_TooltipPiiFoundFiles, foundFiles)
+            ) {
+                Text(
+                    text = foundFiles.toString(),
+                    style = valueTextStyle,
+                    color = colorScheme.onSurface,
+                    maxLines = 1
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .width(ScanListPiiSizeColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            DescriptionTooltip(
+                description = stringResource(Res.string.ScansPage_TooltipPiiSizeFilesTotal, piiSizeLabel)
+            ) {
+                Text(
+                    text = piiSizeLabel,
+                    style = valueTextStyle,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .width(ScanListPiiScoreColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            DescriptionTooltip(
+                description = stringResource(
+                    Res.string.ScansPage_TooltipPiiScoreLogic,
+                    riskLevelLabel,
+                    scoreSum
+                )
+            ) {
+                Text(
+                    text = scoreSum.toString(),
+                    style = valueTextStyle,
+                    color = colorScheme.onSurface,
+                    maxLines = 1
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .width(ScanListAttributesColumnWidth)
+                .heightIn(min = 22.dp),
+            contentAlignment = if (topAttributes.isEmpty()) Alignment.Center else Alignment.CenterStart
         ) {
             if (topAttributes.isEmpty()) {
                 Text(
@@ -211,152 +450,272 @@ fun ScanTaskCard(
             } else {
                 val first = topAttributes.getOrNull(0)
                 val second = topAttributes.getOrNull(1)
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 2.dp, vertical = 1.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    if (first != null) {
-                        AttributeHoverText(
-                            name = first.first.name,
-                            count = first.second
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (first != null) {
+                            AttributeHoverText(
+                                matcher = first.first,
+                                count = first.second
+                            )
+                        }
+                        if (second != null) {
+                            Text(
+                                text = ", ",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                            )
+                            AttributeHoverText(
+                                matcher = second.first,
+                                count = second.second
+                            )
+                        }
+
+                        if (extraAttributesCount > 0) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            val label = if (attributesExpanded) "Collapse" else "+$extraAttributesCount"
+                            if (onAttributesExpandClick != null) {
+                                val expandInteractionSource = remember { MutableInteractionSource() }
+                                val isExpandHovered by expandInteractionSource.collectIsHoveredAsState()
+                                Row(
+                                    modifier = Modifier
+                                        .hoverable(interactionSource = expandInteractionSource)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(
+                                            if (isExpandHovered) colorScheme.primary.copy(alpha = 0.16f)
+                                            else colorScheme.primary.copy(alpha = 0.10f),
+                                            RoundedCornerShape(6.dp)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isExpandHovered) colorScheme.primary.copy(alpha = 0.30f)
+                                            else colorScheme.outlineVariant.copy(alpha = 0.32f),
+                                            shape = RoundedCornerShape(6.dp)
+                                        )
+                                        .clickable(
+                                            interactionSource = expandInteractionSource,
+                                            indication = null,
+                                            onClick = onAttributesExpandClick
+                                        )
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isExpandHovered) colorScheme.primary else colorScheme.primary.copy(alpha = 0.95f),
+                                        maxLines = 1
+                                    )
+                                    if (attributesExpanded) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.ExpandLess,
+                                            contentDescription = null,
+                                            tint = colorScheme.primary.copy(alpha = 0.95f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
                     }
-                    if (second != null) {
-                        Text(
-                            text = ", ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                        )
-                        AttributeHoverText(
-                            name = second.first.name,
-                            count = second.second
-                        )
-                    }
-                    if (extraAttributesCount > 0) {
-                        Text(
-                            text = if (first != null || second != null) ", +$extraAttributesCount" else "+$extraAttributesCount",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                        )
+
+                    if (attributesExpanded && extraAttributes.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(0.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            extraAttributes.forEachIndexed { index, (attr, count) ->
+                                if (index != 0) {
+                                    Text(
+                                        text = ", ",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                                    )
+                                }
+                                AttributeHoverText(matcher = attr, count = count)
+                            }
+                        }
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.width(ScanListMainToMetricsGap))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.width(ScanListMetricsWidth)
+        Box(
+            modifier = Modifier.width(ScanListChevronColumnWidth),
+            contentAlignment = Alignment.CenterEnd
         ) {
-            Box(
-                modifier = Modifier.width(ScanListStatusColumnWidth),
-                contentAlignment = Alignment.Center
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun taskStatusLabel(state: TaskState): String = when (state) {
+    TaskState.SCANNING, TaskState.SEARCHING -> stringResource(Res.string.TaskStateChipFilter_Active)
+    TaskState.STOPPED, TaskState.PENDING -> stringResource(Res.string.TaskStateChipFilter_Paused)
+    TaskState.FAILED -> stringResource(Res.string.TaskStateChipFilter_Error)
+    TaskState.COMPLETED -> stringResource(Res.string.TaskStateChipFilter_Completed)
+    TaskState.LOADING -> "—"
+}
+
+@Composable
+fun ScanTaskAttributesSubRow(
+    taskEntity: TaskEntityViewModel,
+    modifier: Modifier = Modifier,
+    onCollapseClick: () -> Unit
+) {
+    val foundAttributes by taskEntity.foundAttributes.collectAsState()
+    val sortedAttributes = remember(foundAttributes) {
+        foundAttributes.toList().sortedByDescending { it.second }
+    }
+    val colorScheme = MaterialTheme.colorScheme
+
+    if (sortedAttributes.isEmpty()) return
+
+    val rowShape = RoundedCornerShape(12.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(rowShape)
+            .background(colorScheme.surfaceVariant.copy(alpha = 0.10f), rowShape)
+            .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.22f), rowShape)
+            .padding(horizontal = ScanListRowHorizontalPadding, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Attributes",
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 10.sp,
+                color = colorScheme.onSurfaceVariant
+            )
+            val collapseInteractionSource = remember { MutableInteractionSource() }
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .hoverable(interactionSource = collapseInteractionSource)
+                    .clickable(
+                        interactionSource = collapseInteractionSource,
+                        indication = null,
+                        onClick = onCollapseClick
+                    )
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(state.color().copy(alpha = 0.18f))
-                        .border(1.dp, state.color().copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
+                Text(
+                    text = "Collapse",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontSize = 10.sp,
+                    color = colorScheme.primary.copy(alpha = 0.92f)
+                )
+                Icon(
+                    imageVector = Icons.Outlined.ExpandLess,
+                    contentDescription = null,
+                    tint = colorScheme.primary.copy(alpha = 0.92f),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            sortedAttributes.forEachIndexed { index, (attr, count) ->
+                DescriptionTooltip(description = stringResource(Res.string.ScansPage_TooltipFound, count)) {
                     Text(
-                        text = state.text(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = state.color(),
-                        maxLines = 1
+                        text = attr.composableName(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
                     )
                 }
-            }
-
-            Column(
-                modifier = Modifier
-                    .width(ScanListFoundColumnWidth),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = filesLabel,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                    color = colorScheme.onSurface,
-                    maxLines = 1
-                )
-                Text(
-                    text = stringResource(Res.string.ScansPage_MetricFoundFiles),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                )
-            }
-
-            Column(
-                modifier = Modifier.width(ScanListScoreColumnWidth),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = scoreSum.toString(),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                    color = colorScheme.onSurface,
-                    maxLines = 1
-                )
-                Text(
-                    text = stringResource(Res.string.ScansPage_MetricScore),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                )
-            }
-
-            Column(
-                modifier = Modifier.width(ScanListTimeColumnWidth),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = scanTime,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                    color = colorScheme.onSurface,
-                    maxLines = 1
-                )
-                Text(
-                    text = stringResource(Res.string.ScansPage_MetricDuration),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                )
-            }
-            Box(
-                modifier = Modifier.width(ScanListChevronColumnWidth),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
-                    contentDescription = null,
-                    tint = colorScheme.onSurfaceVariant
-                )
+                if (index != sortedAttributes.lastIndex) {
+                    Text(
+                        text = "·",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.outline.copy(alpha = 0.65f),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                }
             }
         }
     }
 }
 
-private fun formatDateTimeWithSeconds(value: LocalDateTime): String {
-    val dd = value.day.toString().padStart(2, '0')
-    val mmDate = value.month.ordinal.plus(1).toString().padStart(2, '0')
-    val yyyy = value.year.toString().padStart(4, '0')
-    val hh = value.hour.toString().padStart(2, '0')
-    val mmTime = value.minute.toString().padStart(2, '0')
-    val ss = value.second.toString().padStart(2, '0')
-    return "$dd.$mmDate.$yyyy $hh:$mmTime:$ss"
+@OptIn(ExperimentalTime::class)
+private fun formatFinishedLabel(
+    finishedAt: LocalDateTime?,
+    currentTime: Instant
+): String {
+    if (finishedAt == null) return "-"
+    val zone = TimeZone.currentSystemDefault()
+    val currentDate = currentTime.toLocalDateTime(zone).date
+    val yesterdayDate = (currentTime - 24.toDuration(DurationUnit.HOURS)).toLocalDateTime(zone).date
+    val finishedDate = finishedAt.date
+    return when {
+        finishedDate == currentDate -> "Today"
+        finishedDate == yesterdayDate -> "Yesterday"
+        else -> formatDateShort(finishedAt)
+    }
 }
 
-private fun formatTimeWithSeconds(value: LocalDateTime): String {
-    val hh = value.hour.toString().padStart(2, '0')
-    val mmTime = value.minute.toString().padStart(2, '0')
-    val ss = value.second.toString().padStart(2, '0')
-    return "$hh:$mmTime:$ss"
+private fun formatDateShort(value: LocalDateTime): String {
+    val dd = value.day.toString().padStart(2, '0')
+    val mmDate = value.month.ordinal.plus(1).toString().padStart(2, '0')
+    val yy = (value.year % 100).toString().padStart(2, '0')
+    return "$dd.$mmDate.$yy"
+}
+
+private fun formatShortDuration(duration: Duration): String {
+    val hours = duration.inWholeHours
+    if (hours > 0) return "${hours}h"
+    val minutes = duration.inWholeMinutes
+    if (minutes > 0) return "${minutes}m"
+    val seconds = duration.inWholeSeconds
+    return "${seconds}s"
+}
+
+private fun compactSize(value: String?): String {
+    if (value.isNullOrBlank()) return "-"
+    return value
+        .replace(" ", "")
+        .replace("MB", "Mb")
+        .replace("KB", "Kb")
+        .replace("GB", "Gb")
+        .replace("TB", "Tb")
 }
 
 @Composable
 private fun AttributeHoverText(
-    name: String,
+    matcher: IMatcher,
     count: Int
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -365,7 +724,7 @@ private fun AttributeHoverText(
 
     DescriptionTooltip(description = stringResource(Res.string.ScansPage_TooltipFound, count)) {
         Text(
-            text = name,
+            text = matcher.composableName(),
             style = MaterialTheme.typography.bodySmall,
             color = if (isHovered) colorScheme.primary else colorScheme.onSurfaceVariant,
             maxLines = 1,

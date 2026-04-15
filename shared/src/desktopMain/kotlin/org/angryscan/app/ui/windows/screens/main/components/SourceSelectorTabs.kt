@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -40,7 +42,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 @Composable
 fun SourceSelectorTabs(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLabelClick: () -> Unit = {},
+    settingsModeActive: Boolean = false,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
@@ -62,33 +66,39 @@ fun SourceSelectorTabs(
             isSelected = selectedRoute == MainScreenConnector.FileShare,
             label = "File Share",
             sourceType = SourceSelectorTabType.FileShare,
+            settingsModeActive = settingsModeActive,
             onClick = {
                 if (selectedRoute != MainScreenConnector.FileShare) {
                     navController.navigate(MainScreenConnector.FileShare)
                 }
-            }
+            },
+            onLabelClick = onLabelClick
         )
         SourceSelectorTabItem(
             modifier = Modifier,
             isSelected = selectedRoute == MainScreenConnector.S3,
             label = "AWS S3",
             sourceType = SourceSelectorTabType.S3,
+            settingsModeActive = settingsModeActive,
             onClick = {
                 if (selectedRoute != MainScreenConnector.S3) {
                     navController.navigate(MainScreenConnector.S3)
                 }
-            }
+            },
+            onLabelClick = onLabelClick
         )
         SourceSelectorTabItem(
             modifier = Modifier,
             isSelected = selectedRoute == MainScreenConnector.HTTP,
             label = "HTTP",
             sourceType = SourceSelectorTabType.HTTP,
+            settingsModeActive = settingsModeActive,
             onClick = {
                 if (selectedRoute != MainScreenConnector.HTTP) {
                     navController.navigate(MainScreenConnector.HTTP)
                 }
-            }
+            },
+            onLabelClick = onLabelClick
         )
     }
 }
@@ -101,7 +111,9 @@ private fun RowScope.SourceSelectorTabItem(
     isSelected: Boolean,
     label: String,
     sourceType: SourceSelectorTabType,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLabelClick: () -> Unit,
+    settingsModeActive: Boolean,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
@@ -134,6 +146,8 @@ private fun RowScope.SourceSelectorTabItem(
         ),
         label = "sourceLabelAlpha"
     )
+    val labelInteractionSource = remember { MutableInteractionSource() }
+    val isLabelHovered by labelInteractionSource.collectIsHoveredAsState()
     val animatedLabelWidth by animateDpAsState(
         targetValue = if (expanded) 126.dp else 0.dp,
         animationSpec = spring(
@@ -227,12 +241,20 @@ private fun RowScope.SourceSelectorTabItem(
                     text = label,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                    textDecoration = if (isLabelHovered || (settingsModeActive && isSelected)) TextDecoration.Underline else TextDecoration.None,
                     maxLines = 1,
                     overflow = TextOverflow.Clip,
                     color = if (isSelected)
                         MaterialTheme.colorScheme.primary.copy(alpha = labelAlpha)
                     else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f * labelAlpha)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f * labelAlpha),
+                    modifier = Modifier
+                        .hoverable(interactionSource = labelInteractionSource)
+                        .clickable(
+                            interactionSource = labelInteractionSource,
+                            indication = null,
+                            onClick = onLabelClick
+                        )
                 )
             }
         }
