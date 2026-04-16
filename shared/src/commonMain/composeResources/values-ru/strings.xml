@@ -46,6 +46,8 @@
     <string name="trayExit">Выход</string>
     <string name="trayOpen">Открыть</string>
     <string name="trayHide">Сложить</string>
+    <string name="scanCompletedNotificationTitle">Сканирование завершено</string>
+    <string name="scanCompletedNotificationMessage">Нажмите, чтобы открыть завершенную задачу</string>
     <string name="statTime">Время сканирования: %1$d:%2$d:%3$d</string>
     <string name="statTotalFile">Всего файлов в папке: %1$d (%2$s)</string>
     <string name="statFilesSelected">Выбрано для сканирования: %1$d (%2$s)</string>
@@ -89,10 +91,13 @@
     <string name="MainScreen-SourceType-FileShare">Файловая система</string>
     <string name="MainScreen-SourceType-S3">AWS S3</string>
     <string name="MainScreen-SourceType-HTTP">HTTP</string>
+    <string name="MainScreen-SourceType-Postgres">SQL Database</string>
     <string name="MainScreen-Placeholder-HTTP">Введите URL через пробел или точку с запятой (;)</string>
+    <string name="MainScreen-Placeholder-Postgres">Схема для сканирования (необязательно, например public)</string>
     <string name="MainScreen-Hint-FileShare">Папка, файлы или txt/csv с путями</string>
     <string name="MainScreen-Hint-S3">Путь внутри bucket (например folder/subfolder/)</string>
     <string name="MainScreen-Hint-HTTP">Один или несколько URL (http:// или https://)</string>
+    <string name="MainScreen-Hint-Postgres">Имя схемы для ограничения сканирования или пустое значение для всех таблиц</string>
     <string name="MainScreen-QuickStart-Title">Быстрый старт</string>
     <string name="MainScreen-QuickStart-Step1">1. Выберите тип источника</string>
     <string name="MainScreen-QuickStart-Step2">2. Укажите путь или URL</string>
@@ -157,6 +162,7 @@
     <string name="MainScreen-ScanHint-FileShare">Выберите или введите путь выше, чтобы активировать кнопку «Сканировать»</string>
     <string name="MainScreen-ScanHint-S3">Введите путь выше и настройте подключение S3 во вкладке «Параметры сканирования», чтобы активировать кнопку</string>
     <string name="MainScreen-ScanHint-HTTP">Введите один или несколько URL выше, чтобы активировать кнопку «Сканировать»</string>
+    <string name="MainScreen-ScanHint-Postgres">Настройте подключение SQL Database во вкладке параметров сканирования, чтобы активировать кнопку</string>
 
     <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
     <string name="ScanSettings-FileExtensions">Выберите расширения файлов для сканирования:</string>
@@ -419,6 +425,10 @@
     <string name="ScanResultScreen-ClipboardCopiedMessage">Скопировано в буфер обмена</string>
 
     <string name="Result-ColumnFile">Файл</string>
+    <string name="Result-CardSchema">Схема</string>
+    <string name="Result-CardTable">Таблица</string>
+    <string name="Result-ColumnTable">Таблица</string>
+    <string name="Result-ColumnColumn">Колонка</string>
     <string name="Result-ColumnAttributes">Что найдено</string>
     <string name="Result-ColumnCount">Кол-во</string>
     <string name="Result-ColumnSize">Размер</string>
@@ -455,6 +465,7 @@
     <string name="LocationWindow-ExportRowsCount">Строк экспортировано: %1$d</string>
     <string name="LocationWindow-ExportError">Ошибка при экспортировании строк</string>
     <string name="LocationWindow-ExportAllRows">Экспортировать все строки</string>
+    <string name="LocationWindow-ExportRowsStarted">Экспортирование строк...</string>
     <string name="Location-LongScanTitle">Глубокий поиск местонахождения атрибутов</string>
     <string name="Location-LongScanText">Поиск местонахождения атрибутов занимает много времени. Вы уверены, что хотите продолжить?</string>
     <string name="Location-LineNumber">Строка %1$d</string>
@@ -463,4 +474,9 @@
     <string name="Validation-NoExtensionsMessage">Пожалуйста, выберите хотя бы одно расширение файла для сканирования.</string>
     <string name="Validation-NoMatchersTitle">Не выбраны функции детектирования</string>
     <string name="Validation-NoMatchersMessage">Пожалуйста, выберите хотя бы одну функцию детектирования для сканирования.</string>
+    <string name="ScanSettings-PostgresTestConnection">Проверить подключение</string>
+    <string name="ScanSettings-PostgresTestingConnection">Проверяем подключение...</string>
+    <string name="ScanSettings-PostgresConnectionSuccess">Подключение успешно установлено.</string>
+    <string name="Validation-PostgresConnectionTitle">Ошибка подключения к базе данных</string>
+    <string name="Validation-PostgresConnectionMessage">Не удалось подключиться к базе данных. Проверьте корректность данных для подключения к БД.</string>
 </resources>

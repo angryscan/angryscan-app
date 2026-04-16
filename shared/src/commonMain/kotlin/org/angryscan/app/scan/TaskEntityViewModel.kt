@@ -2,12 +2,9 @@ package org.angryscan.app.scan
 
 import androidx.lifecycle.ViewModel
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -15,8 +12,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.exposed.sql.*
@@ -38,6 +37,7 @@ class TaskEntityViewModel(
     state: TaskState = TaskState.LOADING
 ) : ViewModel(), KoinComponent {
     private val database: DatabaseConnector by inject()
+    private val tasksViewModel: TasksViewModel by inject()
 
     private val taskScope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 
@@ -259,6 +259,7 @@ class TaskEntityViewModel(
         logger.debug { "Task state changed to $state. ID: ${_id.value}. Path: \"${_path.value}\"" }
 
         taskScope.launch {
+            val previousState = _state.value
             while (_busy.value)
                 delay(1000)
 
@@ -339,6 +340,11 @@ class TaskEntityViewModel(
             }
 
             _state.value = state
+            if (previousState != TaskState.COMPLETED && state == TaskState.COMPLETED) {
+                tasksViewModel.notifyTaskCompleted(_id.value)
+            } else if (previousState == TaskState.COMPLETED && state != TaskState.COMPLETED) {
+                tasksViewModel.resetTaskCompletionNotification(_id.value)
+            }
 
             if (state == TaskState.STOPPED) {
                 while (true) {
@@ -409,11 +415,12 @@ class TaskEntityViewModel(
             if (_state.value == TaskState.PENDING || _state.value == TaskState.SEARCHING || rescan) {
                 if (_state.value != TaskState.SEARCHING)
                     setState(TaskState.SEARCHING)
+                val fileCreationJobs = mutableListOf<Job>()
                 val filesCounters = path.split(";")
                     .map { dir ->
                         try {
-                            scanDirectory(dir, extensions) {
-                                taskScope.launch {
+                            scanObjects(dir, extensions) {
+                                fileCreationJobs.add(taskScope.launch {
                                     database.transaction {
                                         TaskFile.new {
                                             this.task = dbTask
@@ -422,7 +429,7 @@ class TaskEntityViewModel(
                                             this.size = it.size
                                         }
                                     }
-                                }
+                                })
                             }
                         } catch (e: Exception) {
                             logger.error { "Failed to scan directory: $dir. ${e.message}" }
@@ -430,17 +437,19 @@ class TaskEntityViewModel(
                             return@launch
                         }
                     }
-                val directorySize = FilesCounter()
+                fileCreationJobs.joinAll()
+
+                val directorySize = ObjectCounter()
                 filesCounters.forEach {
                     directorySize.plus(it)
                 }
 
                 database.transaction {
-                    dbTask.size = directorySize.filesSize.toString()
-                    dbTask.filesCount = directorySize.filesCount
+                    dbTask.size = directorySize.objectSize.toString()
+                    dbTask.filesCount = directorySize.objectCount
                 }
-                _totalFiles.value = directorySize.filesCount
-                _folderSize.value = directorySize.filesSize.toString()
+                _totalFiles.value = directorySize.objectCount
+                _folderSize.value = directorySize.objectSize.toString()
             }
 
             setState(TaskState.SCANNING)
@@ -448,20 +457,24 @@ class TaskEntityViewModel(
         }
     }
 
-    private suspend fun scanDirectory(
-        dir: String,
+    private suspend fun scanObjects(
+        path: String,
         extensions: List<IFileType>,
         fileSelected: (file: FoundedFile) -> Unit
-    ): FilesCounter {
-        try {
-            val res = dbTask.connector.scanDirectory(
-                dir = dir,
+    ): ObjectCounter {
+        return when (val connector = dbTask.connector) {
+            is IFileConnector -> connector.scanDirectory(
+                dir = path,
                 extensions = extensions,
                 fileSelected = fileSelected
             )
-            return res
-        } catch (e: Exception) {
-            throw e
+
+            is IDatabaseConnector -> connector.scanTables(
+                path = path,
+                tableSelected = fileSelected
+            )
+
+            else -> throw IllegalArgumentException("Unsupported connector type: ${connector::class.simpleName}")
         }
     }
 }

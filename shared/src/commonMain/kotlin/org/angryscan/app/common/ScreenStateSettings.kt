@@ -77,6 +77,27 @@ class ScreenStateSettings : KoinComponent {
     )
 
     @Serializable
+    data class SqlDatabaseScreenState(
+        var databaseType: DatabaseType = DatabaseType.PostgreSQL,
+        var schema: String = "",
+        var host: String = "",
+        var port: String = "5432",
+        var database: String = "",
+        var user: String = "",
+        var password: String = "",
+        var filePath: String = "",
+        var rowLimit: String = "1000",
+        @Serializable
+        val extensions: MutableList<IFileType> = mutableStateListOf(),
+        @Serializable
+        val matchers: MutableList<IMatcher> = mutableStateListOf(),
+        @Serializable
+        val userSignatures: MutableList<UserSignature> = mutableStateListOf(),
+        @Serializable(with = MutableStateSerializer::class)
+        var fastScan: MutableState<Boolean> = mutableStateOf(false)
+    )
+
+    @Serializable
     data class ScanProfile(
         var name: String = "Default",
         var fastScan: Boolean = false,
@@ -91,6 +112,8 @@ class ScreenStateSettings : KoinComponent {
     var fileShareScreenState = FileShareScreenState()
     var s3ScreenState = S3ScreenState()
     var httpScreenState = HTTPScreenState()
+    @Serializable(with = MutableStateSerializer::class)
+    var sqlScreenState = mutableStateOf(SqlDatabaseScreenState())
     var scanProfiles: MutableList<ScanProfile> = mutableStateListOf()
     var activeScanProfileName: String = "Default"
 
@@ -235,6 +258,18 @@ class ScreenStateSettings : KoinComponent {
                     prop.httpScreenState.userSignatures.filter { it in userSignatureSettings.userSignatures }
                 )
                 this.httpScreenState.fastScan = prop.httpScreenState.fastScan
+
+                // Restore SqlDatabase state (migration: old PostgresScreenState → SqlDatabaseScreenState, databaseType defaults to PostgreSQL)
+                this.sqlScreenState.value = prop.sqlScreenState.value
+                this.sqlScreenState.value.extensions.clear()
+                this.sqlScreenState.value.extensions.addAll(prop.sqlScreenState.value.extensions)
+                this.sqlScreenState.value.matchers.clear()
+                this.sqlScreenState.value.matchers.addAll(prop.sqlScreenState.value.matchers.distinct())
+                this.sqlScreenState.value.userSignatures.clear()
+                this.sqlScreenState.value.userSignatures.addAll(
+                    prop.sqlScreenState.value.userSignatures.filter { it in userSignatureSettings.userSignatures }
+                )
+                this.sqlScreenState.value.fastScan = prop.sqlScreenState.value.fastScan
 
                 this.scanProfiles.clear()
                 this.scanProfiles.addAll(

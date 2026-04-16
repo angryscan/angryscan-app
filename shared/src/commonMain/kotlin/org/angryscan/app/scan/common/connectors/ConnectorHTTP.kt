@@ -10,14 +10,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.angryscan.app.common.AppVersion
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
 import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
 private val logger = KotlinLogging.logger {}
 
 @Serializable
-class ConnectorHTTP: IConnector, AutoCloseable {
+class ConnectorHTTP: IFileConnector, AutoCloseable {
 
     private val client by lazy {
         HttpClient(CIO) {
@@ -58,7 +58,7 @@ class ConnectorHTTP: IConnector, AutoCloseable {
         dir: String,
         extensions: List<IFileType>,
         fileSelected: (FoundedFile) -> Unit
-    ): FilesCounter {
+    ): ObjectCounter {
         logger.info { "HTTP scan page: $dir" }
         val response = client.get(dir) {
             header("User-Agent", "DataScanner/${AppVersion}")
@@ -70,7 +70,7 @@ class ConnectorHTTP: IConnector, AutoCloseable {
             throw FailedToLoadHTTP()
         }
 
-        return FilesCounter()
+        return ObjectCounter()
     }
 
     class FailedToLoadHTTP: Exception("Failed to load page")

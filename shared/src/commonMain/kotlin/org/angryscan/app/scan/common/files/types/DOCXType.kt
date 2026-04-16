@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -22,6 +23,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger {  }
 
 @Serializable
 object DOCXType : FileType(), IMaskFile, IFileLocation {
@@ -116,8 +119,9 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                             }
                                         }
                                     }
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
                                     // Not an OLE Package or failed to extract - skip.
+                                    logger.error { "Failed to scan embedded file ${partName}: ${e.message}" }
                                 }
                             } else {
                                 // If the part name contains an extension, filter by it before extraction.
@@ -148,7 +152,8 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                         }
                                     }
                                     embeddedAll++
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
+                                    logger.error { "Failed to scan embedded file ${partName} in DOCX file ${file.absolutePath}: ${e.message}" }
                                     // Skip broken embedded file.
                                 } finally {
                                     tmpFile.delete()
@@ -158,7 +163,8 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.debug { "Failed to scan file with XWPF ${file.absolutePath}: ${e.message} " }
             try {
                 withContext(Dispatchers.IO) {
                     FileInputStream(file).use { fileInputStream ->
@@ -180,7 +186,8 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                         }
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error { "Failed to scan DOCX file ${file.absolutePath}: ${e.message}" }
                 res.skip()
                 return res
             }
@@ -385,8 +392,9 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                             }
                                         }
                                     }
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
                                     // Skip broken embedded file.
+                                    logger.error { "Failed to scan embedded file $partName in DOCX file ${filePath}: ${e.message}" }
                                 }
                             } else {
                                 val ext = embeddedNameLower.substringAfterLast(".", "")
@@ -399,8 +407,9 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                                         tmpFile.outputStream().use { output -> input.copyTo(output) }
                                     }
                                     scanEmbeddedFile(tmpFile, embeddedName)
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
                                     // Skip broken embedded file.
+                                    logger.error { "Failed to scan embedded file $partName in DOCX file ${filePath}: ${e.message}" }
                                 } finally {
                                     tmpFile.delete()
                                 }
@@ -409,7 +418,8 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.debug { "Failed to find locations in DOCX file as XWPF $filePath: ${e.message}" }
             try {
                 withContext(Dispatchers.IO) {
                     val file = File(filePath)
@@ -476,7 +486,8 @@ object DOCXType : FileType(), IMaskFile, IFileLocation {
                         }
                     }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error { "Failed to find locations in DOCX file: ${e.message}" }
                 throw ScanException
             }
         }

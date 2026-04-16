@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FileSize
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.common.engine.IMatcher
@@ -24,7 +25,9 @@ data class TaskFileResult(
     val size: FileSize,
     val foundAttributes: Map<IMatcher, Int>,
     val count: Int,
-    val score: Long
+    val score: Long,
+    /** For DB scan: column where matches were found. Null for file scan. */
+    val columnName: String? = null
 )
 
 class TaskFilesViewModel(val task: Task) : KoinComponent, ViewModel() {
@@ -54,47 +57,95 @@ class TaskFilesViewModel(val task: Task) : KoinComponent, ViewModel() {
     suspend fun update() {
         _updated.value = false
         database.transaction {
-            val fileRows = TaskFiles
-                .innerJoin(TaskFileScanResults)
-                .select(
-                    TaskFiles.path,
-                    TaskFiles.size,
-                    TaskFiles.id
-                )
-                .where {
-                    TaskFiles.task.eq(task.id) and TaskFiles.state.eq(TaskState.COMPLETED)
-                }
-                .withDistinct()
-
-            _taskFiles.value = fileRows.map { fileRow ->
-                val detectRows = TaskFileScanResults
-                    .innerJoin(TaskMatchers)
-                    .select(TaskMatchers.matcher, TaskFileScanResults.count)
-                    .where { TaskFileScanResults.file.eq(fileRow[TaskFiles.id]) }
-                    .map { it[TaskMatchers.matcher] to it[TaskFileScanResults.count] }
-
-                val containsFIO = detectRows.map { it.first }.contains(FullName)
-
-                TaskFileResult(
-                    id = fileRow[TaskFiles.id].value,
-                    path = fileRow[TaskFiles.path],
-                    size = FileSize(fileRow[TaskFiles.size]),
-                    foundAttributes = detectRows.toMap(),
-                    count = detectRows.sumOf { it.second },
-                    score = detectRows.sumOf { row ->
-                        (if (containsFIO) 20 else detectRows.size - 1) +
-                                (when (row.first) {
-                                    is FullName -> 5f
-                                    is CardNumber -> 30f
-                                    is CodeDetectFun -> 0.01f
-                                    is CertDetectFun -> 100f
-                                    else -> 1f
-                                } * row.second).toLong()
+            val isDbTask = task.connector is IDatabaseConnector
+            if (isDbTask) {
+                // DB scan: group by (file, column_name) so each row is table+column with its matcher counts
+                val rows = (TaskFiles innerJoin TaskFileScanResults innerJoin TaskMatchers)
+                    .select(
+                        TaskFiles.id,
+                        TaskFiles.path,
+                        TaskFiles.size,
+                        TaskFileScanResults.columnName,
+                        TaskMatchers.matcher,
+                        TaskFileScanResults.count
+                    )
+                    .where {
+                        TaskFiles.task.eq(task.id) and TaskFiles.state.eq(TaskState.COMPLETED)
                     }
-                )
+                    .map { r ->
+                        Triple(
+                            Triple(r[TaskFiles.id].value, r[TaskFiles.path], FileSize(r[TaskFiles.size])),
+                            r[TaskFileScanResults.columnName],
+                            r[TaskMatchers.matcher] to r[TaskFileScanResults.count]
+                        )
+                    }
+                val grouped = rows.groupBy { (fileKey, columnName, _) -> fileKey to columnName }
+                _taskFiles.value = grouped.map { (key, groupRows) ->
+                    val (fileId, path, size) = key.first
+                    val columnName = key.second
+                    val detectRows = groupRows.map { it.third }
+                    val containsFIO = detectRows.map { it.first }.contains(FullName)
+                    TaskFileResult(
+                        id = fileId,
+                        path = path,
+                        size = size,
+                        foundAttributes = detectRows.groupingBy { it.first }.fold(0) { acc, (_, c) -> acc + c },
+                        count = detectRows.sumOf { it.second },
+                        score = detectRows.sumOf { row ->
+                            (if (containsFIO) 20 else detectRows.size - 1) +
+                                    (when (row.first) {
+                                        is FullName -> 5f
+                                        is CardNumber -> 30f
+                                        is CodeDetectFun -> 0.01f
+                                        is CertDetectFun -> 100f
+                                        else -> 1f
+                                    } * row.second).toLong()
+                        },
+                        columnName = columnName
+                    )
+                }
+            } else {
+                val fileRows = TaskFiles
+                    .innerJoin(TaskFileScanResults)
+                    .select(
+                        TaskFiles.path,
+                        TaskFiles.size,
+                        TaskFiles.id
+                    )
+                    .where {
+                        TaskFiles.task.eq(task.id) and TaskFiles.state.eq(TaskState.COMPLETED)
+                    }
+                    .withDistinct()
+
+                _taskFiles.value = fileRows.map { fileRow ->
+                    val detectRows = TaskFileScanResults
+                        .innerJoin(TaskMatchers)
+                        .select(TaskMatchers.matcher, TaskFileScanResults.count)
+                        .where { TaskFileScanResults.file.eq(fileRow[TaskFiles.id]) }
+                        .map { it[TaskMatchers.matcher] to it[TaskFileScanResults.count] }
+
+                    val containsFIO = detectRows.map { it.first }.contains(FullName)
+
+                    TaskFileResult(
+                        id = fileRow[TaskFiles.id].value,
+                        path = fileRow[TaskFiles.path],
+                        size = FileSize(fileRow[TaskFiles.size]),
+                        foundAttributes = detectRows.toMap(),
+                        count = detectRows.sumOf { it.second },
+                        score = detectRows.sumOf { row ->
+                            (if (containsFIO) 20 else detectRows.size - 1) +
+                                    (when (row.first) {
+                                        is FullName -> 5f
+                                        is CardNumber -> 30f
+                                        is CodeDetectFun -> 0.01f
+                                        is CertDetectFun -> 100f
+                                        else -> 1f
+                                    } * row.second).toLong()
+                        }
+                    )
+                }
             }
             _scoreSum.value = _taskFiles.value.sumOf { it.score }
-
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,6 +54,7 @@ fun SourceSelectorTabs(
         destination?.hasRoute(MainScreenConnector.FileShare::class) == true -> MainScreenConnector.FileShare
         destination?.hasRoute(MainScreenConnector.S3::class) == true -> MainScreenConnector.S3
         destination?.hasRoute(MainScreenConnector.HTTP::class) == true -> MainScreenConnector.HTTP
+        destination?.hasRoute(MainScreenConnector.Postgres::class) == true -> MainScreenConnector.Postgres
         else -> MainScreenConnector.FileShare
     }
 
@@ -97,16 +99,29 @@ fun SourceSelectorTabs(
                 if (selectedRoute != MainScreenConnector.HTTP) {
                     navController.navigate(MainScreenConnector.HTTP)
                 }
+            )
+            SourceSelectorTabItem(
+                modifier = Modifier.weight(1f),
+                isSelected = selectedRoute == MainScreenConnector.Postgres,
+                label = "SQL Database",
+                sourceType = SourceSelectorTabType.Postgres,
+                onClick = {
+                    if (selectedRoute != MainScreenConnector.Postgres) {
+                        navController.navigate(MainScreenConnector.Postgres)
+                    }
+                }
+            )
+        }
             },
             onLabelClick = onLabelClick
         )
     }
 }
 
-private enum class SourceSelectorTabType { FileShare, S3, HTTP }
+private enum class SourceSelectorTabType { FileShare, S3, HTTP, Postgres }
 
 @Composable
-private fun RowScope.SourceSelectorTabItem(
+private fun SourceSelectorTabItem(
     modifier: Modifier = Modifier,
     isSelected: Boolean,
     label: String,
@@ -196,40 +211,50 @@ private fun RowScope.SourceSelectorTabItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                when (sourceType) {
-                    SourceSelectorTabType.FileShare -> {
-                        Icon(
-                            imageVector = Icons.Outlined.FolderOpen,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = if (expanded) 0.9f else 0.72f)
-                        )
-                    }
-                    SourceSelectorTabType.S3 -> {
-                        Icon(
-                            imageVector = Icons.Outlined.Cloud,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = if (expanded) 0.9f else 0.72f)
-                        )
-                    }
-                    SourceSelectorTabType.HTTP -> {
-                        Icon(
-                            imageVector = Icons.Outlined.Link,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = if (expanded) 0.9f else 0.72f)
-                        )
-                    }
+            when (sourceType) {
+                SourceSelectorTabType.FileShare -> {
+                    Icon(
+                        imageVector = Icons.Outlined.FolderOpen,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    )
+                }
+                SourceSelectorTabType.S3 -> {
+                    Icon(
+                        imageVector = Icons.Outlined.Cloud,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    )
+                }
+                SourceSelectorTabType.HTTP -> {
+                    Icon(
+                        imageVector = Icons.Outlined.Link,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    )
+                }
+                SourceSelectorTabType.Postgres -> {
+                    Icon(
+                        imageVector = Icons.Outlined.Storage,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    )
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))

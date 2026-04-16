@@ -48,6 +48,8 @@
     <string name="trayExit">Exit</string>
     <string name="trayOpen">Open</string>
     <string name="trayHide">Hide</string>
+    <string name="scanCompletedNotificationTitle">Scanning completed</string>
+    <string name="scanCompletedNotificationMessage">Click to open completed task</string>
     <string name="statTime">Scan time: %1$d:%2$d:%3$d</string>
     <string name="statTotalFile">Total files in dir: %1$d (%2$s)</string>
     <string name="statFilesSelected">Files selected to scanFile: %1$d (%2$s)</string>
@@ -91,10 +93,13 @@
     <string name="MainScreen-SourceType-FileShare">File Share</string>
     <string name="MainScreen-SourceType-S3">AWS S3</string>
     <string name="MainScreen-SourceType-HTTP">HTTP</string>
+    <string name="MainScreen-SourceType-Postgres">SQL Database</string>
     <string name="MainScreen-Placeholder-HTTP">Enter URLs separated by space or semicolon (;)</string>
+    <string name="MainScreen-Placeholder-Postgres">Schema to scan (optional, e.g. public)</string>
     <string name="MainScreen-Hint-FileShare">Folder, files, or txt/csv file with paths</string>
     <string name="MainScreen-Hint-S3">Path inside bucket (e.g. folder/subfolder/)</string>
     <string name="MainScreen-Hint-HTTP">One or more URLs (http:// or https://)</string>
+    <string name="MainScreen-Hint-Postgres">Schema name to limit scanning, or leave empty to scan all tables</string>
     <string name="MainScreen-QuickStart-Title">Quick start</string>
     <string name="MainScreen-QuickStart-Step1">1. Select source type</string>
     <string name="MainScreen-QuickStart-Step2">2. Specify path or URL</string>
@@ -159,6 +164,8 @@
     <string name="MainScreen-ScanHint-FileShare">Select or enter path above to enable Scan</string>
     <string name="MainScreen-ScanHint-S3">Enter path above and set S3 connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-ScanHint-HTTP">Enter one or more URLs above to enable Scan</string>
+    <string name="MainScreen-ScanHint-Postgres">Set SQL Database connection in Scan options tab to enable Scan</string>
+    <string name="MainScreen-ScanHint-SqlDatabase">Set SQL Database connection in Scan options tab to enable Scan</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">Choose file extensions to scan:</string>
@@ -427,6 +434,10 @@
     <string name="ScanResultScreen-ClipboardCopiedMessage">Copied to clipboard</string>
 
     <string name="Result-ColumnFile">File</string>
+    <string name="Result-CardSchema">Schema</string>
+    <string name="Result-CardTable">Table</string>
+    <string name="Result-ColumnTable">Table</string>
+    <string name="Result-ColumnColumn">Column</string>
     <string name="Result-ColumnAttributes">Attributes</string>
     <string name="Result-ColumnCount">Count</string>
     <string name="Result-ColumnSize">Size</string>
@@ -463,6 +474,7 @@
     <string name="LocationWindow-ExportRowsCount">Rows exported: %1$d</string>
     <string name="LocationWindow-ExportError">Failed to export rows</string>
     <string name="LocationWindow-ExportAllRows">Export all rows</string>
+    <string name="LocationWindow-ExportRowsStarted">Exporting rows...</string>
     <string name="Location-LongScanTitle">Attribute location deep search</string>
     <string name="Location-LongScanText">Searching for attribute location takes a long time to scan. Are you sure you want to scan it?</string>
     <string name="Location-LineNumber">Line %1$d</string>
@@ -473,4 +485,9 @@
     <string name="Validation-NoExtensionsMessage">Please select at least one file extension to scan.</string>
     <string name="Validation-NoMatchersTitle">No detection functions selected</string>
     <string name="Validation-NoMatchersMessage">Please select at least one detection function to scan.</string>
+    <string name="ScanSettings-PostgresTestConnection">Test connection</string>
+    <string name="ScanSettings-PostgresTestingConnection">Testing connection...</string>
+    <string name="ScanSettings-PostgresConnectionSuccess">Connection established successfully.</string>
+    <string name="Validation-PostgresConnectionTitle">Database connection failed</string>
+    <string name="Validation-PostgresConnectionMessage">Could not connect to the database. Check that the database connection data is correct.</string>
 </resources>

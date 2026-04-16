@@ -31,7 +31,7 @@ import org.angryscan.app.di.settingsModule
 import org.angryscan.app.logging.LogLevel
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.ui.MainWindow
-import org.angryscan.app.ui.tray.DorkTray
+import org.angryscan.app.ui.tray.AppTray
 import org.angryscan.app.ui.windows.ApplicationErrorWindow
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
@@ -79,7 +79,7 @@ suspend fun main(args: Array<String>) {
     System.setProperty(
         "skiko.renderApi",
         when (OS.currentOS()) {
-            OS.WINDOWS -> "OPENGL"
+            OS.WINDOWS -> "DIRECT3D"
             OS.LINUX -> "OPENGL"
             OS.MAC -> "METAL"
             else -> "OPENGL"
@@ -217,9 +217,12 @@ suspend fun main(args: Array<String>) {
                     onHideRequest = {
                         mainIsVisible = false
                     },
+                    onShowRequest = {
+                        mainIsVisible = true
+                    },
                     isVisible = mainIsVisible
                 )
-                DorkTray(
+                AppTray(
                     mainIsVisible = mainIsVisible,
                     mainVisibilitySet = {
                         mainIsVisible = it

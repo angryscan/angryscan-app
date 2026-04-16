@@ -7,18 +7,20 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.DocumentWithColumns
+import org.angryscan.app.scan.common.IScanResult
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
+import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
-import org.angryscan.app.scan.common.files.types.*
-import org.angryscan.app.scan.engine.fallback
-import org.angryscan.app.scan.engine.getEngine
-import org.angryscan.app.scan.engine.inappropriateMatchers
-import org.angryscan.common.engine.IScanEngine
+import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.scan.engine.ScanEnginesFactory
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
@@ -101,6 +103,24 @@ class ScanThread : KoinComponent {
                 if (dbFile == null) {
                     scanningFileId.set(-1)
 
+                    val rescuedPending = database.transaction {
+                        TaskFiles.update(
+                            where = {
+                                TaskFiles.task.eq(taskEntity.dbTask.id) and
+                                        TaskFiles.state.eq(TaskState.PENDING)
+                            }
+                        ) {
+                            it[state] = TaskState.SEARCHING
+                        }
+                    }
+
+                    if (rescuedPending > 0) {
+                        logger.debug { "Rescued $rescuedPending PENDING files for task ${taskEntity.id.value}" }
+                        continue
+                    }
+
+                    taskEntity.checkProgress()
+
                     retryCount++
                     if (retryCount > 3) {
                         _started.set(false)
@@ -110,11 +130,11 @@ class ScanThread : KoinComponent {
                     continue
                 }
 
+                val connector = taskEntity.dbTask.connector
                 val fastScan = database.transaction { taskEntity.dbTask.fastScan }
 
                 val fileId = dbFile[TaskFiles.id].value
                 val filePath = dbFile[TaskFiles.path]
-                val fileObject = taskEntity.dbTask.connector.getFile(filePath)
 
                 val matchers = database.transaction {
                     taskEntity.dbTask.lastFileDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -131,76 +151,101 @@ class ScanThread : KoinComponent {
                         .map { it[TaskFileExtensions.extension] }
                 }
 
-                // Determine file types early to decide on requireKeywords
-                val fileTypes = IFileType
-                    .getFileType(fileObject)
-                    .filter { ft ->
-                        ft in extensions
+                var fileObject: File? = null
+                var fileTypes: List<IFileType> = emptyList()
+                var structuredRows: List<Map<String, String>>? = null
+
+                val requireKeywords = when (connector) {
+                    is IFileConnector -> {
+                        fileObject = connector.getFile(filePath)
+                        fileTypes = IFileType
+                            .getFileType(fileObject)
+                            .filter { ft -> ft in extensions }
+                        fileTypes.requireKeywords(fileObject.extension)
                     }
 
-                // Check if file requires requireKeywords = false
-                val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
-
-                val engines: MutableList<IScanEngine> = mutableListOf()
-                scanSettings.value.engine.value
-                    .getEngine(matchers.map { it.key }, requireKeywords = requireKeywords)
-                    .let {
-                        if (it.matchers.isNotEmpty())
-                            engines.add(it)
+                    is IDatabaseConnector -> {
+                        structuredRows = connector.getTableContentStructured(filePath)
+                        false
                     }
-                val iMatchers = if (engines.isNotEmpty())
-                    engines[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
-                else
-                    matchers.map { it.key }.toMutableList()
 
-                if (iMatchers.isNotEmpty()) {
-                    var fbe = scanSettings.value.engine.value.fallback()
-                    do {
-                        val e = fbe
-                            .getEngine(iMatchers, requireKeywords = requireKeywords)
-                        if (e.matchers.isNotEmpty()) {
-                            engines.add(e)
-                            iMatchers.removeAll(e.matchers)
-                        }
-                        fbe = e.fallback()
-                    } while (iMatchers.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
+                    else -> true
                 }
+
+                val engines = ScanEnginesFactory.build(
+                    preferredEngine = scanSettings.value.engine.value,
+                    matchers = matchers.map { it.key },
+                    requireKeywords = requireKeywords
+                )
 
 
                 scanningFileId.set(fileId)
 
                 val timer = measureTimeMillis {
-                    val scanResults = fileTypes.map { ft ->
-                        ft.scanFile(
-                            file = fileObject,
-                            context = currentCoroutineContext(),
-                            engines = engines,
-                            fastScan = fastScan,
-                            selectedExtensions = extensions
-                        )
-                    }
+                    val scanRes: IScanResult? = try {
+                        when {
+                            fileObject != null -> {
+                                val scanResults = fileTypes.map { ft ->
+                                    ft.scanFile(
+                                        file = fileObject,
+                                        context = currentCoroutineContext(),
+                                        engines = engines,
+                                        fastScan = fastScan,
+                                        selectedExtensions = extensions
+                                    )
+                                }
 
-                    engines.forEach { eng ->
-                        eng.close()
-                    }
+                                scanResults.firstOrNull()?.also { result ->
+                                    scanResults.drop(1).forEach {
+                                        result.plus(it.getDocumentFields())
+                                    }
+                                }
+                            }
 
-                    val scanRes = scanResults.firstOrNull()
-                    if (scanRes != null) {
-                        scanResults.drop(1).forEach {
-                            scanRes.plus(it.getDocumentFields())
+                            structuredRows != null -> {
+                                DatabaseContentScanner.scanContentStructured(
+                                    path = filePath,
+                                    rows = structuredRows,
+                                    engines = engines
+                                )
+                            }
+
+                            else -> null
+                        }
+                    } finally {
+                        engines.forEach { eng ->
+                            eng.close()
                         }
                     }
 
-
                     if (scanRes != null && !scanRes.skipped()) {
                         database.transaction {
-                            scanRes.getDocumentFields().forEach { field ->
-                                TaskFileScanResults.insert {
-                                    it[file] = fileId
-                                    it[matcher] = matchers[field.key] ?: 0
-                                    it[count] = field.value
+                            when (scanRes) {
+                                is DocumentWithColumns -> {
+                                    scanRes.columnFields.forEach { (columnName, fields) ->
+                                        fields.forEach { (matcher, cnt) ->
+                                            TaskFileScanResults.insert {
+                                                it[file] = fileId
+                                                it[TaskFileScanResults.matcher] = matchers[matcher] ?: 0
+                                                it[count] = cnt
+                                                it[TaskFileScanResults.columnName] = columnName
+                                            }
+                                        }
+                                    }
+                                    scanRes.getDocumentFields().forEach { (matcher, count) ->
+                                        taskEntity.addFoundAttribute(matcher, count)
+                                    }
                                 }
-                                taskEntity.addFoundAttribute(field.key, field.value)
+                                else -> {
+                                    scanRes.getDocumentFields().forEach { field ->
+                                        TaskFileScanResults.insert {
+                                            it[file] = fileId
+                                            it[matcher] = matchers[field.key] ?: 0
+                                            it[count] = field.value
+                                        }
+                                        taskEntity.addFoundAttribute(field.key, field.value)
+                                    }
+                                }
                             }
                             if (!scanRes.isEmpty()) {
                                 taskEntity.incrementFoundFiles()
@@ -225,7 +270,19 @@ class ScanThread : KoinComponent {
                         }
                     }
                 }
-                logger.debug { "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms" }
+                when {
+                    fileObject != null -> {
+                        logger.debug {
+                            "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms"
+                        }
+                    }
+
+                    structuredRows != null -> {
+                        logger.debug {
+                            "Scanned database table $filePath with ${structuredRows.size} rows in $timer ms"
+                        }
+                    }
+                }
 
                 taskEntity.checkProgress()
                 yield()

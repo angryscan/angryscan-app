@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "PackageDirectoryMismatch")
+
 package org.angryscan.app.ui.windows.screens.scans.components
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -18,7 +20,7 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.FullName
 
 @Composable
-fun AttributeCard(
+fun AttributeChip(
     attribute: IMatcher,
     count: Int
 ) {
@@ -44,7 +46,12 @@ fun AttributeCard(
 }
 
 @Composable
-fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled: Boolean) {
+fun AttributeChip(
+    attribute: IMatcher,
+    count: Int,
+    onClick: () -> Unit,
+    enabled: Boolean
+) {
     MatcherTooltip(
         matcher = attribute,
         count = count
@@ -72,9 +79,9 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
 
 @Preview
 @Composable
-fun AttributeCardPreview() {
+fun AttributeChipPreview() {
     PreviewModule {
-        AttributeCard(
+        AttributeChip(
             FullName,
             5
         )

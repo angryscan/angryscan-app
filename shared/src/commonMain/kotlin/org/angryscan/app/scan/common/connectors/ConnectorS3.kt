@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
 import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
@@ -29,7 +29,7 @@ class ConnectorS3(
     val bucketStr: String,
     @Serializable
     val regionStr: String? = null,
-) : IConnector, AutoCloseable {
+ ) : IFileConnector, AutoCloseable {
 
     private fun normalizeEndpoint(raw: String): String {
         val trimmed = raw.trim()
@@ -164,9 +164,9 @@ class ConnectorS3(
         dir: String,
         extensions: List<IFileType>,
         fileSelected: (file: FoundedFile) -> Unit
-    ): FilesCounter =
+    ): ObjectCounter =
         withContext(Dispatchers.Default) {
-            var filesCounter = FilesCounter()
+            var filesCounter = ObjectCounter()
             var contToken: String? = null
             do {
                 val request = ListObjectsV2Request {

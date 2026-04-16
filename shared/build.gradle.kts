@@ -5,6 +5,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kover)
 }
+
+configurations.configureEach {
+    exclude(group = "org.slf4j", module = "slf4j-simple")
+}
+
 kotlin {
     jvm("desktop")
     sourceSets {
@@ -15,7 +20,8 @@ kotlin {
                 implementation(compose.materialIconsExtended)
                 implementation(compose.material3)
 
-                implementation(libs.dorkbox)
+                implementation(libs.composenativetray)
+                implementation(libs.knotify)
 
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -27,6 +33,8 @@ kotlin {
 
                 implementation(libs.sql.sqlite)
                 implementation(libs.sql.postgresql)
+                implementation(libs.sql.mysql)
+                implementation("org.apache.hive:hive-jdbc:4.2.0")
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)
@@ -90,6 +98,9 @@ kotlin {
                 implementation(compose.desktop.uiTestJUnit4)
                 implementation(libs.koin.test)
                 implementation(libs.koin.test.junit4)
+                implementation(libs.testcontainers.core)
+                implementation(libs.testcontainers.postgresql)
+                implementation(libs.testcontainers.mysql)
             }
         }
         @Suppress("Unused")

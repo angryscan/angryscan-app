@@ -12,6 +12,8 @@ object TaskFileScanResults: IntIdTable() {
     val file = reference("file", TaskFiles)
     val matcher = reference("matcher", TaskMatchers)
     val count = integer("count")
+    /** For DB scan: which column had matches. Null for file scan. */
+    val columnName = varchar("column_name", 255).nullable()
 }
 
 class TaskFileScanResult(id: EntityID<Int>) : IntEntity(id) {
@@ -19,4 +21,5 @@ class TaskFileScanResult(id: EntityID<Int>) : IntEntity(id) {
     var file by TaskFile referencedOn TaskFileScanResults.file
     var matcher by TaskMatcher referencedOn TaskFileScanResults.matcher
     var count by TaskFileScanResults.count
+    var columnName by TaskFileScanResults.columnName
 }

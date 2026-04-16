@@ -1,7 +1,7 @@
 package org.angryscan.app.scan.common.connectors
 
 import kotlinx.serialization.Serializable
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
 import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
@@ -10,7 +10,7 @@ import java.io.File
  * Allows deserialization of existing tasks; operations throw UnsupportedOperationException.
  */
 @Serializable
-class ConnectorAIModels : IConnector {
+class ConnectorAIModels : IFileConnector {
     override suspend fun getFile(filePath: String): File {
         throw UnsupportedOperationException("ConnectorAIModels is not implemented")
     }
@@ -19,7 +19,7 @@ class ConnectorAIModels : IConnector {
         dir: String,
         extensions: List<IFileType>,
         fileSelected: (FoundedFile) -> Unit
-    ): FilesCounter {
+    ): ObjectCounter {
         throw UnsupportedOperationException("ConnectorAIModels is not implemented")
     }
 

@@ -1,5 +1,6 @@
 package org.angryscan.app.scan.common.files.types
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -11,6 +12,8 @@ import org.odftoolkit.odfdom.dom.element.table.TableTableCellElement
 import org.odftoolkit.odfdom.dom.element.table.TableTableRowElement
 import java.io.File
 import kotlin.coroutines.CoroutineContext
+
+private val logger = KotlinLogging.logger { }
 
 @Serializable
 @Suppress("unused")
@@ -67,7 +70,8 @@ object ODSType: FileType() {
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.error { "Error while scanning ods ${file.absolutePath}: ${e.message}" }
             res.skip()
             return res
         }

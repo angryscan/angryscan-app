@@ -7,6 +7,7 @@ import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.connectors.ConnectorPostgres
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.scan.common.connectors.IConnector
 import org.angryscan.app.scan.common.files.types.CertFileType
@@ -206,6 +207,11 @@ class ScanService : KoinComponent {
                             "Endpoind: ${connector.endpointStr}. " +
                                     "Bucket: ${connector.bucketStr}. " +
                                     "Region: ${connector.regionStr}. "
+                        } else if (connector is ConnectorPostgres) {
+                            "Host: ${connector.host}. " +
+                                    "Port: ${connector.port}. " +
+                                    "Database: ${connector.database}. " +
+                                    "Row limit: ${connector.rowLimit}. "
                         } else ""
             }
 
