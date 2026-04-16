@@ -253,6 +253,11 @@ fun MainScreen(
                 )
             }
             composable<MainScreenConnector.Postgres> {
+                // Database screen doesn't provide under-radio content (unlike S3),
+                // so clear whatever previous source left there.
+                SideEffect {
+                    underSourceContent = { }
+                }
                 DatabaseScreen(
                     expandScanState = { taskId -> showScan(taskId) },
                     setSidebarContent = { },
