@@ -99,19 +99,19 @@ fun SourceSelectorTabs(
                 if (selectedRoute != MainScreenConnector.HTTP) {
                     navController.navigate(MainScreenConnector.HTTP)
                 }
-            )
-            SourceSelectorTabItem(
-                modifier = Modifier.weight(1f),
-                isSelected = selectedRoute == MainScreenConnector.Postgres,
-                label = "SQL Database",
-                sourceType = SourceSelectorTabType.Postgres,
-                onClick = {
-                    if (selectedRoute != MainScreenConnector.Postgres) {
-                        navController.navigate(MainScreenConnector.Postgres)
-                    }
+            },
+            onLabelClick = onLabelClick
+        )
+        SourceSelectorTabItem(
+            modifier = Modifier,
+            isSelected = selectedRoute == MainScreenConnector.Postgres,
+            label = "SQL Database",
+            sourceType = SourceSelectorTabType.Postgres,
+            settingsModeActive = settingsModeActive,
+            onClick = {
+                if (selectedRoute != MainScreenConnector.Postgres) {
+                    navController.navigate(MainScreenConnector.Postgres)
                 }
-            )
-        }
             },
             onLabelClick = onLabelClick
         )
@@ -211,50 +211,51 @@ private fun SourceSelectorTabItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-            when (sourceType) {
-                SourceSelectorTabType.FileShare -> {
-                    Icon(
-                        imageVector = Icons.Outlined.FolderOpen,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.S3 -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Cloud,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.HTTP -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Link,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
-                }
-                SourceSelectorTabType.Postgres -> {
-                    Icon(
-                        imageVector = Icons.Outlined.Storage,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                    )
+                when (sourceType) {
+                    SourceSelectorTabType.FileShare -> {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
+                    }
+                    SourceSelectorTabType.S3 -> {
+                        Icon(
+                            imageVector = Icons.Outlined.Cloud,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
+                    }
+                    SourceSelectorTabType.HTTP -> {
+                        Icon(
+                            imageVector = Icons.Outlined.Link,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
+                    }
+                    SourceSelectorTabType.Postgres -> {
+                        Icon(
+                            imageVector = Icons.Outlined.Storage,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))

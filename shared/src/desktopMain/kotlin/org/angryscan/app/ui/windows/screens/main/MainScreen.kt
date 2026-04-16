@@ -38,6 +38,7 @@ import org.angryscan.app.ui.DesktopMainLayout
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
+import org.angryscan.app.ui.windows.screens.main.subscreens.DatabaseScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
@@ -251,6 +252,13 @@ fun MainScreen(
                     setUnderSourceContent = { content -> underSourceContent = content }
                 )
             }
+            composable<MainScreenConnector.Postgres> {
+                DatabaseScreen(
+                    expandScanState = { taskId -> showScan(taskId) },
+                    setSidebarContent = { },
+                    setBottomBarContent = { content -> bottomBarContent = content }
+                )
+            }
         }
     }
 }
@@ -268,6 +276,7 @@ private fun SourceRadioRow(
         destination?.hasRoute(MainScreenConnector.FileShare::class) == true -> MainScreenConnector.FileShare
         destination?.hasRoute(MainScreenConnector.S3::class) == true -> MainScreenConnector.S3
         destination?.hasRoute(MainScreenConnector.HTTP::class) == true -> MainScreenConnector.HTTP
+        destination?.hasRoute(MainScreenConnector.Postgres::class) == true -> MainScreenConnector.Postgres
         else -> MainScreenConnector.FileShare
     }
 
@@ -295,6 +304,17 @@ private fun SourceRadioRow(
             label = "HTTP",
             settingsOpen = settingsOpen,
             onSelect = { if (selectedRoute != MainScreenConnector.HTTP) navController.navigate(MainScreenConnector.HTTP) },
+            onSelectedLabelClick = onSelectedLabelClick
+        )
+        SourceRadioItem(
+            selected = selectedRoute == MainScreenConnector.Postgres,
+            label = "SQL Database",
+            settingsOpen = settingsOpen,
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.Postgres) {
+                    navController.navigate(MainScreenConnector.Postgres)
+                }
+            },
             onSelectedLabelClick = onSelectedLabelClick
         )
     }

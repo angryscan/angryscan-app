@@ -38,15 +38,11 @@ import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.ui.dialogs.DesktopAlertDialog
 import org.angryscan.app.ui.extensions.color
-import org.angryscan.app.ui.extensions.fileDateFormat
 import org.angryscan.app.ui.extensions.icon
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.components.MatcherTooltip
-import org.angryscan.app.ui.windows.screens.scans.components.AttributeFilterChip
-import org.angryscan.app.ui.windows.screens.scans.components.ResultTable
-import org.angryscan.app.ui.windows.screens.scans.components.SortColumn
-import org.angryscan.app.ui.windows.screens.scans.components.comparator
+import org.angryscan.app.ui.windows.screens.scans.components.*
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

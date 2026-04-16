@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -52,7 +53,13 @@ import java.io.File
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
+@OptIn(
+    ExperimentalLayoutApi::class,
+    ExperimentalComposeUiApi::class,
+    ExperimentalTime::class,
+    ExperimentalMaterialApi::class,
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun ResultTable(
     taskFilesViewModel: TaskFilesViewModel,
@@ -692,7 +699,7 @@ fun ResultTable(
                                         .weight(0.75f)
                                 ) {
                                     file.foundAttributes.toList().sortedByDescending { it.second }.forEach { attr ->
-                                        AttributeCard(
+                                        AttributeChip(
                                             attribute = attr.first,
                                             count = attr.second,
                                             onClick = {

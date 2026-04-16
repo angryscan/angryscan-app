@@ -1,25 +1,8 @@
 package org.angryscan.app.ui.windows.screens.main.settings
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,20 +13,8 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.angryscan.app.common.DatabaseConnectionRequiredField
-import org.angryscan.app.common.DatabaseType
-import org.angryscan.app.common.ScanSettings
-import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.common.connectionPort
-import org.angryscan.app.common.missingRequiredConnectionFields
-import org.angryscan.app.common.updatedHighlightedConnectionFields
-import org.angryscan.app.resources.Res
-import org.angryscan.app.resources.S3Screen_Tooltip_ConnectionSettings
-import org.angryscan.app.resources.ScanSettings_PostgresConnectionSuccess
-import org.angryscan.app.resources.ScanSettings_PostgresTestConnection
-import org.angryscan.app.resources.ScanSettings_FastScan
-import org.angryscan.app.resources.ScanSettings_Tooltip_FastScan
-import org.angryscan.app.resources.Validation_PostgresConnectionMessage
+import org.angryscan.app.common.*
+import org.angryscan.app.resources.*
 import org.angryscan.app.scan.common.connectors.DatabaseConnectionValidator
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.settings.items.SettingsTextField
@@ -126,7 +97,7 @@ fun SettingsBoxScan(
             var s3AccessKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.accessKey) }
             var s3SecretKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.secretKey) }
             LaunchedEffect(selectedTab, isS3Source) {
-                if (selectedTab == SettingsTab.Scan.ordinal) {
+                if (isS3Source) {
                     s3Endpoint = screenStateSettings.s3ScreenState.endpoint
                     s3Bucket = screenStateSettings.s3ScreenState.bucket
                     s3AccessKey = screenStateSettings.s3ScreenState.accessKey
