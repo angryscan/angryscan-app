@@ -91,7 +91,7 @@
     <string name="MainScreen-SourceType-FileShare">Файловая система</string>
     <string name="MainScreen-SourceType-S3">AWS S3</string>
     <string name="MainScreen-SourceType-HTTP">HTTP</string>
-    <string name="MainScreen-SourceType-Postgres">SQL Database</string>
+    <string name="MainScreen-SourceType-Postgres">База данных</string>
     <string name="MainScreen-Placeholder-HTTP">Введите URL через пробел или точку с запятой (;)</string>
     <string name="MainScreen-Placeholder-Postgres">Схема для сканирования (необязательно, например public)</string>
     <string name="MainScreen-Hint-FileShare">Папка, файлы или txt/csv с путями</string>
@@ -133,6 +133,8 @@
     <string name="ScansPage-ColumnScore">Оценка PII</string>
     <string name="ScansPage-ColumnTime">Время</string>
     <string name="ScansPage-ColumnFinishedTime">Завершено</string>
+    <string name="ScansPage-Finished-Today">Сегодня</string>
+    <string name="ScansPage-Finished-Yesterday">Вчера</string>
     <string name="ScansPage-ColumnDuration">Длительность</string>
     <string name="ScansPage-ColumnPath">Путь</string>
     <string name="ScansPage-ColumnObjectSize">Размер</string>

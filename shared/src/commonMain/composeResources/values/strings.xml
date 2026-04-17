@@ -93,7 +93,7 @@
     <string name="MainScreen-SourceType-FileShare">File Share</string>
     <string name="MainScreen-SourceType-S3">AWS S3</string>
     <string name="MainScreen-SourceType-HTTP">HTTP</string>
-    <string name="MainScreen-SourceType-Postgres">SQL Database</string>
+    <string name="MainScreen-SourceType-Postgres">Database</string>
     <string name="MainScreen-Placeholder-HTTP">Enter URLs separated by space or semicolon (;)</string>
     <string name="MainScreen-Placeholder-Postgres">Schema to scan (optional, e.g. public)</string>
     <string name="MainScreen-Hint-FileShare">Folder, files, or txt/csv file with paths</string>
@@ -135,6 +135,8 @@
     <string name="ScansPage-ColumnScore">Score</string>
     <string name="ScansPage-ColumnTime">Time</string>
     <string name="ScansPage-ColumnFinishedTime">Finished time</string>
+    <string name="ScansPage-Finished-Today">Today</string>
+    <string name="ScansPage-Finished-Yesterday">Yesterday</string>
     <string name="ScansPage-ColumnDuration">Duration</string>
     <string name="ScansPage-ColumnPath">Path</string>
     <string name="ScansPage-ColumnObjectSize">Object size</string>

@@ -9,15 +9,13 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDropDown
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontFamily
@@ -33,10 +31,12 @@ import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.TaskEntityViewModel
 import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.common.connectors.*
 import org.angryscan.app.ui.extensions.toHumanReadable
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.common.engine.IMatcher
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -255,8 +255,34 @@ fun ScanTaskCard(
     val rowShape = RoundedCornerShape(12.dp)
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
+    val connector = taskEntity.dbTask.connector
     val colorScheme = MaterialTheme.colorScheme
-    val title = name ?: path.substringAfterLast('/').substringAfterLast('\\')
+    val databaseConnectionLabel = when (connector) {
+        is ConnectorPostgres -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorMySQL -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorGreenPlum -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorHive -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorCockroachDB -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorSqlite -> connector.filePath
+        else -> null
+    }
+    val title = run {
+        val normalizedName = name?.trim().orEmpty()
+        val fallbackPathTitle = path.substringAfterLast('/').substringAfterLast('\\')
+        val schemaSuffix = if (path.isBlank()) "" else " ${stringResource(Res.string.Result_CardSchema)}: ${path.trim()}"
+        when {
+            connector is IDatabaseConnector && (normalizedName.isBlank() || normalizedName == path.trim()) ->
+                (databaseConnectionLabel ?: fallbackPathTitle) + schemaSuffix
+            normalizedName.isNotBlank() -> normalizedName
+            else -> fallbackPathTitle
+        }
+    }
+    val sourceTypeLabel = when (connector) {
+        is ConnectorS3 -> stringResource(Res.string.MainScreen_SourceType_S3)
+        is ConnectorHTTP -> stringResource(Res.string.MainScreen_SourceType_HTTP)
+        is IDatabaseConnector -> stringResource(Res.string.MainScreen_SourceType_Postgres)
+        else -> stringResource(Res.string.MainScreen_SourceType_FileShare)
+    }
     val finishedLabel = formatFinishedLabel(finishedAt, currentTime)
     val durationLabel = formatShortDuration(scanDuration)
     val statusLabel = taskStatusLabel(state)
@@ -346,18 +372,64 @@ fun ScanTaskCard(
                 .padding(end = 6.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            DescriptionTooltip(description = path) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .pointerHoverIcon(PointerIcon.Hand),
-                    textAlign = TextAlign.Start
-                )
+            val sourceTooltip = buildString {
+                append(sourceTypeLabel)
+                if (connector is IDatabaseConnector && databaseConnectionLabel != null) {
+                    append('\n')
+                    append(databaseConnectionLabel)
+                    if (path.isNotBlank()) {
+                        append('\n')
+                        append("${stringResource(Res.string.Result_CardSchema)}: ${path.trim()}")
+                    }
+                } else if (path.isNotBlank()) {
+                    append('\n')
+                    append(path)
+                }
+            }
+            DescriptionTooltip(description = sourceTooltip) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    when (connector) {
+                        is ConnectorS3 -> Icon(
+                            painter = painterResource(Res.drawable.aws_s3),
+                            contentDescription = sourceTypeLabel,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        is ConnectorHTTP -> Icon(
+                            imageVector = Icons.Outlined.Language,
+                            contentDescription = sourceTypeLabel,
+                            tint = colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        is IDatabaseConnector -> Icon(
+                            painter = painterResource(Res.drawable.db_default_logo),
+                            contentDescription = sourceTypeLabel,
+                            tint = colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        else -> Icon(
+                            imageVector = Icons.Outlined.Folder,
+                            contentDescription = sourceTypeLabel,
+                            tint = colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .pointerHoverIcon(PointerIcon.Hand),
+                        textAlign = TextAlign.Start
+                    )
+                }
             }
         }
 
@@ -670,6 +742,7 @@ fun ScanTaskAttributesSubRow(
     }
 }
 
+@Composable
 @OptIn(ExperimentalTime::class)
 private fun formatFinishedLabel(
     finishedAt: LocalDateTime?,
@@ -681,8 +754,8 @@ private fun formatFinishedLabel(
     val yesterdayDate = (currentTime - 24.toDuration(DurationUnit.HOURS)).toLocalDateTime(zone).date
     val finishedDate = finishedAt.date
     return when {
-        finishedDate == currentDate -> "Today"
-        finishedDate == yesterdayDate -> "Yesterday"
+        finishedDate == currentDate -> stringResource(Res.string.ScansPage_Finished_Today)
+        finishedDate == yesterdayDate -> stringResource(Res.string.ScansPage_Finished_Yesterday)
         else -> formatDateShort(finishedAt)
     }
 }
