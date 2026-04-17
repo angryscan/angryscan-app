@@ -88,6 +88,7 @@ fun MainScreen(
 
     val headerRouteEntry by navController.currentBackStackEntryAsState()
     val s3SourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
+    val sqlSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
     val centralPanelTopPadding = when {
         // When scan settings are open we don't show extra under-radio rows (incl. S3 params),
         // so the panel can start right under the radios for all sources.
@@ -204,7 +205,8 @@ fun MainScreen(
             ) {
                 if (settingsPanelOpened) {
                     SettingsBox(
-                        transition = updateTransition(targetState = true, label = "settings-inline")
+                        transition = updateTransition(targetState = true, label = "settings-inline"),
+                        allowExtensionsEditing = !sqlSourceActive
                     )
                 } else {
                     RecentScansPreview(
@@ -253,15 +255,11 @@ fun MainScreen(
                 )
             }
             composable<MainScreenConnector.Postgres> {
-                // Database screen doesn't provide under-radio content (unlike S3),
-                // so clear whatever previous source left there.
-                SideEffect {
-                    underSourceContent = { }
-                }
                 DatabaseScreen(
                     expandScanState = { taskId -> showScan(taskId) },
                     setSidebarContent = { },
-                    setBottomBarContent = { content -> bottomBarContent = content }
+                    setBottomBarContent = { content -> bottomBarContent = content },
+                    setUnderSourceContent = { content -> underSourceContent = content }
                 )
             }
         }

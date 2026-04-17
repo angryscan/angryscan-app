@@ -19,6 +19,7 @@ import org.koin.compose.koinInject
 @Composable
 fun SettingsBox(
     transition: Transition<Boolean>,
+    allowExtensionsEditing: Boolean = true,
 ) {
     val scanSettings = koinInject<ScanSettings>()
 
@@ -29,18 +30,20 @@ fun SettingsBox(
     ) {
         val subsectionDividerColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.26f)
         SettingsScanUnifiedPanel(modifier = Modifier.fillMaxSize()) {
-            SettingsBoxExtensionsSelection(
-                scanSettings,
-                showTitle = true,
-                unifiedBlock = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            HorizontalDivider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                color = subsectionDividerColor
-            )
+            if (allowExtensionsEditing) {
+                SettingsBoxExtensionsSelection(
+                    scanSettings,
+                    showTitle = true,
+                    unifiedBlock = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                HorizontalDivider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    color = subsectionDividerColor
+                )
+            }
             SettingsBoxDetectFunctionsGrouped(
                 scanSettings,
                 showTitle = true,

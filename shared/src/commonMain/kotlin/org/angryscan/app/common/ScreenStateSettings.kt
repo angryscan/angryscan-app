@@ -98,6 +98,17 @@ class ScreenStateSettings : KoinComponent {
     )
 
     @Serializable
+    data class SqlSavedConnection(
+        var databaseType: DatabaseType = DatabaseType.PostgreSQL,
+        var host: String = "",
+        var port: String = "5432",
+        var database: String = "",
+        var schema: String = "",
+        var user: String = "",
+        var password: String = "",
+    )
+
+    @Serializable
     data class ScanProfile(
         var name: String = "Default",
         var fastScan: Boolean = false,
@@ -114,6 +125,8 @@ class ScreenStateSettings : KoinComponent {
     var httpScreenState = HTTPScreenState()
     @Serializable(with = MutableStateSerializer::class)
     var sqlScreenState = mutableStateOf(SqlDatabaseScreenState())
+    @Serializable
+    var sqlSavedConnections: MutableList<SqlSavedConnection> = mutableStateListOf()
     var scanProfiles: MutableList<ScanProfile> = mutableStateListOf()
     var activeScanProfileName: String = "Default"
 
@@ -270,6 +283,8 @@ class ScreenStateSettings : KoinComponent {
                     prop.sqlScreenState.value.userSignatures.filter { it in userSignatureSettings.userSignatures }
                 )
                 this.sqlScreenState.value.fastScan = prop.sqlScreenState.value.fastScan
+                this.sqlSavedConnections.clear()
+                this.sqlSavedConnections.addAll(prop.sqlSavedConnections)
 
                 this.scanProfiles.clear()
                 this.scanProfiles.addAll(

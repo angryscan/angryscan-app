@@ -163,6 +163,7 @@
     <string name="MainScreen-ScanHint-S3">Введите путь выше и настройте подключение S3 во вкладке «Параметры сканирования», чтобы активировать кнопку</string>
     <string name="MainScreen-ScanHint-HTTP">Введите один или несколько URL выше, чтобы активировать кнопку «Сканировать»</string>
     <string name="MainScreen-ScanHint-Postgres">Настройте подключение SQL Database во вкладке параметров сканирования, чтобы активировать кнопку</string>
+    <string name="MainScreen-SavedConnections">Сохраненные подключения (%1$d)</string>
 
     <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
     <string name="ScanSettings-FileExtensions">Выберите расширения файлов для сканирования:</string>
@@ -474,6 +475,7 @@
     <string name="Validation-NoExtensionsMessage">Пожалуйста, выберите хотя бы одно расширение файла для сканирования.</string>
     <string name="Validation-NoMatchersTitle">Не выбраны функции детектирования</string>
     <string name="Validation-NoMatchersMessage">Пожалуйста, выберите хотя бы одну функцию детектирования для сканирования.</string>
+    <string name="MainScreen-DeleteSavedConnectionTypeTitle">Удалить подключение типа %1$s?</string>
     <string name="ScanSettings-PostgresTestConnection">Проверить подключение</string>
     <string name="ScanSettings-PostgresTestingConnection">Проверяем подключение...</string>
     <string name="ScanSettings-PostgresConnectionSuccess">Подключение успешно установлено.</string>
