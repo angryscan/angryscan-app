@@ -5,10 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -68,6 +66,7 @@ fun S3Screen(
     var connectionTestOk by remember { mutableStateOf<Boolean?>(null) }
     var connectionTestMessage by remember { mutableStateOf<String?>(null) }
     var showConnectionErrorDialog by remember { mutableStateOf(false) }
+    var secretKeyVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(scanNotCorrectPath, incorrectConnection) {
         if (scanNotCorrectPath || incorrectConnection) {
@@ -406,7 +405,8 @@ fun S3Screen(
                         onValueChange: (String) -> Unit,
                         placeholder: String,
                         modifier: Modifier,
-                        visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None
+                        visualTransformation: VisualTransformation = VisualTransformation.None,
+                        isPassword: Boolean = false
                     ) {
                         val shape = RoundedCornerShape(10.dp)
                         Surface(
@@ -433,8 +433,10 @@ fun S3Screen(
                                     singleLine = true,
                                     textStyle = fieldTextStyle.copy(color = MaterialTheme.colorScheme.onSurface),
                                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                    visualTransformation = visualTransformation,
-                                    modifier = Modifier.fillMaxWidth(),
+                                    visualTransformation = if (isPassword && !secretKeyVisible) PasswordVisualTransformation() else visualTransformation,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(end = if (isPassword) 24.dp else 0.dp),
                                     decorationBox = { inner ->
                                         if (value.isEmpty()) {
                                             Text(placeholder, style = placeholderStyle, maxLines = 1)
@@ -442,6 +444,21 @@ fun S3Screen(
                                         inner()
                                     }
                                 )
+                                if (isPassword) {
+                                    IconButton(
+                                        onClick = { secretKeyVisible = !secretKeyVisible },
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .size(20.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (secretKeyVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                            contentDescription = if (secretKeyVisible) "Hide secret key" else "Show secret key",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -476,7 +493,7 @@ fun S3Screen(
                             onValueChange = { secretKey = it; saveScreenState(); connectionTestOk = null; connectionTestMessage = null },
                             placeholder = "Secret key",
                             modifier = Modifier.weight(1f).widthIn(min = 125.dp),
-                            visualTransformation = PasswordVisualTransformation()
+                            isPassword = true
                         )
                     }
 

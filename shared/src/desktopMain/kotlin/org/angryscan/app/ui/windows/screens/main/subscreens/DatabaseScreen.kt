@@ -59,6 +59,11 @@ fun DatabaseScreen(
     var savedConnectionsExpanded by remember { mutableStateOf(false) }
     var selectedSavedConnectionKey by remember { mutableStateOf<String?>(null) }
     var pendingDeleteConnection by remember { mutableStateOf<ScreenStateSettings.SqlSavedConnection?>(null) }
+    val connectionFieldBorderColor = when {
+        sqlConnectionTestSuccessful -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+        sqlConnectionTestMessage != null -> MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
+        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)
+    }
 
     fun markSqlConnectionDirty() {
         sqlConnectionTestSuccessful = false
@@ -374,8 +379,8 @@ fun DatabaseScreen(
                                     shape = RoundedCornerShape(14.dp),
                                     isError = selectPathError,
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color.Transparent,
-                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedBorderColor = connectionFieldBorderColor,
+                                        unfocusedBorderColor = connectionFieldBorderColor,
                                         focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                                         unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                                         errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
@@ -395,8 +400,8 @@ fun DatabaseScreen(
                                     shape = RoundedCornerShape(14.dp),
                                     isError = selectPathError,
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color.Transparent,
-                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedBorderColor = connectionFieldBorderColor,
+                                        unfocusedBorderColor = connectionFieldBorderColor,
                                         focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                                         unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                                         errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
@@ -416,8 +421,8 @@ fun DatabaseScreen(
                                     shape = RoundedCornerShape(14.dp),
                                     isError = selectPathError,
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color.Transparent,
-                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedBorderColor = connectionFieldBorderColor,
+                                        unfocusedBorderColor = connectionFieldBorderColor,
                                         focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                                         unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
                                         errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
@@ -455,12 +460,6 @@ fun DatabaseScreen(
                                 }
                             }
                         }
-                        Icon(
-                            imageVector = Icons.Outlined.Storage,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
 
@@ -592,7 +591,7 @@ fun DatabaseScreen(
                         .height(32.dp)
                         .border(
                             width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f),
+                            color = connectionFieldBorderColor,
                             shape = shape
                         ),
                     shape = shape,
