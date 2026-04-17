@@ -1,18 +1,27 @@
 package org.angryscan.app.ui.windows.screens.scans
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -31,7 +40,7 @@ import kotlin.time.ExperimentalTime
 @Composable
 fun ScansScreen(
     onTaskClick: (Int) -> Unit,
-    onBackClick: (() -> Unit)? = null
+    onBackToMainClick: (() -> Unit)? = null
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -80,18 +89,58 @@ fun ScansScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (onBackClick != null) {
-                TextButton(
-                    onClick = onBackClick,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = stringResource(Res.string.Common_Back),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = colorScheme.onSurfaceVariant
-                    )
+            @Composable
+            fun BreadcrumbLink(
+                text: String,
+                onClick: (() -> Unit)?,
+                highlighted: Boolean = false
+            ) {
+                val interaction = remember { MutableInteractionSource() }
+                val hovered by interaction.collectIsHoveredAsState()
+                val backgroundColor = when {
+                    hovered && onClick != null -> colorScheme.surfaceVariant.copy(alpha = 0.44f)
+                    highlighted -> colorScheme.primaryContainer.copy(alpha = 0.36f)
+                    else -> Color.Transparent
                 }
+                val textColor = if (highlighted) colorScheme.onPrimaryContainer else colorScheme.onSurfaceVariant
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = textColor,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(backgroundColor)
+                        .hoverable(interaction)
+                        .let { base ->
+                            if (onClick != null) {
+                                base
+                                    .clickable(
+                                        interactionSource = interaction,
+                                        indication = null,
+                                        onClick = onClick
+                                    )
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            } else base
+                        }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             }
+
+            BreadcrumbLink(
+                text = stringResource(Res.string.SideMenu_MainPage),
+                onClick = onBackToMainClick
+            )
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = colorScheme.outline.copy(alpha = 0.7f),
+                modifier = Modifier.size(14.dp)
+            )
+            BreadcrumbLink(
+                text = stringResource(Res.string.ScanResult_Breadcrumb_History),
+                onClick = null,
+                highlighted = true
+            )
         }
 
         Box(

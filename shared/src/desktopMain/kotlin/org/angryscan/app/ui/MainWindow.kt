@@ -27,22 +27,12 @@ import ch.qos.logback.classic.Level
 import io.github.kdroidfilter.knotify.builder.ExperimentalNotificationsApi
 import io.github.kdroidfilter.knotify.builder.sendNotification
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.OS
 import org.angryscan.app.logging.LogLevel
 import org.angryscan.app.navigation.AppScreen
-import org.angryscan.app.resources.Res
-import org.angryscan.app.resources.appName
-import org.angryscan.app.resources.eula_version
-import org.angryscan.app.resources.icon
-import org.angryscan.app.resources.scanCompletedNotificationMessage
-import org.angryscan.app.resources.scanCompletedNotificationTitle
+import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
-import org.angryscan.app.resources.favicon_light
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.mainWindow
 import org.angryscan.app.ui.dialogs.EulaDialog
@@ -53,6 +43,7 @@ import org.angryscan.app.ui.windows.screens.main.MainScreen
 import org.angryscan.app.ui.windows.screens.scans.ScanResultScreen
 import org.angryscan.app.ui.windows.screens.scans.ScansScreen
 import org.angryscan.app.ui.windows.screens.settings.SettingsScreen
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -305,13 +296,17 @@ fun MainWindow(
                                         onShowRequest()
                                         navController.navigate(AppScreen.ScanResult(taskId))
                                     },
-                                    onBackClick = { navController.popBackStack() }
+                                    onBackToMainClick = {
+                                        if (!navController.popBackStack(AppScreen.Main, inclusive = false)) {
+                                            navController.navigate(AppScreen.Main)
+                                        }
+                                    }
                                 )
                             }
                             composable<AppScreen.ScanResult> { backStackEntry ->
                                 val scanResult: AppScreen.ScanResult = backStackEntry.toRoute()
                                 ScanResultScreen(
-                                    scanResult.scanId,
+                                    taskId = scanResult.scanId,
                                     onBackToHistoryClick = {
                                         if (!navController.popBackStack(AppScreen.Scans, inclusive = false)) {
                                             navController.navigate(AppScreen.Scans)

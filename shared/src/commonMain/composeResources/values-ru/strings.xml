@@ -207,6 +207,8 @@
     <string name="Common-Back">&lt;&lt; Назад</string>
     <string name="ScanResult-BackToHistory">&lt;&lt; Назад в историю сканирований</string>
     <string name="ScanResult-BackToMainMenu">&lt;&lt;&lt; В главное меню</string>
+    <string name="ScanResult-Breadcrumb-History">История сканирований</string>
+    <string name="ScanResult-Breadcrumb-Current">Результаты сканирования</string>
     <string name="Common-Save">Сохранить</string>
     <string name="ScanSettings-DetectPresets-Title">Профили</string>
     <string name="ScanSettings-DetectPreset-PersonalData-RU">Персональные данные RU</string>

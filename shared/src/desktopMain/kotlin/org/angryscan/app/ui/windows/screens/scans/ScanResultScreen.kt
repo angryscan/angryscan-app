@@ -3,6 +3,8 @@ package org.angryscan.app.ui.windows.screens.scans
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.PlatformFile
@@ -214,6 +218,81 @@ fun ScanResultScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    @Composable
+    fun ResultNavigationActions(
+        onBackToHistory: () -> Unit,
+        onBackToMain: () -> Unit
+    ) {
+        val cs = MaterialTheme.colorScheme
+        @Composable
+        fun BreadcrumbLink(
+            text: String,
+            onClick: () -> Unit,
+            highlighted: Boolean = false
+        ) {
+            val interaction = remember { MutableInteractionSource() }
+            val hovered by interaction.collectIsHoveredAsState()
+            val backgroundColor = when {
+                hovered -> cs.surfaceVariant.copy(alpha = 0.44f)
+                highlighted -> cs.primaryContainer.copy(alpha = 0.36f)
+                else -> Color.Transparent
+            }
+            val textColor = if (highlighted) cs.onPrimaryContainer else cs.onSurfaceVariant
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                color = textColor,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(backgroundColor)
+                    .hoverable(interaction)
+                    .clickable(
+                        interactionSource = interaction,
+                        indication = null,
+                        onClick = onClick
+                    )
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BreadcrumbLink(
+                text = stringResource(Res.string.SideMenu_MainPage),
+                onClick = onBackToMain
+            )
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = cs.outline.copy(alpha = 0.7f),
+                modifier = Modifier.size(14.dp)
+            )
+            BreadcrumbLink(
+                text = stringResource(Res.string.ScanResult_Breadcrumb_History),
+                onClick = onBackToHistory,
+                highlighted = false
+            )
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = cs.outline.copy(alpha = 0.7f),
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = stringResource(Res.string.ScanResult_Breadcrumb_Current),
+                style = MaterialTheme.typography.labelLarge,
+                color = cs.onPrimaryContainer,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(cs.primaryContainer.copy(alpha = 0.42f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -243,26 +322,10 @@ fun ScanResultScreen(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.weight(0.8f)
                     ) {
-                        TextButton(
-                            onClick = onBackToHistoryClick,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.ScanResult_BackToHistory),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        TextButton(
-                            onClick = onBackToMainClick,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.ScanResult_BackToMainMenu),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        ResultNavigationActions(
+                            onBackToHistory = onBackToHistoryClick,
+                            onBackToMain = onBackToMainClick
+                        )
 
                         when (task.dbTask.connector) {
                             is ConnectorS3 -> {

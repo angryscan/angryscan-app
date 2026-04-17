@@ -311,7 +311,7 @@ private fun SourceRadioRow(
         )
         SourceRadioItem(
             selected = selectedRoute == MainScreenConnector.Postgres,
-            label = "SQL Database",
+            label = "Database",
             settingsOpen = settingsOpen,
             onSelect = {
                 if (selectedRoute != MainScreenConnector.Postgres) {
