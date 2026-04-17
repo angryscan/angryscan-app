@@ -169,6 +169,7 @@
     <string name="MainScreen-ScanHint-Postgres">Set SQL Database connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-ScanHint-SqlDatabase">Set SQL Database connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-SavedConnections">Saved connections (%1$d)</string>
+    <string name="MainScreen-NoSavedConnections">No saved connections</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">Choose file extensions to scan:</string>

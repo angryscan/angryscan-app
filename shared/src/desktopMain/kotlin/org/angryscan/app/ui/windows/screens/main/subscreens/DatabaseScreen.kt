@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
@@ -64,6 +65,8 @@ fun DatabaseScreen(
         sqlConnectionTestMessage != null -> MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
         else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)
     }
+    val savedForCurrentType = screenStateSettings.sqlSavedConnections
+        .filter { it.databaseType == sqlScreenState.databaseType }
 
     fun markSqlConnectionDirty() {
         sqlConnectionTestSuccessful = false
@@ -115,6 +118,23 @@ fun DatabaseScreen(
         if (conn.database.isNotBlank()) append(" · ${conn.database}")
         if (conn.schema.isNotBlank()) append(" · ${conn.schema}")
         if (conn.user.isNotBlank()) append(" · ${conn.user}")
+    }
+
+    fun savedConnectionPrimary(conn: ScreenStateSettings.SqlSavedConnection): String {
+        val databasePart = conn.database.trim()
+        return if (databasePart.isNotBlank()) {
+            "${conn.host}:${conn.port}/$databasePart"
+        } else {
+            "${conn.host}:${conn.port}"
+        }
+    }
+
+    fun savedConnectionSecondary(conn: ScreenStateSettings.SqlSavedConnection): String {
+        val parts = buildList {
+            if (conn.schema.isNotBlank()) add("schema: ${conn.schema}")
+            if (conn.user.isNotBlank()) add("user: ${conn.user}")
+        }
+        return parts.joinToString(" · ")
     }
 
     fun saveCurrentSqlConnection() {
@@ -539,6 +559,177 @@ fun DatabaseScreen(
             }
         )
     }
+    if (savedConnectionsExpanded) {
+        Dialog(onDismissRequest = { savedConnectionsExpanded = false }) {
+            val dialogScroll = rememberScrollState()
+            val cs = MaterialTheme.colorScheme
+            val dialogContainerColor = cs.surfaceVariant
+            val dialogBorderColor = cs.outlineVariant.copy(alpha = 0.56f)
+            val dialogDividerColor = cs.outlineVariant.copy(alpha = 0.34f)
+            val selectedRowColor = cs.primaryContainer.copy(alpha = 0.18f)
+            val selectedTextColor = cs.primary
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                tonalElevation = 3.dp,
+                color = dialogContainerColor,
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = dialogBorderColor
+                ),
+                modifier = Modifier.widthIn(min = 440.dp, max = 580.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = cs.onSurface
+                        )
+                        TextButton(
+                            onClick = { savedConnectionsExpanded = false },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.Common_Cancel),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.onSurfaceVariant
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = dialogDividerColor)
+                    if (savedForCurrentType.isEmpty()) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_NoSavedConnections),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cs.onSurfaceVariant
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 320.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 10.dp)
+                                    .verticalScroll(dialogScroll),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                savedForCurrentType.forEachIndexed { index, conn ->
+                                    val title = savedConnectionLabel(conn)
+                                    val connectionKey = sqlConnectionKey(
+                                        databaseType = conn.databaseType,
+                                        host = conn.host,
+                                        port = conn.port,
+                                        schema = conn.schema,
+                                        user = conn.user
+                                    )
+                                    val isSelected = connectionKey == selectedSavedConnectionKey
+                                    DescriptionTooltip(description = title, delay = 250) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(
+                                                    if (isSelected) {
+                                                        selectedRowColor
+                                                    } else {
+                                                        Color.Transparent
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .clickable {
+                                                    applySavedConnection(conn)
+                                                    savedConnectionsExpanded = false
+                                                }
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isSelected) {
+                                                    Icons.Outlined.RadioButtonChecked
+                                                } else {
+                                                    Icons.Outlined.RadioButtonUnchecked
+                                                },
+                                                contentDescription = null,
+                                                tint = if (isSelected) {
+                                                    selectedTextColor
+                                                } else {
+                                                    cs.onSurfaceVariant.copy(alpha = 0.75f)
+                                                },
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Column(
+                                                modifier = Modifier.weight(1f),
+                                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                                            ) {
+                                                Text(
+                                                    text = savedConnectionPrimary(conn),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = if (isSelected) {
+                                                        selectedTextColor
+                                                    } else {
+                                                        cs.onSurface
+                                                    }
+                                                )
+                                                Text(
+                                                    text = savedConnectionSecondary(conn).ifBlank { " " },
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = cs.onSurfaceVariant
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { pendingDeleteConnection = conn },
+                                                modifier = Modifier.size(30.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Close,
+                                                    contentDescription = "Delete saved connection",
+                                                    tint = cs.onSurfaceVariant.copy(alpha = 0.85f),
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    if (index < savedForCurrentType.lastIndex) {
+                                        HorizontalDivider(
+                                            color = cs.outlineVariant.copy(alpha = 0.24f),
+                                            modifier = Modifier.padding(horizontal = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            VerticalScrollbar(
+                                adapter = rememberScrollbarAdapter(dialogScroll),
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .fillMaxHeight()
+                                    .width(8.dp),
+                                style = LocalScrollbarStyle.current.copy(
+                                    unhoverColor = cs.outlineVariant.copy(alpha = 0.5f),
+                                    hoverColor = cs.primary.copy(alpha = 0.85f)
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // SQL connection params should appear under the source radio buttons (same UX as AWS S3).
     setUnderSourceContent {
@@ -551,8 +742,6 @@ fun DatabaseScreen(
             } * 0.75f
             val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
             val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
-            val savedConnectionsScroll = rememberScrollState()
-
             val compactSize = MaterialTheme.typography.bodySmall.fontSize
             val compactLineHeight = MaterialTheme.typography.bodySmall.lineHeight
             val fieldTextStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -746,110 +935,17 @@ fun DatabaseScreen(
                         )
                     }
                     if (sqlScreenState.databaseType != DatabaseType.SQLite) {
-                        val savedForCurrentType = screenStateSettings.sqlSavedConnections
-                            .filter { it.databaseType == sqlScreenState.databaseType }
-                        val savedMenuHeight = (savedForCurrentType.size * 40).dp.coerceIn(40.dp, 260.dp)
                         Spacer(modifier = Modifier.weight(1f))
-                        Box {
-                            TextButton(
-                                onClick = { savedConnectionsExpanded = !savedConnectionsExpanded },
-                                enabled = savedForCurrentType.isNotEmpty(),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text(
-                                    stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = if (savedConnectionsExpanded) {
-                                        Icons.Outlined.KeyboardArrowUp
-                                    } else {
-                                        Icons.Outlined.KeyboardArrowDown
-                                    },
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = savedConnectionsExpanded,
-                                onDismissRequest = { savedConnectionsExpanded = false },
-                                modifier = Modifier
-                                    .widthIn(min = 340.dp, max = 520.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .height(savedMenuHeight)
-                                        .widthIn(min = 340.dp, max = 520.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(end = 10.dp)
-                                            .verticalScroll(savedConnectionsScroll)
-                                    ) {
-                                        savedForCurrentType.forEach { conn ->
-                                            val title = savedConnectionLabel(conn)
-                                            val isSelected = sqlConnectionKey(
-                                                databaseType = conn.databaseType,
-                                                host = conn.host,
-                                                port = conn.port,
-                                                schema = conn.schema,
-                                                user = conn.user
-                                            ) == selectedSavedConnectionKey
-                                            DescriptionTooltip(description = title, delay = 250) {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Text(
-                                                            text = title,
-                                                            style = if (isSelected) {
-                                                                MaterialTheme.typography.bodyMedium.copy(
-                                                                    color = MaterialTheme.colorScheme.primary
-                                                                )
-                                                            } else {
-                                                                MaterialTheme.typography.bodyMedium
-                                                            },
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                    },
-                                                    trailingIcon = {
-                                                        IconButton(
-                                                            onClick = { pendingDeleteConnection = conn },
-                                                            modifier = Modifier.size(28.dp)
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = Icons.Outlined.Close,
-                                                                contentDescription = "Delete saved connection",
-                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                                                                modifier = Modifier.size(14.dp)
-                                                            )
-                                                        }
-                                                    },
-                                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
-                                                    onClick = {
-                                                        applySavedConnection(conn)
-                                                        savedConnectionsExpanded = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                    VerticalScrollbar(
-                                        adapter = rememberScrollbarAdapter(savedConnectionsScroll),
-                                        modifier = Modifier
-                                            .align(Alignment.CenterEnd)
-                                            .fillMaxHeight()
-                                            .width(8.dp),
-                                        style = LocalScrollbarStyle.current.copy(
-                                            unhoverColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                            hoverColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    )
-                                }
-                            }
+                        TextButton(
+                            onClick = { savedConnectionsExpanded = true },
+                            enabled = savedForCurrentType.isNotEmpty(),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
+                                style = MaterialTheme.typography.labelSmall
+                            )
                         }
                     }
                 }
