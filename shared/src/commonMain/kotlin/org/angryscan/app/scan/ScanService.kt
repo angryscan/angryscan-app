@@ -218,8 +218,7 @@ class ScanService : KoinComponent {
                         } else if (connector is ConnectorPostgres) {
                             "Host: ${connector.host}. " +
                                     "Port: ${connector.port}. " +
-                                    "Database: ${connector.database}. " +
-                                    "Row limit: ${connector.rowLimit}. "
+                                    "Database: ${connector.database}. "
                         } else ""
             }
 

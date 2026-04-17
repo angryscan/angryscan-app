@@ -494,6 +494,7 @@
     <string name="Validation-NoMatchersMessage">Please select at least one detection function to scan.</string>
     <string name="MainScreen-DeleteSavedConnectionTypeTitle">Delete %1$s connection?</string>
     <string name="ScanSettings-PostgresTestConnection">Test connection</string>
+    <string name="ScanSettings-PostgresAddConnection">Add connection</string>
     <string name="ScanSettings-PostgresTestingConnection">Testing connection...</string>
     <string name="ScanSettings-PostgresConnectionSuccess">Connection established successfully.</string>
     <string name="Validation-PostgresConnectionTitle">Database connection failed</string>

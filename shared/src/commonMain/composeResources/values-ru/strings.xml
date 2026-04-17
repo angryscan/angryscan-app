@@ -483,6 +483,7 @@
     <string name="Validation-NoMatchersMessage">Пожалуйста, выберите хотя бы одну функцию детектирования для сканирования.</string>
     <string name="MainScreen-DeleteSavedConnectionTypeTitle">Удалить подключение типа %1$s?</string>
     <string name="ScanSettings-PostgresTestConnection">Проверить подключение</string>
+    <string name="ScanSettings-PostgresAddConnection">Добавить подключение</string>
     <string name="ScanSettings-PostgresTestingConnection">Проверяем подключение...</string>
     <string name="ScanSettings-PostgresConnectionSuccess">Подключение успешно установлено.</string>
     <string name="Validation-PostgresConnectionTitle">Ошибка подключения к базе данных</string>

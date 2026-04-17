@@ -198,7 +198,6 @@ fun MainScreen(
                         schema = replay.path,
                         user = connector.user,
                         password = connector.password,
-                        rowLimit = connector.rowLimit.toString(),
                         filePath = ""
                     )
                     is ConnectorMySQL -> currentSql.copy(
@@ -209,7 +208,6 @@ fun MainScreen(
                         schema = replay.path,
                         user = connector.user,
                         password = connector.password,
-                        rowLimit = connector.rowLimit.toString(),
                         filePath = ""
                     )
                     is ConnectorGreenPlum -> currentSql.copy(
@@ -220,7 +218,6 @@ fun MainScreen(
                         schema = replay.path,
                         user = connector.user,
                         password = connector.password,
-                        rowLimit = connector.rowLimit.toString(),
                         filePath = ""
                     )
                     is ConnectorHive -> currentSql.copy(
@@ -231,7 +228,6 @@ fun MainScreen(
                         schema = replay.path,
                         user = connector.user,
                         password = connector.password,
-                        rowLimit = connector.rowLimit.toString(),
                         filePath = ""
                     )
                     is ConnectorCockroachDB -> currentSql.copy(
@@ -242,13 +238,11 @@ fun MainScreen(
                         schema = replay.path,
                         user = connector.user,
                         password = connector.password,
-                        rowLimit = connector.rowLimit.toString(),
                         filePath = ""
                     )
                     is ConnectorSqlite -> currentSql.copy(
                         databaseType = DatabaseType.SQLite,
                         filePath = connector.filePath,
-                        rowLimit = connector.rowLimit.toString(),
                         schema = "",
                         host = "",
                         port = "5432",

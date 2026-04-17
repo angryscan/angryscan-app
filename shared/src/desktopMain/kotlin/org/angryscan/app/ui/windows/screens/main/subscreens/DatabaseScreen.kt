@@ -261,51 +261,44 @@ fun DatabaseScreen(
                         showErrorSnackbar(postgresConnectionErrorMessage)
                         return@launch
                     }
-                    val rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
                     val connector = when (sqlScreenState.databaseType) {
                         DatabaseType.PostgreSQL -> ConnectorPostgres(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
                             user = sqlScreenState.user,
-                            password = sqlScreenState.password,
-                            rowLimit = rowLimit
+                            password = sqlScreenState.password
                         )
                         DatabaseType.MySQL -> ConnectorMySQL(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
                             user = sqlScreenState.user,
-                            password = sqlScreenState.password,
-                            rowLimit = rowLimit
+                            password = sqlScreenState.password
                         )
                         DatabaseType.GreenPlum -> ConnectorGreenPlum(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
                             user = sqlScreenState.user,
-                            password = sqlScreenState.password,
-                            rowLimit = rowLimit
+                            password = sqlScreenState.password
                         )
                         DatabaseType.Hive -> ConnectorHive(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
                             user = sqlScreenState.user,
-                            password = sqlScreenState.password,
-                            rowLimit = rowLimit
+                            password = sqlScreenState.password
                         )
                         DatabaseType.CockroachDB -> ConnectorCockroachDB(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
                             user = sqlScreenState.user,
-                            password = sqlScreenState.password,
-                            rowLimit = rowLimit
+                            password = sqlScreenState.password
                         )
                         DatabaseType.SQLite -> ConnectorSqlite(
-                            filePath = sqlScreenState.filePath,
-                            rowLimit = rowLimit
+                            filePath = sqlScreenState.filePath
                         )
                     }
                     val taskName = when (sqlScreenState.databaseType) {
@@ -641,6 +634,53 @@ fun DatabaseScreen(
                 }
             }
 
+            @Composable
+            fun ConnectionActionButtons(
+                canTest: Boolean,
+                showAddConnection: Boolean
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        enabled = canTest && !sqlConnectionTestInProgress,
+                        onClick = { testCurrentSqlConnection() },
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = startScanButtonColors()
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.ScanSettings_PostgresTestConnection),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    if (showAddConnection) {
+                        OutlinedButton(
+                            enabled = canTest,
+                            onClick = { saveCurrentSqlConnection() },
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.ScanSettings_PostgresAddConnection),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .widthIn(min = blockMinWidth)
@@ -820,51 +860,11 @@ fun DatabaseScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            CompactField(
-                                value = sqlScreenState.rowLimit,
-                                onValueChange = { v ->
-                                    if (v.isBlank() || v.toIntOrNull() != null) {
-                                        sqlScreenState = sqlScreenState.copy(rowLimit = v)
-                                        markSqlConnectionDirty()
-                                        coroutineScope.launch { screenStateSettings.save() }
-                                    }
-                                },
-                                placeholder = "Rows",
-                                modifier = Modifier.width(120.dp)
-                            )
                             val canTest = sqlScreenState.hasRequiredConnectionSettings()
-                            DescriptionTooltip(description = "Test connection", delay = 350) {
-                                Button(
-                                    enabled = canTest && !sqlConnectionTestInProgress,
-                                    onClick = { testCurrentSqlConnection() },
-                                    modifier = Modifier.size(32.dp),
-                                    contentPadding = PaddingValues(0.dp),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = startScanButtonColors()
-                                ) {
-                                    when {
-                                        sqlConnectionTestInProgress -> CircularProgressIndicator(
-                                            modifier = Modifier.size(14.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                        sqlConnectionTestSuccessful -> Icon(
-                                            imageVector = Icons.Outlined.CheckCircle,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        sqlConnectionTestMessage != null -> Icon(
-                                            imageVector = Icons.Outlined.ErrorOutline,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        else -> Icon(
-                                            imageVector = Icons.Outlined.Sync,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
+                            ConnectionActionButtons(
+                                canTest = canTest,
+                                showAddConnection = false
+                            )
                         }
                     }
                     else -> {
@@ -903,51 +903,11 @@ fun DatabaseScreen(
                                 modifier = Modifier.weight(0.34f),
                                 isPassword = true
                             )
-                            CompactField(
-                                value = sqlScreenState.rowLimit,
-                                onValueChange = { v ->
-                                    if (v.isBlank() || v.toIntOrNull() != null) {
-                                        sqlScreenState = sqlScreenState.copy(rowLimit = v)
-                                        markSqlConnectionDirty()
-                                        coroutineScope.launch { screenStateSettings.save() }
-                                    }
-                                },
-                                placeholder = "Rows",
-                                modifier = Modifier.weight(0.22f)
-                            )
                             val canTest = sqlScreenState.hasRequiredConnectionSettings()
-                            DescriptionTooltip(description = "Test connection", delay = 350) {
-                                Button(
-                                    enabled = canTest && !sqlConnectionTestInProgress,
-                                    onClick = { testCurrentSqlConnection() },
-                                    modifier = Modifier.size(32.dp),
-                                    contentPadding = PaddingValues(0.dp),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = startScanButtonColors()
-                                ) {
-                                    when {
-                                        sqlConnectionTestInProgress -> CircularProgressIndicator(
-                                            modifier = Modifier.size(14.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                        sqlConnectionTestSuccessful -> Icon(
-                                            imageVector = Icons.Outlined.CheckCircle,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        sqlConnectionTestMessage != null -> Icon(
-                                            imageVector = Icons.Outlined.ErrorOutline,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        else -> Icon(
-                                            imageVector = Icons.Outlined.Sync,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
+                            ConnectionActionButtons(
+                                canTest = canTest,
+                                showAddConnection = true
+                            )
                         }
                     }
                 }
