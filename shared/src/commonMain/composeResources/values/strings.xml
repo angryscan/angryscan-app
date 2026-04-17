@@ -215,6 +215,8 @@
     <string name="ScanResult-BackToMainMenu">&lt;&lt;&lt; Back to main menu</string>
     <string name="ScanResult-Breadcrumb-History">Scan history</string>
     <string name="ScanResult-Breadcrumb-Current">Scan result</string>
+    <string name="ScanResult-RescanAsIs">Rescan</string>
+    <string name="ScanResult-EditAndRun">Edit &amp; Run</string>
     <string name="Common-Save">Save</string>
     <string name="ScanSettings-DetectPresets-Title">Profiles</string>
     <string name="ScanSettings-DetectPreset-PersonalData-RU">Personal data RU</string>

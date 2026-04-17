@@ -49,8 +49,8 @@ val ScanListObjectSizeColumnWidth = 98.dp
 val ScanListPiiFoundColumnWidth = 92.dp
 val ScanListPiiSizeColumnWidth = 98.dp
 val ScanListPiiScoreColumnWidth = 92.dp
-val ScanListAttributesColumnWidth = 264.dp
-val ScanListChevronColumnWidth = 28.dp
+val ScanListAttributesColumnWidth = 232.dp
+val ScanListChevronColumnWidth = 56.dp
 val ScanListRowHorizontalPadding = 12.dp
 val ScanListMainToMetricsGap = 12.dp
 val ScanListMetricsWidth =
@@ -98,7 +98,11 @@ fun ScanTaskHeaderRow(
             statusCounts = statusCounts,
             onStatusFilterChange = onStatusFilterChange
         )
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnPath), modifier = Modifier.weight(1f).padding(end = 6.dp))
+        HeaderCell(
+            stringResource(Res.string.ScansPage_ColumnPath),
+            modifier = Modifier.weight(1f).padding(end = 6.dp),
+            centered = true
+        )
         HeaderCell(stringResource(Res.string.ScansPage_ColumnObjectSize), modifier = Modifier.width(ScanListObjectSizeColumnWidth), centered = true)
         HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiFound), modifier = Modifier.width(ScanListPiiFoundColumnWidth), centered = true)
         HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiSize), modifier = Modifier.width(ScanListPiiSizeColumnWidth), centered = true)
@@ -221,6 +225,8 @@ fun ScanTaskCard(
     currentTime: Instant,
     attributesExpanded: Boolean = false,
     onAttributesExpandClick: (() -> Unit)? = null,
+    onRescanClick: (() -> Unit)? = null,
+    onEditAndRunClick: (() -> Unit)? = null,
 ) {
     val state by taskEntity.state.collectAsState()
     val path by taskEntity.path.collectAsState()
@@ -297,9 +303,15 @@ fun ScanTaskCard(
     val sortedAttributes = remember(foundAttributes) {
         foundAttributes.toList().sortedByDescending { it.second }
     }
-    val topAttributes = remember(sortedAttributes) { sortedAttributes.take(2) }
-    val extraAttributesCount = (sortedAttributes.size - 2).coerceAtLeast(0)
-    val extraAttributes = remember(sortedAttributes) { sortedAttributes.drop(2) }
+    val topAttributes = remember(sortedAttributes, attributesExpanded) {
+        when {
+            attributesExpanded && sortedAttributes.size > 1 -> sortedAttributes.take(1)
+            else -> sortedAttributes.take(2)
+        }
+    }
+    val extraAttributesCount = (sortedAttributes.size - topAttributes.size).coerceAtLeast(0)
+    val extraAttributes = remember(sortedAttributes, topAttributes) { sortedAttributes.drop(topAttributes.size) }
+    var actionsExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -539,7 +551,7 @@ fun ScanTaskCard(
                                 count = first.second
                             )
                         }
-                        if (second != null) {
+                        if (!attributesExpanded && second != null) {
                             Text(
                                 text = ", ",
                                 style = MaterialTheme.typography.bodySmall,
@@ -552,7 +564,15 @@ fun ScanTaskCard(
                         }
 
                         if (extraAttributesCount > 0) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                            if (first != null && second == null) {
+                                Text(
+                                    text = ", ",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                                )
+                            } else if (second != null) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
                             val label = if (attributesExpanded) "Collapse" else "+$extraAttributesCount"
                             if (onAttributesExpandClick != null) {
                                 val expandInteractionSource = remember { MutableInteractionSource() }
@@ -631,11 +651,66 @@ fun ScanTaskCard(
             modifier = Modifier.width(ScanListChevronColumnWidth),
             contentAlignment = Alignment.CenterEnd
         ) {
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = colorScheme.onSurfaceVariant
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onRescanClick != null || onEditAndRunClick != null) {
+                    Box {
+                        IconButton(
+                            onClick = { actionsExpanded = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.MoreVert,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant.copy(alpha = 0.92f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = actionsExpanded,
+                            onDismissRequest = { actionsExpanded = false }
+                        ) {
+                            onRescanClick?.let { rescan ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.ScanResult_RescanAsIs)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.RestartAlt,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        actionsExpanded = false
+                                        rescan()
+                                    }
+                                )
+                            }
+                            onEditAndRunClick?.let { editAndRun ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.ScanResult_EditAndRun)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Edit,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        actionsExpanded = false
+                                        editAndRun()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

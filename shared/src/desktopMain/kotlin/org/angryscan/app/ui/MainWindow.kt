@@ -317,6 +317,10 @@ fun MainWindow(
                                             navController.navigate(AppScreen.Main)
                                         }
                                     },
+                                    onShowScan = { taskId ->
+                                        onShowRequest()
+                                        navController.navigate(AppScreen.ScanResult(taskId))
+                                    }
                                 )
                             }
                             composable<AppScreen.Settings> {

@@ -25,9 +25,11 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.TaskReplayHelper
 import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskCard
 import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskHeaderRow
 import org.angryscan.app.ui.windows.screens.scans.components.StatusFilter
@@ -76,6 +78,7 @@ fun ScansScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -247,6 +250,23 @@ fun ScansScreen(
                                     onAttributesExpandClick = {
                                         val id = task.id.value ?: return@ScanTaskCard
                                         expandedTaskId = if (expandedTaskId == id) null else id
+                                    },
+                                    onRescanClick = {
+                                        coroutineScope.launch {
+                                            val newTask = scanService.startNewScanFromTask(task)
+                                            newTask.id.value?.let {
+                                                focusManager.clearFocus()
+                                                onTaskClick(it)
+                                            }
+                                        }
+                                    },
+                                    onEditAndRunClick = onBackToMainClick?.let { backToMain ->
+                                        {
+                                            coroutineScope.launch {
+                                                TaskReplayHelper.set(scanService.snapshotTaskReplaySettings(task))
+                                                backToMain()
+                                            }
+                                        }
                                     }
                                 )
                             }

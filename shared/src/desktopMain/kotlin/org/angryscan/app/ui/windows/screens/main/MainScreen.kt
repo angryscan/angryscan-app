@@ -28,12 +28,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.angryscan.app.common.DatabaseType
+import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.MainScreen_RecentScans_Empty
 import org.angryscan.app.resources.MainScreen_RecentScans_Title
 import org.angryscan.app.resources.MainScreen_RecentScans_ViewFullHistory
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.TaskReplayHelper
+import org.angryscan.app.scan.common.connectors.*
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.ui.DesktopMainLayout
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
@@ -45,6 +52,8 @@ import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
 import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskCard
 import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskHeaderRow
 import org.angryscan.app.ui.windows.screens.scans.components.StatusFilter
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.matchers.UserSignature
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.time.Clock
@@ -82,11 +91,14 @@ fun MainScreen(
     var underSourceContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
     var settingsPanelOpened by remember { mutableStateOf(false) }
     val scanService = koinInject<ScanService>()
+    val scanSettings = koinInject<ScanSettings>()
+    val screenStateSettings = koinInject<ScreenStateSettings>()
 
     val colorScheme = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
 
     val headerRouteEntry by navController.currentBackStackEntryAsState()
+    val pendingReplay by TaskReplayHelper.pending.collectAsState()
     val s3SourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
     val sqlSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
     val centralPanelTopPadding = when {
@@ -102,6 +114,184 @@ fun MainScreen(
     } else {
         // Latest scans table can use a bit more horizontal space.
         1160.dp
+    }
+
+    fun applyDetectionSettings(
+        extensionsTarget: MutableList<IFileType>,
+        matchersTarget: MutableList<IMatcher>,
+        userSignaturesTarget: MutableList<UserSignature>,
+        fastScanTarget: MutableState<Boolean>,
+        extensions: List<IFileType>,
+        matchers: List<IMatcher>,
+        userSignatures: List<UserSignature>,
+        fastScan: Boolean
+    ) {
+        extensionsTarget.clear()
+        extensionsTarget.addAll(extensions)
+        matchersTarget.clear()
+        matchersTarget.addAll(matchers)
+        userSignaturesTarget.clear()
+        userSignaturesTarget.addAll(userSignatures)
+        fastScanTarget.value = fastScan
+    }
+
+    LaunchedEffect(pendingReplay) {
+        val replay = pendingReplay ?: return@LaunchedEffect
+        val replayUserSignatures = replay.matchers.filterIsInstance<UserSignature>()
+        val replayMatchers = replay.matchers.filterNot { it is UserSignature }
+
+        applyDetectionSettings(
+            extensionsTarget = scanSettings.extensions,
+            matchersTarget = scanSettings.matchers,
+            userSignaturesTarget = scanSettings.userSignatures,
+            fastScanTarget = scanSettings.fastScan,
+            extensions = replay.extensions,
+            matchers = replayMatchers,
+            userSignatures = replayUserSignatures,
+            fastScan = replay.fastScan
+        )
+        scanSettings.save()
+
+        val destination = when (val connector = replay.connector) {
+            is ConnectorS3 -> {
+                screenStateSettings.s3ScreenState.path = replay.path
+                screenStateSettings.s3ScreenState.endpoint = connector.endpointStr
+                screenStateSettings.s3ScreenState.accessKey = connector.accessKey
+                screenStateSettings.s3ScreenState.secretKey = connector.secretKey
+                screenStateSettings.s3ScreenState.bucket = connector.bucketStr
+                applyDetectionSettings(
+                    extensionsTarget = screenStateSettings.s3ScreenState.extensions,
+                    matchersTarget = screenStateSettings.s3ScreenState.matchers,
+                    userSignaturesTarget = screenStateSettings.s3ScreenState.userSignatures,
+                    fastScanTarget = screenStateSettings.s3ScreenState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.S3
+            }
+
+            is ConnectorHTTP -> {
+                screenStateSettings.httpScreenState.path = replay.path
+                applyDetectionSettings(
+                    extensionsTarget = screenStateSettings.httpScreenState.extensions,
+                    matchersTarget = screenStateSettings.httpScreenState.matchers,
+                    userSignaturesTarget = screenStateSettings.httpScreenState.userSignatures,
+                    fastScanTarget = screenStateSettings.httpScreenState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.HTTP
+            }
+
+            is IDatabaseConnector -> {
+                val currentSql = screenStateSettings.sqlScreenState.value
+                screenStateSettings.sqlScreenState.value = when (connector) {
+                    is ConnectorPostgres -> currentSql.copy(
+                        databaseType = DatabaseType.PostgreSQL,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        rowLimit = connector.rowLimit.toString(),
+                        filePath = ""
+                    )
+                    is ConnectorMySQL -> currentSql.copy(
+                        databaseType = DatabaseType.MySQL,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        rowLimit = connector.rowLimit.toString(),
+                        filePath = ""
+                    )
+                    is ConnectorGreenPlum -> currentSql.copy(
+                        databaseType = DatabaseType.GreenPlum,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        rowLimit = connector.rowLimit.toString(),
+                        filePath = ""
+                    )
+                    is ConnectorHive -> currentSql.copy(
+                        databaseType = DatabaseType.Hive,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        rowLimit = connector.rowLimit.toString(),
+                        filePath = ""
+                    )
+                    is ConnectorCockroachDB -> currentSql.copy(
+                        databaseType = DatabaseType.CockroachDB,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        rowLimit = connector.rowLimit.toString(),
+                        filePath = ""
+                    )
+                    is ConnectorSqlite -> currentSql.copy(
+                        databaseType = DatabaseType.SQLite,
+                        filePath = connector.filePath,
+                        rowLimit = connector.rowLimit.toString(),
+                        schema = "",
+                        host = "",
+                        port = "5432",
+                        database = "",
+                        user = "",
+                        password = ""
+                    )
+                    else -> currentSql
+                }
+                val sqlState = screenStateSettings.sqlScreenState.value
+                applyDetectionSettings(
+                    extensionsTarget = sqlState.extensions,
+                    matchersTarget = sqlState.matchers,
+                    userSignaturesTarget = sqlState.userSignatures,
+                    fastScanTarget = sqlState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.Postgres
+            }
+
+            else -> {
+                screenStateSettings.fileShareScreenState.path = replay.path
+                applyDetectionSettings(
+                    extensionsTarget = screenStateSettings.fileShareScreenState.extensions,
+                    matchersTarget = screenStateSettings.fileShareScreenState.matchers,
+                    userSignaturesTarget = screenStateSettings.fileShareScreenState.userSignatures,
+                    fastScanTarget = screenStateSettings.fileShareScreenState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.FileShare
+            }
+        }
+
+        screenStateSettings.save()
+        settingsPanelOpened = false
+        navController.navigate(destination)
+        TaskReplayHelper.clear()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -410,6 +600,7 @@ private fun RecentScansPreview(
 ) {
     val allTasks by scanService.tasks.tasks.collectAsState()
     var statusFilter by remember { mutableStateOf(StatusFilter.ALL) }
+    val coroutineScope = rememberCoroutineScope()
 
     val visibleTasks = allTasks
         .filter { it.state.value != TaskState.LOADING }
@@ -488,6 +679,17 @@ private fun RecentScansPreview(
                         onAttributesExpandClick = {
                             val id = task.id.value ?: return@ScanTaskCard
                             expandedTaskId = if (expandedTaskId == id) null else id
+                        },
+                        onRescanClick = {
+                            coroutineScope.launch {
+                                val newTask = scanService.startNewScanFromTask(task)
+                                newTask.id.value?.let { onTaskClick(it) }
+                            }
+                        },
+                        onEditAndRunClick = {
+                            coroutineScope.launch {
+                                TaskReplayHelper.set(scanService.snapshotTaskReplaySettings(task))
+                            }
                         }
                     )
                 }

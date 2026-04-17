@@ -24,6 +24,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private val logger = KotlinLogging.logger {}
 
+data class TaskReplaySettings(
+    val path: String,
+    val fastScan: Boolean,
+    val connector: IConnector,
+    val extensions: List<IFileType>,
+    val matchers: List<IMatcher>,
+)
+
 @OptIn(ExperimentalDatabaseMigrationApi::class)
 class ScanService : KoinComponent {
     private val database: DatabaseConnector by inject()
@@ -299,5 +307,29 @@ class ScanService : KoinComponent {
         task.rescan {
             this.start()
         }
+    }
+
+    suspend fun snapshotTaskReplaySettings(task: TaskEntityViewModel): TaskReplaySettings = database.transaction {
+        TaskReplaySettings(
+            path = task.dbTask.path,
+            fastScan = task.dbTask.fastScan,
+            connector = task.dbTask.connector,
+            extensions = task.dbTask.extensions.map { it.extension },
+            matchers = task.dbTask.matchers.map { it.matcher }
+        )
+    }
+
+    suspend fun startNewScanFromTask(task: TaskEntityViewModel): TaskEntityViewModel {
+        val replay = snapshotTaskReplaySettings(task)
+        val newTask = createTask(
+            name = task.name.value,
+            path = replay.path,
+            extensions = replay.extensions,
+            matchers = replay.matchers,
+            fastScan = replay.fastScan,
+            connector = replay.connector
+        )
+        startTask(newTask)
+        return newTask
     }
 }

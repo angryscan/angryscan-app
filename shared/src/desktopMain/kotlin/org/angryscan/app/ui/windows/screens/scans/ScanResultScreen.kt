@@ -36,6 +36,7 @@ import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.TaskReplayHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.createDialogSettings
@@ -62,7 +63,8 @@ import kotlin.time.toDuration
 fun ScanResultScreen(
     taskId: Int,
     onBackToHistoryClick: () -> Unit,
-    onBackToMainClick: () -> Unit
+    onBackToMainClick: () -> Unit,
+    onShowScan: (Int) -> Unit
 ) {
     val scanService = koinInject<ScanService>()
     val scanSettings = koinInject<ScanSettings>()
@@ -368,6 +370,59 @@ fun ScanResultScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                DescriptionTooltip(
+                                    description = stringResource(Res.string.ScanResult_RescanAsIs),
+                                    delay = 280
+                                ) {
+                                    FilledTonalIconButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val newTask = scanService.startNewScanFromTask(task)
+                                                newTask.id.value?.let { onShowScan(it) }
+                                            }
+                                        },
+                                        enabled = !busy,
+                                        shape = RoundedCornerShape(9.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.RestartAlt,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                DescriptionTooltip(
+                                    description = stringResource(Res.string.ScanResult_EditAndRun),
+                                    delay = 280
+                                ) {
+                                    FilledTonalIconButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val replaySettings = scanService.snapshotTaskReplaySettings(task)
+                                                TaskReplayHelper.set(replaySettings)
+                                                onBackToMainClick()
+                                            }
+                                        },
+                                        enabled = !busy,
+                                        shape = RoundedCornerShape(9.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Edit,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
                                 @Composable
                                 fun ExportButton(
                                     label: String,
