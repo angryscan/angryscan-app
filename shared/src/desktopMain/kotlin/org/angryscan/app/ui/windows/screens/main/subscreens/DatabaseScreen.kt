@@ -44,6 +44,7 @@ fun DatabaseScreen(
     val scanService = koinInject<ScanService>()
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
+    val savedConnectionsRepository = koinInject<SavedSqlConnectionsRepository>()
     var sqlScreenState by remember { screenStateSettings.sqlScreenState }
 
     var selectPathError by remember { mutableStateOf(false) }
@@ -60,52 +61,39 @@ fun DatabaseScreen(
     var sqlConnectionTestMessage by remember { mutableStateOf<String?>(null) }
     var savedConnectionsExpanded by remember { mutableStateOf(false) }
     var selectedSavedConnectionKey by remember { mutableStateOf<String?>(null) }
-    var pendingDeleteConnection by remember { mutableStateOf<ScreenStateSettings.SqlSavedConnection?>(null) }
+    var pendingDeleteConnection by remember { mutableStateOf<SavedSqlConnection?>(null) }
     var pendingConnectionNameDialog by remember { mutableStateOf(false) }
     var pendingConnectionName by remember { mutableStateOf("") }
     var pendingConnectionNameError by remember { mutableStateOf(false) }
+    var savedForCurrentType by remember { mutableStateOf<List<SavedSqlConnection>>(emptyList()) }
     val connectionFieldBorderColor = when {
         sqlConnectionTestSuccessful -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
         sqlConnectionTestMessage != null -> MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
         else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)
     }
-    val savedForCurrentType = screenStateSettings.sqlSavedConnections
-        .filter { it.databaseType == sqlScreenState.databaseType }
-
     fun markSqlConnectionDirty() {
         sqlConnectionTestSuccessful = false
         sqlConnectionTestMessage = null
         selectedSavedConnectionKey = null
     }
 
-    fun sqlConnectionKey(
-        databaseType: DatabaseType,
-        host: String,
-        port: String,
-        schema: String,
-        user: String,
-    ): String = "${databaseType.name}|${host.trim().lowercase()}|${port.trim()}|${schema.trim().lowercase()}|${user.trim().lowercase()}"
-
-    fun applySavedConnection(conn: ScreenStateSettings.SqlSavedConnection) {
-        sqlScreenState = sqlScreenState.copy(
-            databaseType = conn.databaseType,
-            host = conn.host,
-            port = conn.port,
-            database = conn.database,
-            schema = conn.schema,
-            user = conn.user,
-            password = conn.password
-        )
-        sqlConnectionTestSuccessful = false
-        sqlConnectionTestMessage = null
-        selectedSavedConnectionKey = sqlConnectionKey(
-            databaseType = conn.databaseType,
-            host = conn.host,
-            port = conn.port,
-            schema = conn.schema,
-            user = conn.user
-        )
-        coroutineScope.launch { screenStateSettings.save() }
+    fun applySavedConnection(conn: SavedSqlConnection) {
+        coroutineScope.launch {
+            val password = savedConnectionsRepository.getPassword(conn.connectionKey).orEmpty()
+            sqlScreenState = sqlScreenState.copy(
+                databaseType = conn.databaseType,
+                host = conn.host,
+                port = conn.port,
+                database = conn.database,
+                schema = conn.schema,
+                user = conn.user,
+                password = password
+            )
+            sqlConnectionTestSuccessful = false
+            sqlConnectionTestMessage = null
+            selectedSavedConnectionKey = conn.connectionKey
+            screenStateSettings.save()
+        }
     }
 
     fun databaseTypeLabel(databaseType: DatabaseType): String = when (databaseType) {
@@ -117,7 +105,7 @@ fun DatabaseScreen(
         DatabaseType.CockroachDB -> "CockroachDB"
     }
 
-    fun savedConnectionLabel(conn: ScreenStateSettings.SqlSavedConnection): String = buildString {
+    fun savedConnectionLabel(conn: SavedSqlConnection): String = buildString {
         if (conn.name.isNotBlank()) {
             append("${conn.name} — ")
         }
@@ -127,7 +115,7 @@ fun DatabaseScreen(
         if (conn.user.isNotBlank()) append(" · ${conn.user}")
     }
 
-    fun savedConnectionUrl(conn: ScreenStateSettings.SqlSavedConnection): String {
+    fun savedConnectionUrl(conn: SavedSqlConnection): String {
         val databasePart = conn.database.trim()
         return if (databasePart.isNotBlank()) {
             "${conn.host}:${conn.port}/$databasePart"
@@ -136,13 +124,13 @@ fun DatabaseScreen(
         }
     }
 
-    fun savedConnectionPrimary(conn: ScreenStateSettings.SqlSavedConnection): String =
+    fun savedConnectionPrimary(conn: SavedSqlConnection): String =
         conn.name.trim().ifBlank { savedConnectionUrl(conn) }
 
-    fun savedConnectionSecondary(conn: ScreenStateSettings.SqlSavedConnection): String =
+    fun savedConnectionSecondary(conn: SavedSqlConnection): String =
         "url: ${savedConnectionUrl(conn)}"
 
-    fun savedConnectionTertiary(conn: ScreenStateSettings.SqlSavedConnection): String {
+    fun savedConnectionTertiary(conn: SavedSqlConnection): String {
         val parts = buildList {
             if (conn.schema.isNotBlank()) add("schema: ${conn.schema}")
             if (conn.user.isNotBlank()) add("user: ${conn.user}")
@@ -156,80 +144,55 @@ fun DatabaseScreen(
         return if (databasePart.isNotBlank()) "$hostPart/$databasePart" else hostPart
     }
 
-    fun saveCurrentSqlConnection(connectionName: String? = null) {
-        if (sqlScreenState.databaseType == DatabaseType.SQLite) return
-        val current = ScreenStateSettings.SqlSavedConnection(
-            databaseType = sqlScreenState.databaseType,
-            host = sqlScreenState.host.trim(),
-            port = sqlScreenState.port.trim(),
-            database = sqlScreenState.database.trim(),
-            schema = sqlScreenState.schema.trim(),
-            user = sqlScreenState.user.trim(),
-            password = sqlScreenState.password
-        )
-        val currentKey = sqlConnectionKey(
-            databaseType = current.databaseType,
-            host = current.host,
-            port = current.port,
-            schema = current.schema,
-            user = current.user
-        )
-        val existingIndex = screenStateSettings.sqlSavedConnections.indexOfFirst {
-            sqlConnectionKey(
-                databaseType = it.databaseType,
-                host = it.host,
-                port = it.port,
-                schema = it.schema,
-                user = it.user
-            ) == currentKey
+    fun refreshSavedConnections() {
+        coroutineScope.launch {
+            savedForCurrentType = savedConnectionsRepository.list(sqlScreenState.databaseType)
         }
-        if (existingIndex >= 0) {
-            val existing = screenStateSettings.sqlSavedConnections[existingIndex]
-            val merged = current.copy(
-                name = connectionName?.trim()?.takeIf { it.isNotBlank() }
-                    ?: existing.name.trim().takeIf { it.isNotBlank() }
-                    ?: defaultConnectionName()
-            )
-            if (existing != merged) {
-                screenStateSettings.sqlSavedConnections[existingIndex] = merged
-            }
-        } else {
-            screenStateSettings.sqlSavedConnections.add(
-                current.copy(
-                    name = connectionName?.trim()?.takeIf { it.isNotBlank() } ?: defaultConnectionName()
-                )
-            )
-        }
-        coroutineScope.launch { screenStateSettings.save() }
     }
 
-    fun removeSavedConnection(conn: ScreenStateSettings.SqlSavedConnection) {
-        val removedKey = sqlConnectionKey(
-            databaseType = conn.databaseType,
-            host = conn.host,
-            port = conn.port,
-            schema = conn.schema,
-            user = conn.user
-        )
-        screenStateSettings.sqlSavedConnections.removeAll {
-            sqlConnectionKey(
-                databaseType = it.databaseType,
-                host = it.host,
-                port = it.port,
-                schema = it.schema,
-                user = it.user
-            ) == removedKey
+    fun saveCurrentSqlConnection(connectionName: String? = null) {
+        if (sqlScreenState.databaseType == DatabaseType.SQLite) return
+        val finalName = connectionName?.trim()?.takeIf { it.isNotBlank() } ?: defaultConnectionName()
+        coroutineScope.launch {
+            val key = savedConnectionsRepository.upsert(
+                name = finalName,
+                databaseType = sqlScreenState.databaseType,
+                host = sqlScreenState.host,
+                port = sqlScreenState.port,
+                database = sqlScreenState.database,
+                schema = sqlScreenState.schema,
+                user = sqlScreenState.user,
+                password = sqlScreenState.password
+            )
+            selectedSavedConnectionKey = key
+            refreshSavedConnections()
         }
-        if (selectedSavedConnectionKey == removedKey) {
-            selectedSavedConnectionKey = null
+    }
+
+    fun removeSavedConnection(conn: SavedSqlConnection) {
+        coroutineScope.launch {
+            savedConnectionsRepository.remove(conn.connectionKey)
+            if (selectedSavedConnectionKey == conn.connectionKey) {
+                selectedSavedConnectionKey = null
+            }
+            refreshSavedConnections()
+            if (savedForCurrentType.isEmpty()) {
+                savedConnectionsExpanded = false
+            }
         }
-        val hasItemsForCurrentType = screenStateSettings.sqlSavedConnections.any {
-            it.databaseType == sqlScreenState.databaseType
+    }
+
+    LaunchedEffect(Unit) {
+        if (screenStateSettings.sqlSavedConnections.isNotEmpty()) {
+            savedConnectionsRepository.migrateFromLegacy(screenStateSettings.sqlSavedConnections.toList())
+            screenStateSettings.sqlSavedConnections.clear()
+            screenStateSettings.save()
         }
-        if (!hasItemsForCurrentType) {
-            savedConnectionsExpanded = false
-        }
-        coroutineScope.launch { screenStateSettings.save() }
+        refreshSavedConnections()
+    }
+
+    LaunchedEffect(sqlScreenState.databaseType) {
+        refreshSavedConnections()
     }
 
     fun testCurrentSqlConnection() {
@@ -701,13 +664,7 @@ fun DatabaseScreen(
                             ) {
                                 savedForCurrentType.forEachIndexed { index, conn ->
                                     val title = savedConnectionLabel(conn)
-                                    val connectionKey = sqlConnectionKey(
-                                        databaseType = conn.databaseType,
-                                        host = conn.host,
-                                        port = conn.port,
-                                        schema = conn.schema,
-                                        user = conn.user
-                                    )
+                                    val connectionKey = conn.connectionKey
                                     val isSelected = connectionKey == selectedSavedConnectionKey
                                     DescriptionTooltip(description = title, delay = 250) {
                                         Row(

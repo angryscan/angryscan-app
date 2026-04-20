@@ -1,15 +1,12 @@
 package org.angryscan.app.scan
 
+import MigrationUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.runBlocking
 import org.angryscan.app.common.AppFiles
 import org.angryscan.app.common.AppSettings
 import org.angryscan.app.db.DatabaseConnector
-import org.angryscan.app.db.models.TaskFileExtensions
-import org.angryscan.app.db.models.TaskFileScanResults
-import org.angryscan.app.db.models.TaskFiles
-import org.angryscan.app.db.models.TaskMatchers
-import org.angryscan.app.db.models.Tasks
+import org.angryscan.app.db.models.*
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.exception.FlywayValidateException
 import org.flywaydb.core.internal.exception.FlywayMigrateException
@@ -20,7 +17,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 import java.sql.DriverManager
-import kotlin.getValue
 import kotlin.io.path.absolutePathString
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -69,7 +65,8 @@ object DatabaseMigration: KoinComponent {
                 TaskFiles,
                 TaskFileExtensions,
                 TaskMatchers,
-                TaskFileScanResults
+                TaskFileScanResults,
+                SavedSqlConnections
             )
 
 
@@ -78,7 +75,8 @@ object DatabaseMigration: KoinComponent {
                 TaskFiles,
                 TaskFileExtensions,
                 TaskMatchers,
-                TaskFileScanResults
+                TaskFileScanResults,
+                SavedSqlConnections
             )
             val statements = MigrationUtils.statementsRequiredForDatabaseMigration(*allTables, withLogs = false)
             if (statements.isNotEmpty()) {

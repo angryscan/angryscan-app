@@ -1,8 +1,10 @@
 package org.angryscan.app.di
 
-import org.koin.dsl.module
 import org.angryscan.app.common.AppFiles
+import org.angryscan.app.common.DesktopSqlConnectionSecretStore
+import org.angryscan.app.common.SqlConnectionSecretStore
 import org.angryscan.app.db.DatabaseSettings
+import org.koin.dsl.module
 
 val databaseModule = module {
     single {
@@ -11,4 +13,5 @@ val databaseModule = module {
             driver = "org.sqlite.JDBC"
         )
     }
+    single<SqlConnectionSecretStore> { DesktopSqlConnectionSecretStore() }
 }
