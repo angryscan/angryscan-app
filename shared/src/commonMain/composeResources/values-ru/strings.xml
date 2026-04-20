@@ -105,6 +105,8 @@
     <string name="MainScreen-RecentScans-Title">5 последних сканов:</string>
     <string name="MainScreen-RecentScans-Empty">Пока нет сканирований</string>
     <string name="MainScreen-RecentScans-ViewFullHistory">Посмотреть всю историю</string>
+    <string name="MainScreen-SourceLabel-ScanSettingsTooltip">Нажмите, чтобы закрыть настройки сканирования</string>
+    <string name="MainScreen-SourceLabel-LatestScansTooltip">Нажмите, чтобы открыть настройки сканирования</string>
     <string name="QuickSettings-Title">Быстрые настройки</string>
     <string name="QuickSettings-Theme">Тема</string>
     <string name="QuickSettings-Theme-System">Системная</string>

@@ -33,10 +33,7 @@ import org.angryscan.app.common.DatabaseType
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.db.models.TaskState
-import org.angryscan.app.resources.MainScreen_RecentScans_Empty
-import org.angryscan.app.resources.MainScreen_RecentScans_Title
-import org.angryscan.app.resources.MainScreen_RecentScans_ViewFullHistory
-import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskReplayHelper
 import org.angryscan.app.scan.common.connectors.*
@@ -327,6 +324,7 @@ fun MainScreen(
                             navController = navController,
                             settingsOpen = settingsPanelOpened,
                             onSelectedLabelClick = { settingsPanelOpened = !settingsPanelOpened },
+                            onSourceSwitch = { settingsPanelOpened = false },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -456,6 +454,7 @@ private fun SourceRadioRow(
     settingsOpen: Boolean,
     modifier: Modifier = Modifier,
     onSelectedLabelClick: () -> Unit,
+    onSourceSwitch: () -> Unit,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
@@ -476,21 +475,36 @@ private fun SourceRadioRow(
             selected = selectedRoute == MainScreenConnector.FileShare,
             label = "File Share",
             settingsOpen = settingsOpen,
-            onSelect = { if (selectedRoute != MainScreenConnector.FileShare) navController.navigate(MainScreenConnector.FileShare) },
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.FileShare) {
+                    onSourceSwitch()
+                    navController.navigate(MainScreenConnector.FileShare)
+                }
+            },
             onSelectedLabelClick = onSelectedLabelClick
         )
         SourceRadioItem(
             selected = selectedRoute == MainScreenConnector.S3,
             label = "AWS S3",
             settingsOpen = settingsOpen,
-            onSelect = { if (selectedRoute != MainScreenConnector.S3) navController.navigate(MainScreenConnector.S3) },
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.S3) {
+                    onSourceSwitch()
+                    navController.navigate(MainScreenConnector.S3)
+                }
+            },
             onSelectedLabelClick = onSelectedLabelClick
         )
         SourceRadioItem(
             selected = selectedRoute == MainScreenConnector.HTTP,
             label = "HTTP",
             settingsOpen = settingsOpen,
-            onSelect = { if (selectedRoute != MainScreenConnector.HTTP) navController.navigate(MainScreenConnector.HTTP) },
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.HTTP) {
+                    onSourceSwitch()
+                    navController.navigate(MainScreenConnector.HTTP)
+                }
+            },
             onSelectedLabelClick = onSelectedLabelClick
         )
         SourceRadioItem(
@@ -499,6 +513,7 @@ private fun SourceRadioRow(
             settingsOpen = settingsOpen,
             onSelect = {
                 if (selectedRoute != MainScreenConnector.Postgres) {
+                    onSourceSwitch()
                     navController.navigate(MainScreenConnector.Postgres)
                 }
             },
@@ -515,14 +530,14 @@ private fun SourceRadioItem(
     onSelect: () -> Unit,
     onSelectedLabelClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-    // Standard underline: hover -> "clickable", selected+settingsOpen -> "mode".
-    val underline = hovered || (selected && settingsOpen)
+    val labelInteractionSource = remember { MutableInteractionSource() }
+    val labelHovered by labelInteractionSource.collectIsHoveredAsState()
+    val radioInteractionSource = remember { MutableInteractionSource() }
+    val underline = selected && (labelHovered || settingsOpen)
     val color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
         alpha = when {
             selected -> 0.95f
-            hovered -> 0.88f
+            labelHovered -> 0.88f
             else -> 0.72f
         }
     )
@@ -536,32 +551,45 @@ private fun SourceRadioItem(
         Row(
             modifier = Modifier
                 .heightIn(min = 32.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
-                    if (selected) onSelectedLabelClick() else onSelect()
-                }
-                .hoverable(interactionSource)
-                .pointerHoverIcon(PointerIcon.Hand)
                 .padding(horizontal = 2.dp, vertical = 0.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+            horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            RadioButton(
-                selected = selected,
-                onClick = null,
-                modifier = Modifier.scale(0.82f),
-                colors = radioColors
-            )
+            Box(
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable(
+                        interactionSource = radioInteractionSource,
+                        indication = null
+                    ) {
+                        if (!selected) onSelect()
+                    }
+            ) {
+                RadioButton(
+                    selected = selected,
+                    onClick = null,
+                    modifier = Modifier.scale(0.82f),
+                    colors = radioColors
+                )
+            }
             Column(
                 modifier = Modifier
                     .width(IntrinsicSize.Max)
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                    .padding(start = 1.dp, top = 2.dp, bottom = 2.dp),
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
                     text = label,
+                    modifier = Modifier
+                        .hoverable(labelInteractionSource)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(
+                            interactionSource = labelInteractionSource,
+                            indication = null,
+                            onClick = {
+                                if (selected) onSelectedLabelClick() else onSelect()
+                            }
+                        ),
                     style = MaterialTheme.typography.labelMedium,
                     color = color,
                     textDecoration = if (underline) TextDecoration.Underline else TextDecoration.None,
@@ -573,9 +601,15 @@ private fun SourceRadioItem(
         }
     }
 
-    if (selected && settingsOpen) {
+    if (selected) {
         DescriptionTooltip(
-            description = "Click to close scan settings",
+            description = stringResource(
+                if (settingsOpen) {
+                    Res.string.MainScreen_SourceLabel_ScanSettingsTooltip
+                } else {
+                    Res.string.MainScreen_SourceLabel_LatestScansTooltip
+                }
+            ),
             delay = 350
         ) {
             MainRow()

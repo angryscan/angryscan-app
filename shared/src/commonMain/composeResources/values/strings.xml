@@ -107,6 +107,8 @@
     <string name="MainScreen-RecentScans-Title">5 latest scans:</string>
     <string name="MainScreen-RecentScans-Empty">No scans yet</string>
     <string name="MainScreen-RecentScans-ViewFullHistory">View full history</string>
+    <string name="MainScreen-SourceLabel-ScanSettingsTooltip">Click to close scan settings</string>
+    <string name="MainScreen-SourceLabel-LatestScansTooltip">Click to open scan settings</string>
     <string name="QuickSettings-Title">Quick settings</string>
     <string name="QuickSettings-Theme">Theme</string>
     <string name="QuickSettings-Theme-System">System</string>
