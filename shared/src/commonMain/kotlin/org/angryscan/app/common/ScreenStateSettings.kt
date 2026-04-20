@@ -130,6 +130,7 @@ class ScreenStateSettings : KoinComponent {
     var sqlSavedConnections: MutableList<SqlSavedConnection> = mutableStateListOf()
     var scanProfiles: MutableList<ScanProfile> = mutableStateListOf()
     var activeScanProfileName: String = "Default"
+    var mainScreenSource: String = "fileshare"
 
     private fun defaultProfileExtensions(): MutableList<IFileType> =
         ScanSettingsDefaults.defaultExtensions().toMutableList()
@@ -305,6 +306,7 @@ class ScreenStateSettings : KoinComponent {
                 this.activeScanProfileName =
                     if (prop.activeScanProfileName.isNotBlank()) prop.activeScanProfileName
                     else this.scanProfiles.first().name
+                this.mainScreenSource = prop.mainScreenSource.ifBlank { "fileshare" }
                 ensureSystemProfilesPresent()
                 if (this.scanProfiles.none { it.name == this.activeScanProfileName }) {
                     this.activeScanProfileName = this.scanProfiles.first().name

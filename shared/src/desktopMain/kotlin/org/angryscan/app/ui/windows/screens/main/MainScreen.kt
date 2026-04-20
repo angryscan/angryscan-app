@@ -78,6 +78,21 @@ private val MainContentColumnMaxWidth = DesktopMainLayout.mainContentColumnMaxWi
 private val MainContentOuterPaddingH = 24.dp
 private val MainContentInnerPaddingH = 18.dp
 
+private fun connectorToStorageValue(connector: Any): String = when (connector) {
+    MainScreenConnector.FileShare -> "fileshare"
+    MainScreenConnector.S3 -> "s3"
+    MainScreenConnector.HTTP -> "http"
+    MainScreenConnector.Postgres -> "database"
+    else -> "fileshare"
+}
+
+private fun storageValueToConnector(value: String): Any = when (value.lowercase()) {
+    "s3" -> MainScreenConnector.S3
+    "http" -> MainScreenConnector.HTTP
+    "database", "postgres", "sql" -> MainScreenConnector.Postgres
+    else -> MainScreenConnector.FileShare
+}
+
 @Composable
 fun MainScreen(
     showScan: (taskId: Int) -> Unit,
@@ -281,6 +296,7 @@ fun MainScreen(
 
         screenStateSettings.save()
         settingsPanelOpened = false
+        screenStateSettings.mainScreenSource = connectorToStorageValue(destination)
         navController.navigate(destination)
         TaskReplayHelper.clear()
     }
@@ -324,7 +340,11 @@ fun MainScreen(
                             navController = navController,
                             settingsOpen = settingsPanelOpened,
                             onSelectedLabelClick = { settingsPanelOpened = !settingsPanelOpened },
-                            onSourceSwitch = { settingsPanelOpened = false },
+                            onSourceSwitch = { sourceToken ->
+                                settingsPanelOpened = false
+                                screenStateSettings.mainScreenSource = sourceToken
+                                screenStateSettings.save()
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -405,9 +425,12 @@ fun MainScreen(
 
     // Keep subscreen-specific state and bottom bar logic active.
     Box(modifier = Modifier.size(0.dp)) {
+        val initialConnector = remember(screenStateSettings.mainScreenSource) {
+            storageValueToConnector(screenStateSettings.mainScreenSource)
+        }
         NavHost(
             navController = navController,
-            startDestination = MainScreenConnector.FileShare
+            startDestination = initialConnector
         ) {
             composable<MainScreenConnector.FileShare> {
                 FileShareScreen(
@@ -454,7 +477,7 @@ private fun SourceRadioRow(
     settingsOpen: Boolean,
     modifier: Modifier = Modifier,
     onSelectedLabelClick: () -> Unit,
-    onSourceSwitch: () -> Unit,
+    onSourceSwitch: (String) -> Unit,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
@@ -477,7 +500,7 @@ private fun SourceRadioRow(
             settingsOpen = settingsOpen,
             onSelect = {
                 if (selectedRoute != MainScreenConnector.FileShare) {
-                    onSourceSwitch()
+                    onSourceSwitch("fileshare")
                     navController.navigate(MainScreenConnector.FileShare)
                 }
             },
@@ -489,7 +512,7 @@ private fun SourceRadioRow(
             settingsOpen = settingsOpen,
             onSelect = {
                 if (selectedRoute != MainScreenConnector.S3) {
-                    onSourceSwitch()
+                    onSourceSwitch("s3")
                     navController.navigate(MainScreenConnector.S3)
                 }
             },
@@ -501,7 +524,7 @@ private fun SourceRadioRow(
             settingsOpen = settingsOpen,
             onSelect = {
                 if (selectedRoute != MainScreenConnector.HTTP) {
-                    onSourceSwitch()
+                    onSourceSwitch("http")
                     navController.navigate(MainScreenConnector.HTTP)
                 }
             },
@@ -513,7 +536,7 @@ private fun SourceRadioRow(
             settingsOpen = settingsOpen,
             onSelect = {
                 if (selectedRoute != MainScreenConnector.Postgres) {
-                    onSourceSwitch()
+                    onSourceSwitch("database")
                     navController.navigate(MainScreenConnector.Postgres)
                 }
             },
