@@ -147,7 +147,11 @@ fun CompactCountryFilterChips(
             CompactCountryChip(
                 country = country,
                 isSelected = country == selectedCountry,
-                onClick = { onCountrySelected(if (country == selectedCountry) null else country) },
+                onClick = {
+                    if (country != selectedCountry) {
+                        onCountrySelected(country)
+                    }
+                },
                 selectedCount = stats?.first,
                 totalCount = stats?.second,
                 dense = dense,
