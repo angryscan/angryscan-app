@@ -16,12 +16,11 @@ import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.MainScreen_Placeholder_HTTP
-import org.angryscan.app.resources.MainScreen_ScanHint_HTTP
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -30,6 +29,8 @@ import org.koin.compose.koinInject
 fun HTTPScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
+    onRequireScanSettings: (missingExtensions: Boolean, missingMatchers: Boolean) -> Unit = { _, _ -> },
+    onRequireSourceInputs: () -> Unit = {},
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
     setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
     setUnderSourceContent: (@Composable () -> Unit) -> Unit = {}
@@ -41,9 +42,6 @@ fun HTTPScreen(
 
     val helperPath by ScanPathHelper.path.collectAsState()
     var path by remember { mutableStateOf(screenStateSettings.httpScreenState.path) }
-
-    var scanNotCorrectPath by remember { mutableStateOf(false) }
-
     var selectPathError by remember { mutableStateOf(false) }
     
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
@@ -132,20 +130,12 @@ fun HTTPScreen(
         }
     }
 
-    LaunchedEffect(scanNotCorrectPath) {
-        if (scanNotCorrectPath) {
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            scanNotCorrectPath = false
+    LaunchedEffect(selectPathError) {
+        if (selectPathError) {
+            delay(2000)
+            if (selectPathError) {
+                selectPathError = false
+            }
         }
     }
 
@@ -225,68 +215,55 @@ fun HTTPScreen(
                     )
                 }
             }
-            if (path.isNotEmpty()) {
-                Button(
-                    enabled = true,
-                    onClick = {
-                        if (!path.split(";").all {
-                                it.startsWith("http://") || it.startsWith("https://")
-                            }
-                        ) {
-                            scanNotCorrectPath = true
-                            return@Button
-                        }
-                        if (!validateAndShowError()) return@Button
-                        saveScreenState()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                path = path,
-                                extensions = scanSettings.extensions,
-                                matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorHTTP()
-                            )
-                            scanService.startTask(task)
-                            task.id.value?.let { expandScanState(it) }
-                        }
-                    },
-                    modifier = ScanButtonModifier(
-                        isReady = true,
-                        modifier = Modifier.width(scanButtonWidth).height(controlHeight)
-                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                    shape = controlShape,
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        disabledElevation = 0.dp
-                    ),
-                    colors = startScanButtonColors()
-                ) {
-                    StartScanButtonContent()
-                }
-            } else {
-                DescriptionTooltip(
-                    description = stringResource(Res.string.MainScreen_ScanHint_HTTP),
-                    delay = 400
-                ) {
-                    Button(
-                        enabled = false,
-                        onClick = { },
-                        modifier = ScanButtonModifier(
-                            isReady = false,
-                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
-                        ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                        shape = controlShape,
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp,
-                            disabledElevation = 0.dp
-                        ),
-                        colors = startScanButtonColors()
-                    ) {
-                        StartScanButtonContent()
+            Button(
+                enabled = true,
+                onClick = {
+                    val urls = path.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+                    if (urls.isEmpty()) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
                     }
-                }
+                    val missingExtensions = scanSettings.extensions.isEmpty()
+                    val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
+                    if (missingExtensions || missingMatchers) {
+                        onRequireScanSettings(missingExtensions, missingMatchers)
+                        return@Button
+                    }
+                    if (!urls.all { it.startsWith("http://") || it.startsWith("https://") }) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
+                    }
+                    if (!validateAndShowError()) return@Button
+                    val normalizedPath = urls.joinToString(";")
+                    path = normalizedPath
+                    saveScreenState()
+                    coroutineScope.launch {
+                        val task = scanService.createTask(
+                            path = normalizedPath,
+                            extensions = scanSettings.extensions,
+                            matchers = scanSettings.matchers + scanSettings.userSignatures,
+                            fastScan = scanSettings.fastScan.value,
+                            connector = ConnectorHTTP()
+                        )
+                        scanService.startTask(task)
+                        task.id.value?.let { expandScanState(it) }
+                    }
+                },
+                modifier = ScanButtonModifier(
+                    isReady = true,
+                    modifier = Modifier.width(scanButtonWidth).height(controlHeight)
+                ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                shape = controlShape,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    disabledElevation = 0.dp
+                ),
+                colors = startScanButtonColors()
+            ) {
+                StartScanButtonContent()
             }
             }
         }

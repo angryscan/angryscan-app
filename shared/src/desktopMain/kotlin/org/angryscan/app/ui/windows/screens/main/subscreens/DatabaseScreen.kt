@@ -29,6 +29,7 @@ import org.angryscan.app.common.*
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.connectors.*
+import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.painterResource
@@ -38,6 +39,8 @@ import org.koin.compose.koinInject
 @Composable
 fun DatabaseScreen(
     expandScanState: (Int) -> Unit,
+    onRequireScanSettings: (missingExtensions: Boolean, missingMatchers: Boolean) -> Unit = { _, _ -> },
+    onRequireSourceInputs: () -> Unit = {},
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
     setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
     setUnderSourceContent: (@Composable () -> Unit) -> Unit = {},
@@ -50,11 +53,9 @@ fun DatabaseScreen(
     val savedConnectionsRepository = koinInject<SavedSqlConnectionsRepository>()
     var sqlScreenState by remember { screenStateSettings.sqlScreenState }
 
-    var selectPathError by remember { mutableStateOf(false) }
+    var highlightedConnectionFields by remember { mutableStateOf<Set<DatabaseConnectionRequiredField>>(emptySet()) }
     var validationErrorDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    val noMatchersTitle = stringResource(Res.string.Validation_NoMatchersTitle)
-    val noMatchersMessage = stringResource(Res.string.Validation_NoMatchersMessage)
     val postgresConnectionErrorMessage = stringResource(Res.string.Validation_PostgresConnectionMessage)
     val connectionNameRequiredMessage = stringResource(Res.string.MainScreen_ConnectionNameRequired)
 
@@ -69,6 +70,16 @@ fun DatabaseScreen(
     var pendingConnectionName by remember { mutableStateOf("") }
     var pendingConnectionNameError by remember { mutableStateOf(false) }
     var savedForCurrentType by remember { mutableStateOf<List<SavedSqlConnection>>(emptyList()) }
+
+    LaunchedEffect(highlightedConnectionFields) {
+        if (highlightedConnectionFields.isNotEmpty()) {
+            val snapshot = highlightedConnectionFields
+            kotlinx.coroutines.delay(2000)
+            if (highlightedConnectionFields == snapshot) {
+                highlightedConnectionFields = emptySet()
+            }
+        }
+    }
     val connectionFieldBorderColor = when {
         sqlConnectionTestSuccessful -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
         sqlConnectionTestMessage != null -> MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
@@ -229,7 +240,10 @@ fun DatabaseScreen(
         title = "Select SQLite database"
     ) { result ->
         result?.path?.let { path ->
-            sqlScreenState = sqlScreenState.copy(filePath = path)
+            val updated = sqlScreenState.copy(filePath = path)
+            sqlScreenState = updated
+            highlightedConnectionFields =
+                updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
             markSqlConnectionDirty()
             coroutineScope.launch { screenStateSettings.save() }
         }
@@ -248,11 +262,17 @@ fun DatabaseScreen(
             val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
             val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
 
-            val sqlScanEnabled = sqlScreenState.hasRequiredConnectionSettings()
-
             val startSqlScan: () -> Unit = startSqlScan@{
-                if (scanSettings.matchers.isEmpty() && scanSettings.userSignatures.isEmpty()) {
-                    validationErrorDialog = noMatchersTitle to noMatchersMessage
+                val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
+                if (missingMatchers) {
+                    highlightedConnectionFields = emptySet()
+                    onRequireScanSettings(false, true)
+                    return@startSqlScan
+                }
+                val missingConnectionFields = sqlScreenState.missingRequiredConnectionFields()
+                highlightedConnectionFields = missingConnectionFields
+                if (missingConnectionFields.isNotEmpty()) {
+                    onRequireSourceInputs()
                     return@startSqlScan
                 }
 
@@ -343,18 +363,7 @@ fun DatabaseScreen(
                     modifier = Modifier
                         .weight(1f)
                         .widthIn(min = pathMinWidth)
-                        .height(controlHeight)
-                        .then(
-                            if (selectPathError) {
-                                Modifier.border(
-                                    2.dp,
-                                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                                    controlShape
-                                )
-                            } else {
-                                Modifier
-                            }
-                        ),
+                        .height(controlHeight),
                     shape = controlShape,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     tonalElevation = 0.dp
@@ -371,7 +380,10 @@ fun DatabaseScreen(
                                 OutlinedTextField(
                                     value = sqlScreenState.host,
                                     onValueChange = {
-                                        sqlScreenState = sqlScreenState.copy(host = it)
+                                        val updated = sqlScreenState.copy(host = it)
+                                        sqlScreenState = updated
+                                        highlightedConnectionFields =
+                                            updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
@@ -380,7 +392,7 @@ fun DatabaseScreen(
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
                                     shape = RoundedCornerShape(14.dp),
-                                    isError = selectPathError,
+                                    isError = DatabaseConnectionRequiredField.HOST in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = connectionFieldBorderColor,
                                         unfocusedBorderColor = connectionFieldBorderColor,
@@ -392,7 +404,10 @@ fun DatabaseScreen(
                                 OutlinedTextField(
                                     value = sqlScreenState.port,
                                     onValueChange = {
-                                        sqlScreenState = sqlScreenState.copy(port = it)
+                                        val updated = sqlScreenState.copy(port = it)
+                                        sqlScreenState = updated
+                                        highlightedConnectionFields =
+                                            updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
@@ -401,7 +416,7 @@ fun DatabaseScreen(
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
                                     shape = RoundedCornerShape(14.dp),
-                                    isError = selectPathError,
+                                    isError = DatabaseConnectionRequiredField.PORT in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = connectionFieldBorderColor,
                                         unfocusedBorderColor = connectionFieldBorderColor,
@@ -413,7 +428,10 @@ fun DatabaseScreen(
                                 OutlinedTextField(
                                     value = sqlScreenState.database,
                                     onValueChange = {
-                                        sqlScreenState = sqlScreenState.copy(database = it)
+                                        val updated = sqlScreenState.copy(database = it)
+                                        sqlScreenState = updated
+                                        highlightedConnectionFields =
+                                            updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
@@ -422,7 +440,7 @@ fun DatabaseScreen(
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
                                     shape = RoundedCornerShape(14.dp),
-                                    isError = selectPathError,
+                                    isError = DatabaseConnectionRequiredField.DATABASE in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = connectionFieldBorderColor,
                                         unfocusedBorderColor = connectionFieldBorderColor,
@@ -436,7 +454,10 @@ fun DatabaseScreen(
                                 OutlinedTextField(
                                     value = sqlScreenState.filePath,
                                     onValueChange = {
-                                        sqlScreenState = sqlScreenState.copy(filePath = it)
+                                        val updated = sqlScreenState.copy(filePath = it)
+                                        sqlScreenState = updated
+                                        highlightedConnectionFields =
+                                            updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
@@ -445,7 +466,7 @@ fun DatabaseScreen(
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
                                     shape = RoundedCornerShape(14.dp),
-                                    isError = selectPathError,
+                                    isError = DatabaseConnectionRequiredField.FILE_PATH in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color.Transparent,
                                         unfocusedBorderColor = Color.Transparent,
@@ -466,51 +487,24 @@ fun DatabaseScreen(
                     }
                 }
 
-                if (sqlScanEnabled) {
-                    Button(
-                        enabled = true,
-                        onClick = { startSqlScan() },
-                        modifier = ScanButtonModifier(
-                            isReady = true,
-                            modifier = Modifier
-                                .width(scanButtonWidth)
-                                .height(controlHeight)
-                        ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                        shape = controlShape,
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp,
-                            disabledElevation = 0.dp
-                        ),
-                        colors = startScanButtonColors()
-                    ) {
-                        StartScanButtonContent()
-                    }
-                } else {
-                    DescriptionTooltip(
-                        description = stringResource(Res.string.MainScreen_ScanHint_SqlDatabase),
-                        delay = 400
-                    ) {
-                        Button(
-                            enabled = false,
-                            onClick = { },
-                            modifier = ScanButtonModifier(
-                                isReady = false,
-                                modifier = Modifier
-                                    .width(scanButtonWidth)
-                                    .height(controlHeight)
-                            ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                            shape = controlShape,
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 0.dp,
-                                pressedElevation = 0.dp,
-                                disabledElevation = 0.dp
-                            ),
-                            colors = startScanButtonColors()
-                        ) {
-                            StartScanButtonContent()
-                        }
-                    }
+                Button(
+                    enabled = true,
+                    onClick = { startSqlScan() },
+                    modifier = ScanButtonModifier(
+                        isReady = true,
+                        modifier = Modifier
+                            .width(scanButtonWidth)
+                            .height(controlHeight)
+                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                    shape = controlShape,
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        disabledElevation = 0.dp
+                    ),
+                    colors = startScanButtonColors()
+                ) {
+                    StartScanButtonContent()
                 }
             }
         }
@@ -799,6 +793,7 @@ fun DatabaseScreen(
                 onValueChange: (String) -> Unit,
                 placeholder: String,
                 modifier: Modifier,
+                isError: Boolean = false,
                 isPassword: Boolean = false,
                 visualTransformation: VisualTransformation = VisualTransformation.None,
             ) {
@@ -814,7 +809,11 @@ fun DatabaseScreen(
                         .height(32.dp)
                         .border(
                             width = 1.dp,
-                            color = connectionFieldBorderColor,
+                            color = if (isError) {
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            } else {
+                                connectionFieldBorderColor
+                            },
                             shape = shape
                         ),
                     shape = shape,
@@ -1016,7 +1015,10 @@ fun DatabaseScreen(
                                     DatabaseType.CockroachDB -> "26257"
                                     DatabaseType.SQLite -> sqlScreenState.port
                                 }
-                                sqlScreenState = sqlScreenState.copy(databaseType = dbType, port = defaultPort)
+                                val updated = sqlScreenState.copy(databaseType = dbType, port = defaultPort)
+                                sqlScreenState = updated
+                                highlightedConnectionFields =
+                                    updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                 markSqlConnectionDirty()
                                 coroutineScope.launch { screenStateSettings.save() }
                             }
@@ -1067,7 +1069,10 @@ fun DatabaseScreen(
                             CompactField(
                                 value = sqlScreenState.schema,
                                 onValueChange = {
-                                    sqlScreenState = sqlScreenState.copy(schema = it)
+                                    val updated = sqlScreenState.copy(schema = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                     markSqlConnectionDirty()
                                     coroutineScope.launch { screenStateSettings.save() }
                                 },
@@ -1077,22 +1082,30 @@ fun DatabaseScreen(
                             CompactField(
                                 value = sqlScreenState.user,
                                 onValueChange = {
-                                    sqlScreenState = sqlScreenState.copy(user = it)
+                                    val updated = sqlScreenState.copy(user = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                     markSqlConnectionDirty()
                                     coroutineScope.launch { screenStateSettings.save() }
                                 },
                                 placeholder = "User",
-                                modifier = Modifier.weight(0.22f)
+                                modifier = Modifier.weight(0.22f),
+                                isError = DatabaseConnectionRequiredField.USER in highlightedConnectionFields
                             )
                             CompactField(
                                 value = sqlScreenState.password,
                                 onValueChange = {
-                                    sqlScreenState = sqlScreenState.copy(password = it)
+                                    val updated = sqlScreenState.copy(password = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
                                     markSqlConnectionDirty()
                                     coroutineScope.launch { screenStateSettings.save() }
                                 },
                                 placeholder = "Password",
                                 modifier = Modifier.weight(0.34f),
+                                isError = DatabaseConnectionRequiredField.PASSWORD in highlightedConnectionFields,
                                 isPassword = true
                             )
                             val canTest = sqlScreenState.hasRequiredConnectionSettings()

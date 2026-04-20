@@ -102,9 +102,19 @@ fun MainScreen(
     var bottomBarContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
     var underSourceContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
     var settingsPanelOpened by remember { mutableStateOf(false) }
+    var highlightMissingExtensions by remember { mutableStateOf(false) }
+    var highlightMissingMatchers by remember { mutableStateOf(false) }
     val scanService = koinInject<ScanService>()
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
+
+    LaunchedEffect(highlightMissingExtensions, highlightMissingMatchers) {
+        if (highlightMissingExtensions || highlightMissingMatchers) {
+            delay(2000)
+            highlightMissingExtensions = false
+            highlightMissingMatchers = false
+        }
+    }
 
     val colorScheme = MaterialTheme.colorScheme
     val focusManager = LocalFocusManager.current
@@ -339,9 +349,18 @@ fun MainScreen(
                         SourceRadioRow(
                             navController = navController,
                             settingsOpen = settingsPanelOpened,
-                            onSelectedLabelClick = { settingsPanelOpened = !settingsPanelOpened },
+                            onSelectedLabelClick = {
+                                val nextOpened = !settingsPanelOpened
+                                settingsPanelOpened = nextOpened
+                                if (!nextOpened) {
+                                    highlightMissingExtensions = false
+                                    highlightMissingMatchers = false
+                                }
+                            },
                             onSourceSwitch = { sourceToken ->
                                 settingsPanelOpened = false
+                                highlightMissingExtensions = false
+                                highlightMissingMatchers = false
                                 screenStateSettings.mainScreenSource = sourceToken
                                 screenStateSettings.save()
                             },
@@ -408,7 +427,9 @@ fun MainScreen(
                 if (settingsPanelOpened) {
                     SettingsBox(
                         transition = updateTransition(targetState = true, label = "settings-inline"),
-                        allowExtensionsEditing = !sqlSourceActive
+                        allowExtensionsEditing = !sqlSourceActive,
+                        highlightMissingExtensions = highlightMissingExtensions,
+                        highlightMissingMatchers = highlightMissingMatchers
                     )
                 } else {
                     RecentScansPreview(
@@ -436,6 +457,16 @@ fun MainScreen(
                 FileShareScreen(
                     navController = navController,
                     expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
                     setSidebarContent = { },
                     setBottomBarContent = { content -> bottomBarContent = content },
                     setUnderSourceContent = { content -> underSourceContent = content }
@@ -445,6 +476,16 @@ fun MainScreen(
                 S3Screen(
                     navController = navController,
                     expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
                     setSidebarContent = { },
                     setBottomBarContent = { content -> bottomBarContent = content },
                     setUnderSourceContent = { content -> underSourceContent = content }
@@ -454,6 +495,16 @@ fun MainScreen(
                 HTTPScreen(
                     navController = navController,
                     expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
                     setSidebarContent = { },
                     setBottomBarContent = { content -> bottomBarContent = content },
                     setUnderSourceContent = { content -> underSourceContent = content }
@@ -462,6 +513,16 @@ fun MainScreen(
             composable<MainScreenConnector.Postgres> {
                 DatabaseScreen(
                     expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
                     setSidebarContent = { },
                     setBottomBarContent = { content -> bottomBarContent = content },
                     setUnderSourceContent = { content -> underSourceContent = content }

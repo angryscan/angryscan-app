@@ -31,7 +31,7 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
-import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -41,6 +41,8 @@ import java.io.File
 fun FileShareScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
+    onRequireScanSettings: (missingExtensions: Boolean, missingMatchers: Boolean) -> Unit = { _, _ -> },
+    onRequireSourceInputs: () -> Unit = {},
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
     setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
     setUnderSourceContent: (@Composable () -> Unit) -> Unit = {}
@@ -180,23 +182,12 @@ fun FileShareScreen(
     }
 
     var selectPathError by remember { mutableStateOf(false) }
-
-    var scanNotCorrectPath by remember { mutableStateOf(false) }
-
-    LaunchedEffect(scanNotCorrectPath) {
-        if (scanNotCorrectPath) {
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            scanNotCorrectPath = false
+    LaunchedEffect(selectPathError) {
+        if (selectPathError) {
+            delay(2000)
+            if (selectPathError) {
+                selectPathError = false
+            }
         }
     }
 
@@ -418,75 +409,67 @@ fun FileShareScreen(
                     }
                 }
             }
-            if (path.isNotEmpty()) {
-                Button(
-                    enabled = true,
-                    onClick = {
-                        if (!path.split(";").map { File(it).exists() }.all { it }) {
-                            scanNotCorrectPath = true
-                            return@Button
-                        }
-                        if (!validateAndShowError()) return@Button
-                        val detectedType = detectSelectionType(path)
-                        val scanPath = if (detectedType == SelectionTypes.FileWithPaths) {
-                            File(path).readLines().joinToString(separator = ";")
-                        } else path
-                        selectionType = detectedType
-                        saveScreenState()
-                        scanSettings.save()
-                        screenStateSettings.fileShareScreenState.matchers.clear()
-                        screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
-                        screenStateSettings.save()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                name = if (detectedType == SelectionTypes.FileWithPaths) path else null,
-                                path = scanPath,
-                                extensions = scanSettings.extensions.toList(),
-                                matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorFileShare()
-                            )
-                            scanService.startTask(task)
-                            task.id.value?.let { expandScanState(it) }
-                        }
-                    },
-                        modifier = ScanButtonModifier(
-                            isReady = true,
-                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
-                        ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                    shape = controlShape,
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        disabledElevation = 0.dp
-                    ),
-                    colors = startScanButtonColors()
-                ) {
-                    StartScanButtonContent()
-                }
-            } else {
-                DescriptionTooltip(
-                    description = stringResource(Res.string.MainScreen_ScanHint_FileShare),
-                    delay = 400
-                ) {
-                    Button(
-                        enabled = false,
-                        onClick = { },
-                        modifier = ScanButtonModifier(
-                            isReady = false,
-                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
-                        ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                        shape = controlShape,
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp,
-                            disabledElevation = 0.dp
-                        ),
-                        colors = startScanButtonColors()
-                    ) {
-                        StartScanButtonContent()
+            Button(
+                enabled = true,
+                onClick = {
+                    val pathParts = path.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+                    if (pathParts.isEmpty()) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
                     }
-                }
+                    val missingExtensions = scanSettings.extensions.isEmpty()
+                    val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
+                    if (missingExtensions || missingMatchers) {
+                        onRequireScanSettings(missingExtensions, missingMatchers)
+                        return@Button
+                    }
+                    if (!pathParts.all { File(it).exists() }) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
+                    }
+                    if (!validateAndShowError()) return@Button
+                    val normalizedPath = pathParts.joinToString(";")
+                    val detectedType = detectSelectionType(normalizedPath)
+                    val scanPath = if (detectedType == SelectionTypes.FileWithPaths) {
+                        File(normalizedPath).readLines().joinToString(separator = ";")
+                    } else {
+                        normalizedPath
+                    }
+                    selectionType = detectedType
+                    path = normalizedPath
+                    saveScreenState()
+                    scanSettings.save()
+                    screenStateSettings.fileShareScreenState.matchers.clear()
+                    screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
+                    screenStateSettings.save()
+                    coroutineScope.launch {
+                        val task = scanService.createTask(
+                            name = if (detectedType == SelectionTypes.FileWithPaths) normalizedPath else null,
+                            path = scanPath,
+                            extensions = scanSettings.extensions.toList(),
+                            matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
+                            fastScan = scanSettings.fastScan.value,
+                            connector = ConnectorFileShare()
+                        )
+                        scanService.startTask(task)
+                        task.id.value?.let { expandScanState(it) }
+                    }
+                },
+                modifier = ScanButtonModifier(
+                    isReady = true,
+                    modifier = Modifier.width(scanButtonWidth).height(controlHeight)
+                ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                shape = controlShape,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    disabledElevation = 0.dp
+                ),
+                colors = startScanButtonColors()
+            ) {
+                StartScanButtonContent()
             }
             }
         }

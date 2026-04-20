@@ -1,6 +1,8 @@
 package org.angryscan.app.ui.windows.screens.main.settings
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +34,7 @@ fun SettingsBoxExtensionsSelection(
     scanSettings: ScanSettings,
     showTitle: Boolean = true,
     unifiedBlock: Boolean = false,
+    errorHighlight: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val fileTypeEntries = remember {
@@ -128,7 +131,17 @@ fun SettingsBoxExtensionsSelection(
         if (unifiedBlock) {
             SettingsUnifiedSubsection(
                 title = stringResource(Res.string.ScanSettings_FileExtensions),
-                modifier = modifier,
+                modifier = modifier.then(
+                    if (errorHighlight) {
+                        Modifier.border(
+                            width = 1.5.dp,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
                 contentTopPadding = (SettingsScanTable.contentBelowHeaderSpacing * 3) / 2f,
                 titleTrailingInline = true,
                 titleTrailingInlineSpacing = SettingsScanTable.headerInlineActionSpacing,

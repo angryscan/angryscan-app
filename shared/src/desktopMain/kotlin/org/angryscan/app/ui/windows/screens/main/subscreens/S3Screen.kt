@@ -21,12 +21,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.MainScreen_ScanHint_S3
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
+import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
@@ -36,6 +36,8 @@ import org.koin.compose.koinInject
 fun S3Screen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
+    onRequireScanSettings: (missingExtensions: Boolean, missingMatchers: Boolean) -> Unit = { _, _ -> },
+    onRequireSourceInputs: () -> Unit = {},
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
     setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
     setUnderSourceContent: (@Composable () -> Unit) -> Unit = {}
@@ -55,10 +57,7 @@ fun S3Screen(
     val coroutineScope = rememberCoroutineScope()
 
     var selectPathError by remember { mutableStateOf(false) }
-
-    var scanNotCorrectPath by remember { mutableStateOf(false) }
     var incorrectConnection by remember { mutableStateOf(false) }
-    var incorrectPathError by remember { mutableStateOf(false) }
 
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
 
@@ -68,24 +67,20 @@ fun S3Screen(
     var showConnectionErrorDialog by remember { mutableStateOf(false) }
     var secretKeyVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(scanNotCorrectPath, incorrectConnection) {
-        if (scanNotCorrectPath || incorrectConnection) {
-            if (incorrectPathError)
-                selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            if (incorrectPathError)
-                selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            if (incorrectPathError)
-                selectPathError = true
-            delay(200)
-            selectPathError = false
-            scanNotCorrectPath = false
-            incorrectConnection = false
+    LaunchedEffect(selectPathError) {
+        if (selectPathError) {
+            delay(2000)
+            if (selectPathError) {
+                selectPathError = false
+            }
+        }
+    }
+    LaunchedEffect(incorrectConnection) {
+        if (incorrectConnection) {
+            delay(2000)
+            if (incorrectConnection) {
+                incorrectConnection = false
+            }
         }
     }
 
@@ -303,62 +298,63 @@ fun S3Screen(
                         }
                     }
 
-                    val s3ScanEnabled = path.isNotEmpty() && endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()
-                    if (s3ScanEnabled) {
-                        Button(
-                            enabled = true,
-                            onClick = {
-                                if (!validateAndShowError()) return@Button
-                                saveScreenState()
-                                coroutineScope.launch {
-                                    val task = scanService.createTask(
-                                        path = path,
-                                        extensions = scanSettings.extensions,
-                                        matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                        fastScan = scanSettings.fastScan.value,
-                                        connector = ConnectorS3(endpointStr = endpoint, accessKey = accessKey, secretKey = secretKey, bucketStr = bucket)
-                                    )
-                                    scanService.startTask(task)
-                                    task.id.value?.let { expandScanState(it) }
-                                }
-                            },
-                            modifier = ScanButtonModifier(
-                                isReady = true,
-                                modifier = Modifier.width(scanButtonWidth).height(controlHeight)
-                            ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                            shape = controlShape,
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 0.dp,
-                                pressedElevation = 0.dp,
-                                disabledElevation = 0.dp
-                            ),
-                            colors = startScanButtonColors()
-                        ) {
-                            StartScanButtonContent()
-                        }
-                    } else {
-                        DescriptionTooltip(
-                            description = stringResource(Res.string.MainScreen_ScanHint_S3),
-                            delay = 400
-                        ) {
-                            Button(
-                                enabled = false,
-                                onClick = { },
-                                modifier = ScanButtonModifier(
-                                    isReady = false,
-                                    modifier = Modifier.width(scanButtonWidth).height(controlHeight)
-                                ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                                shape = controlShape,
-                                elevation = ButtonDefaults.buttonElevation(
-                                    defaultElevation = 0.dp,
-                                    pressedElevation = 0.dp,
-                                    disabledElevation = 0.dp
-                                ),
-                                colors = startScanButtonColors()
-                            ) {
-                                StartScanButtonContent()
+                    Button(
+                        enabled = true,
+                        onClick = {
+                            val normalizedPath = path.trim()
+                            val hasConnectionSettings = endpoint.isNotBlank() &&
+                                bucket.isNotBlank() &&
+                                accessKey.isNotBlank() &&
+                                secretKey.isNotBlank()
+                            val missingExtensions = scanSettings.extensions.isEmpty()
+                            val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
+                            if (missingExtensions || missingMatchers) {
+                                onRequireScanSettings(missingExtensions, missingMatchers)
+                                return@Button
                             }
-                        }
+                            if (!hasConnectionSettings) {
+                                onRequireSourceInputs()
+                                incorrectConnection = true
+                                return@Button
+                            }
+                            if (normalizedPath.isEmpty()) {
+                                onRequireSourceInputs()
+                                selectPathError = true
+                                return@Button
+                            }
+                            if (!validateAndShowError()) return@Button
+                            path = normalizedPath
+                            saveScreenState()
+                            coroutineScope.launch {
+                                val task = scanService.createTask(
+                                    path = normalizedPath,
+                                    extensions = scanSettings.extensions,
+                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                    fastScan = scanSettings.fastScan.value,
+                                    connector = ConnectorS3(
+                                        endpointStr = endpoint,
+                                        accessKey = accessKey,
+                                        secretKey = secretKey,
+                                        bucketStr = bucket
+                                    )
+                                )
+                                scanService.startTask(task)
+                                task.id.value?.let { expandScanState(it) }
+                            }
+                        },
+                        modifier = ScanButtonModifier(
+                            isReady = true,
+                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
+                        ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                        shape = controlShape,
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
+                            disabledElevation = 0.dp
+                        ),
+                        colors = startScanButtonColors()
+                    ) {
+                        StartScanButtonContent()
                     }
                 }
             }
@@ -405,6 +401,7 @@ fun S3Screen(
                         onValueChange: (String) -> Unit,
                         placeholder: String,
                         modifier: Modifier,
+                        isError: Boolean = false,
                         visualTransformation: VisualTransformation = VisualTransformation.None,
                         isPassword: Boolean = false
                     ) {
@@ -414,7 +411,11 @@ fun S3Screen(
                                 .height(32.dp)
                                 .border(
                                     width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f),
+                                    color = if (isError) {
+                                        MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)
+                                    },
                                     shape = shape
                                 ),
                             shape = shape,
@@ -474,25 +475,29 @@ fun S3Screen(
                             value = endpoint,
                             onValueChange = { endpoint = it; saveScreenState(); connectionTestOk = null; connectionTestMessage = null },
                             placeholder = "Endpoint",
-                            modifier = Modifier.weight(1.35f).widthIn(min = 200.dp)
+                            modifier = Modifier.weight(1.35f).widthIn(min = 200.dp),
+                            isError = incorrectConnection && endpoint.isBlank()
                         )
                         CompactField(
                             value = bucket,
                             onValueChange = { bucket = it; saveScreenState(); connectionTestOk = null; connectionTestMessage = null },
                             placeholder = "Bucket",
-                            modifier = Modifier.weight(0.85f).widthIn(min = 120.dp)
+                            modifier = Modifier.weight(0.85f).widthIn(min = 120.dp),
+                            isError = incorrectConnection && bucket.isBlank()
                         )
                         CompactField(
                             value = accessKey,
                             onValueChange = { accessKey = it; saveScreenState(); connectionTestOk = null; connectionTestMessage = null },
                             placeholder = "Access key",
-                            modifier = Modifier.weight(1f).widthIn(min = 140.dp)
+                            modifier = Modifier.weight(1f).widthIn(min = 140.dp),
+                            isError = incorrectConnection && accessKey.isBlank()
                         )
                         CompactField(
                             value = secretKey,
                             onValueChange = { secretKey = it; saveScreenState(); connectionTestOk = null; connectionTestMessage = null },
                             placeholder = "Secret key",
                             modifier = Modifier.weight(1f).widthIn(min = 125.dp),
+                            isError = incorrectConnection && secretKey.isBlank(),
                             isPassword = true
                         )
                     }

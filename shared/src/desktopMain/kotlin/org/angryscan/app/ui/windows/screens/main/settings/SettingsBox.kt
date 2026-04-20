@@ -20,6 +20,8 @@ import org.koin.compose.koinInject
 fun SettingsBox(
     transition: Transition<Boolean>,
     allowExtensionsEditing: Boolean = true,
+    highlightMissingExtensions: Boolean = false,
+    highlightMissingMatchers: Boolean = false,
 ) {
     val scanSettings = koinInject<ScanSettings>()
 
@@ -35,6 +37,7 @@ fun SettingsBox(
                     scanSettings,
                     showTitle = true,
                     unifiedBlock = true,
+                    errorHighlight = highlightMissingExtensions,
                     modifier = Modifier.fillMaxWidth()
                 )
                 HorizontalDivider(
@@ -48,6 +51,7 @@ fun SettingsBox(
                 scanSettings,
                 showTitle = true,
                 unifiedBlock = true,
+                errorHighlight = highlightMissingMatchers,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()

@@ -1,6 +1,8 @@
 package org.angryscan.app.ui.windows.screens.main.settings
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,6 +34,7 @@ fun SettingsBoxDetectFunctionsGrouped(
     scanSettings: ScanSettings,
     showTitle: Boolean = true,
     unifiedBlock: Boolean = false,
+    errorHighlight: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val detectFunctions = remember { scanSettings.matchers }
@@ -75,7 +78,7 @@ fun SettingsBoxDetectFunctionsGrouped(
     val addressGeoMatchers = remember { listOf(Address, AddressUS, Geo, CadastralNumber) }
     val datesMatchers = remember { listOf(Birthday, DeathDate) }
     val phonesMatchers = remember { listOf(Phone, PhoneUS) }
-    val passportIdsMatchers = remember { listOf(Passport, PassportUS, IdentityDocType) }
+    val passportIdsMatchers = remember { listOf(Passport, PassportUS, IdentityDocType, MaritalStatus) }
     val vehicleDriverMatchers = remember {
         listOf(DriverLicense, DriverLicenseUS, VIN, VehicleRegNumber, OSAGOPolicy)
     }
@@ -296,7 +299,20 @@ fun SettingsBoxDetectFunctionsGrouped(
         if (unifiedBlock) {
             SettingsUnifiedSubsection(
                 title = stringResource(Res.string.ScanSettings_DetectFunctions),
-                modifier = modifier.fillMaxWidth().fillMaxHeight(),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .then(
+                        if (errorHighlight) {
+                            Modifier.border(
+                                width = 1.5.dp,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
                 expandContentVertically = true,
                 titleTrailingInline = true,
                 titleTrailingInlineSpacing = SettingsScanTable.headerInlineActionSpacing,
