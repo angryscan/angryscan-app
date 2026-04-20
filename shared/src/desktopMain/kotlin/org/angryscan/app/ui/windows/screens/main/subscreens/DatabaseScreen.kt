@@ -1,6 +1,8 @@
 package org.angryscan.app.ui.windows.screens.main.subscreens
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -10,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -912,6 +915,71 @@ fun DatabaseScreen(
                 }
             }
 
+            @Composable
+            fun DatabaseTypeChip(
+                dbType: DatabaseType,
+                iconRes: org.jetbrains.compose.resources.DrawableResource,
+                selected: Boolean,
+                onClick: () -> Unit
+            ) {
+                val cs = MaterialTheme.colorScheme
+                val interaction = remember { MutableInteractionSource() }
+                val hovered by interaction.collectIsHoveredAsState()
+                val shape = RoundedCornerShape(10.dp)
+
+                val fill = when {
+                    selected && hovered -> cs.primary.copy(alpha = 0.24f)
+                    selected -> cs.primary.copy(alpha = 0.18f)
+                    hovered -> cs.primary.copy(alpha = 0.12f)
+                    else -> cs.surface.copy(alpha = 0.28f)
+                }
+                val stroke = when {
+                    selected || hovered -> cs.primary.copy(alpha = 0.45f)
+                    else -> cs.outlineVariant.copy(alpha = 0.65f)
+                }
+                val labelColor = when {
+                    selected || hovered -> cs.primary
+                    else -> cs.onSurfaceVariant
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .height(32.dp)
+                        .clip(shape)
+                        .clickable(
+                            interactionSource = interaction,
+                            indication = null,
+                            onClick = onClick
+                        )
+                        .hoverable(interactionSource = interaction),
+                    shape = shape,
+                    color = fill,
+                    border = BorderStroke(1.dp, stroke),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.Unspecified
+                        )
+                        Text(
+                            text = dbType.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = labelColor
+                        )
+                    }
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .widthIn(min = blockMinWidth)
@@ -935,7 +1003,9 @@ fun DatabaseScreen(
                             DatabaseType.Hive -> Res.drawable.db_hive_logo
                             DatabaseType.CockroachDB -> Res.drawable.db_cockroachdb_logo
                         }
-                        FilterChip(
+                        DatabaseTypeChip(
+                            dbType = dbType,
+                            iconRes = iconRes,
                             selected = selected,
                             onClick = {
                                 val defaultPort = when (dbType) {
@@ -949,46 +1019,30 @@ fun DatabaseScreen(
                                 sqlScreenState = sqlScreenState.copy(databaseType = dbType, port = defaultPort)
                                 markSqlConnectionDirty()
                                 coroutineScope.launch { screenStateSettings.save() }
-                            },
-                            label = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        painter = painterResource(iconRes),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = Color.Unspecified
-                                    )
-                                    Text(dbType.name, style = MaterialTheme.typography.labelSmall)
-                                }
-                            },
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = selected,
-                                borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
-                                selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                            ),
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.28f),
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                            )
+                            }
                         )
                     }
+                    Spacer(modifier = Modifier.weight(1f))
                     if (sqlScreenState.databaseType != DatabaseType.SQLite) {
-                        Spacer(modifier = Modifier.weight(1f))
                         TextButton(
                             onClick = { savedConnectionsExpanded = true },
                             enabled = savedForCurrentType.isNotEmpty(),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
                             Text(
-                                stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
-                                style = MaterialTheme.typography.labelSmall
+                                text = stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (savedForCurrentType.isNotEmpty()) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                                }
                             )
                         }
+                    } else {
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
 
