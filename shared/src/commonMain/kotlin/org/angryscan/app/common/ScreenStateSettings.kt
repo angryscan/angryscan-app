@@ -99,6 +99,7 @@ class ScreenStateSettings : KoinComponent {
 
     @Serializable
     data class SqlSavedConnection(
+        var name: String = "",
         var databaseType: DatabaseType = DatabaseType.PostgreSQL,
         var host: String = "",
         var port: String = "5432",

@@ -170,6 +170,9 @@
     <string name="MainScreen-ScanHint-SqlDatabase">Set SQL Database connection in Scan options tab to enable Scan</string>
     <string name="MainScreen-SavedConnections">Saved connections (%1$d)</string>
     <string name="MainScreen-NoSavedConnections">No saved connections</string>
+    <string name="MainScreen-ConnectionNameTitle">Connection name</string>
+    <string name="MainScreen-ConnectionNamePlaceholder">Enter connection name</string>
+    <string name="MainScreen-ConnectionNameRequired">Please enter a connection name</string>
 
     <string name="ScanSettings-FastScan">Fast scan mode</string>
     <string name="ScanSettings-FileExtensions">Choose file extensions to scan:</string>

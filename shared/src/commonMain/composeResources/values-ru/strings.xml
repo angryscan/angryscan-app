@@ -167,6 +167,9 @@
     <string name="MainScreen-ScanHint-Postgres">Настройте подключение SQL Database во вкладке параметров сканирования, чтобы активировать кнопку</string>
     <string name="MainScreen-SavedConnections">Сохраненные подключения (%1$d)</string>
     <string name="MainScreen-NoSavedConnections">Нет сохраненных подключений</string>
+    <string name="MainScreen-ConnectionNameTitle">Имя подключения</string>
+    <string name="MainScreen-ConnectionNamePlaceholder">Введите имя подключения</string>
+    <string name="MainScreen-ConnectionNameRequired">Введите имя подключения</string>
 
     <string name="ScanSettings-FastScan">Режим быстрого сканирования</string>
     <string name="ScanSettings-FileExtensions">Выберите расширения файлов для сканирования:</string>

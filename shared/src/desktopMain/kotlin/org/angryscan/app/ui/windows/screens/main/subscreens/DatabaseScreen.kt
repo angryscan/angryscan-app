@@ -52,6 +52,7 @@ fun DatabaseScreen(
     val noMatchersTitle = stringResource(Res.string.Validation_NoMatchersTitle)
     val noMatchersMessage = stringResource(Res.string.Validation_NoMatchersMessage)
     val postgresConnectionErrorMessage = stringResource(Res.string.Validation_PostgresConnectionMessage)
+    val connectionNameRequiredMessage = stringResource(Res.string.MainScreen_ConnectionNameRequired)
 
     val coroutineScope = rememberCoroutineScope()
     var sqlConnectionTestInProgress by remember { mutableStateOf(false) }
@@ -60,6 +61,9 @@ fun DatabaseScreen(
     var savedConnectionsExpanded by remember { mutableStateOf(false) }
     var selectedSavedConnectionKey by remember { mutableStateOf<String?>(null) }
     var pendingDeleteConnection by remember { mutableStateOf<ScreenStateSettings.SqlSavedConnection?>(null) }
+    var pendingConnectionNameDialog by remember { mutableStateOf(false) }
+    var pendingConnectionName by remember { mutableStateOf("") }
+    var pendingConnectionNameError by remember { mutableStateOf(false) }
     val connectionFieldBorderColor = when {
         sqlConnectionTestSuccessful -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
         sqlConnectionTestMessage != null -> MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
@@ -114,13 +118,16 @@ fun DatabaseScreen(
     }
 
     fun savedConnectionLabel(conn: ScreenStateSettings.SqlSavedConnection): String = buildString {
+        if (conn.name.isNotBlank()) {
+            append("${conn.name} — ")
+        }
         append("${conn.host}:${conn.port}")
         if (conn.database.isNotBlank()) append(" · ${conn.database}")
         if (conn.schema.isNotBlank()) append(" · ${conn.schema}")
         if (conn.user.isNotBlank()) append(" · ${conn.user}")
     }
 
-    fun savedConnectionPrimary(conn: ScreenStateSettings.SqlSavedConnection): String {
+    fun savedConnectionUrl(conn: ScreenStateSettings.SqlSavedConnection): String {
         val databasePart = conn.database.trim()
         return if (databasePart.isNotBlank()) {
             "${conn.host}:${conn.port}/$databasePart"
@@ -129,7 +136,13 @@ fun DatabaseScreen(
         }
     }
 
-    fun savedConnectionSecondary(conn: ScreenStateSettings.SqlSavedConnection): String {
+    fun savedConnectionPrimary(conn: ScreenStateSettings.SqlSavedConnection): String =
+        conn.name.trim().ifBlank { savedConnectionUrl(conn) }
+
+    fun savedConnectionSecondary(conn: ScreenStateSettings.SqlSavedConnection): String =
+        "url: ${savedConnectionUrl(conn)}"
+
+    fun savedConnectionTertiary(conn: ScreenStateSettings.SqlSavedConnection): String {
         val parts = buildList {
             if (conn.schema.isNotBlank()) add("schema: ${conn.schema}")
             if (conn.user.isNotBlank()) add("user: ${conn.user}")
@@ -137,7 +150,13 @@ fun DatabaseScreen(
         return parts.joinToString(" · ")
     }
 
-    fun saveCurrentSqlConnection() {
+    fun defaultConnectionName(): String {
+        val hostPart = sqlScreenState.host.trim().ifBlank { "connection" }
+        val databasePart = sqlScreenState.database.trim()
+        return if (databasePart.isNotBlank()) "$hostPart/$databasePart" else hostPart
+    }
+
+    fun saveCurrentSqlConnection(connectionName: String? = null) {
         if (sqlScreenState.databaseType == DatabaseType.SQLite) return
         val current = ScreenStateSettings.SqlSavedConnection(
             databaseType = sqlScreenState.databaseType,
@@ -165,13 +184,21 @@ fun DatabaseScreen(
             ) == currentKey
         }
         if (existingIndex >= 0) {
-            // Same host/port/schema/user: if password differs, update the saved connection.
             val existing = screenStateSettings.sqlSavedConnections[existingIndex]
-            if (existing != current) {
-                screenStateSettings.sqlSavedConnections[existingIndex] = current
+            val merged = current.copy(
+                name = connectionName?.trim()?.takeIf { it.isNotBlank() }
+                    ?: existing.name.trim().takeIf { it.isNotBlank() }
+                    ?: defaultConnectionName()
+            )
+            if (existing != merged) {
+                screenStateSettings.sqlSavedConnections[existingIndex] = merged
             }
         } else {
-            screenStateSettings.sqlSavedConnections.add(current)
+            screenStateSettings.sqlSavedConnections.add(
+                current.copy(
+                    name = connectionName?.trim()?.takeIf { it.isNotBlank() } ?: defaultConnectionName()
+                )
+            )
         }
         coroutineScope.launch { screenStateSettings.save() }
     }
@@ -222,9 +249,6 @@ fun DatabaseScreen(
             sqlConnectionTestInProgress = false
             if (validationError == null) {
                 sqlConnectionTestSuccessful = true
-                if (sqlScreenState.databaseType != DatabaseType.SQLite) {
-                    saveCurrentSqlConnection()
-                }
                 sqlConnectionTestMessage = "Connection is valid"
             } else {
                 sqlConnectionTestSuccessful = false
@@ -559,6 +583,56 @@ fun DatabaseScreen(
             }
         )
     }
+    if (pendingConnectionNameDialog) {
+        AlertDialog(
+            onDismissRequest = { pendingConnectionNameDialog = false },
+            title = { Text(stringResource(Res.string.MainScreen_ConnectionNameTitle)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedTextField(
+                        value = pendingConnectionName,
+                        onValueChange = {
+                            pendingConnectionName = it
+                            if (pendingConnectionNameError && it.isNotBlank()) {
+                                pendingConnectionNameError = false
+                            }
+                        },
+                        placeholder = { Text(stringResource(Res.string.MainScreen_ConnectionNamePlaceholder)) },
+                        singleLine = true,
+                        isError = pendingConnectionNameError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (pendingConnectionNameError) {
+                        Text(
+                            text = connectionNameRequiredMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val trimmed = pendingConnectionName.trim()
+                        if (trimmed.isBlank()) {
+                            pendingConnectionNameError = true
+                        } else {
+                            saveCurrentSqlConnection(connectionName = trimmed)
+                            pendingConnectionNameDialog = false
+                        }
+                    }
+                ) {
+                    Text(stringResource(Res.string.Common_Save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingConnectionNameDialog = false }) {
+                    Text(stringResource(Res.string.Common_Cancel))
+                }
+            }
+        )
+    }
     if (savedConnectionsExpanded) {
         Dialog(onDismissRequest = { savedConnectionsExpanded = false }) {
             val dialogScroll = rememberScrollState()
@@ -671,7 +745,7 @@ fun DatabaseScreen(
                                             )
                                             Column(
                                                 modifier = Modifier.weight(1f),
-                                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                                                verticalArrangement = Arrangement.spacedBy(1.dp)
                                             ) {
                                                 Text(
                                                     text = savedConnectionPrimary(conn),
@@ -685,7 +759,14 @@ fun DatabaseScreen(
                                                     }
                                                 )
                                                 Text(
-                                                    text = savedConnectionSecondary(conn).ifBlank { " " },
+                                                    text = savedConnectionSecondary(conn),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = cs.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = savedConnectionTertiary(conn).ifBlank { " " },
                                                     style = MaterialTheme.typography.labelSmall,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis,
@@ -848,7 +929,11 @@ fun DatabaseScreen(
                     if (showAddConnection) {
                         OutlinedButton(
                             enabled = canTest,
-                            onClick = { saveCurrentSqlConnection() },
+                            onClick = {
+                                pendingConnectionName = defaultConnectionName()
+                                pendingConnectionNameError = false
+                                pendingConnectionNameDialog = true
+                            },
                             modifier = Modifier.height(32.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             shape = RoundedCornerShape(10.dp),
