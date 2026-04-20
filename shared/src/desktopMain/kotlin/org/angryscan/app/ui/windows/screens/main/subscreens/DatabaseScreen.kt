@@ -160,7 +160,9 @@ fun DatabaseScreen(
 
     fun refreshSavedConnections() {
         coroutineScope.launch {
-            savedForCurrentType = savedConnectionsRepository.list(sqlScreenState.databaseType)
+            savedForCurrentType = scanService.withHistoryBatchesPaused {
+                savedConnectionsRepository.list(sqlScreenState.databaseType)
+            }
         }
     }
 
@@ -168,24 +170,28 @@ fun DatabaseScreen(
         if (sqlScreenState.databaseType == DatabaseType.SQLite) return
         val finalName = connectionName?.trim()?.takeIf { it.isNotBlank() } ?: defaultConnectionName()
         coroutineScope.launch {
-            val key = savedConnectionsRepository.upsert(
-                name = finalName,
-                databaseType = sqlScreenState.databaseType,
-                host = sqlScreenState.host,
-                port = sqlScreenState.port,
-                database = sqlScreenState.database,
-                schema = sqlScreenState.schema,
-                user = sqlScreenState.user,
-                password = sqlScreenState.password
-            )
-            selectedSavedConnectionKey = key
+            scanService.withHistoryBatchesPaused {
+                val key = savedConnectionsRepository.upsert(
+                    name = finalName,
+                    databaseType = sqlScreenState.databaseType,
+                    host = sqlScreenState.host,
+                    port = sqlScreenState.port,
+                    database = sqlScreenState.database,
+                    schema = sqlScreenState.schema,
+                    user = sqlScreenState.user,
+                    password = sqlScreenState.password
+                )
+                selectedSavedConnectionKey = key
+            }
             refreshSavedConnections()
         }
     }
 
     fun removeSavedConnection(conn: SavedSqlConnection) {
         coroutineScope.launch {
-            savedConnectionsRepository.remove(conn.connectionKey)
+            scanService.withHistoryBatchesPaused {
+                savedConnectionsRepository.remove(conn.connectionKey)
+            }
             if (selectedSavedConnectionKey == conn.connectionKey) {
                 selectedSavedConnectionKey = null
             }
@@ -198,7 +204,9 @@ fun DatabaseScreen(
 
     LaunchedEffect(Unit) {
         if (screenStateSettings.sqlSavedConnections.isNotEmpty()) {
-            savedConnectionsRepository.migrateFromLegacy(screenStateSettings.sqlSavedConnections.toList())
+            scanService.withHistoryBatchesPaused {
+                savedConnectionsRepository.migrateFromLegacy(screenStateSettings.sqlSavedConnections.toList())
+            }
             screenStateSettings.sqlSavedConnections.clear()
             screenStateSettings.save()
         }

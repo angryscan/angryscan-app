@@ -17,8 +17,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
@@ -92,7 +94,7 @@ fun S3Screen(
             coroutineScope.launch {
                 delay(100)
                 screenStateSettings.s3ScreenState.path = path
-                screenStateSettings.save()
+                withContext(Dispatchers.IO) { screenStateSettings.save() }
             }
             if (focusRequested)
                 ScanPathHelper.resetFocus()
@@ -119,7 +121,7 @@ fun S3Screen(
             screenStateSettings.s3ScreenState.userSignatures.clear()
             screenStateSettings.s3ScreenState.userSignatures.addAll(scanSettings.userSignatures)
             screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
     
@@ -152,7 +154,7 @@ fun S3Screen(
                 scanSettings.userSignatures.clear()
                 scanSettings.userSignatures.addAll(screenStateSettings.s3ScreenState.userSignatures)
                 scanSettings.fastScan.value = screenStateSettings.s3ScreenState.fastScan.value
-                scanSettings.save()
+                withContext(Dispatchers.IO) { scanSettings.save() }
             }
             hasLoadedS3Settings = true
         } else if (!isOnS3Screen) {
@@ -184,16 +186,16 @@ fun S3Screen(
                     screenStateSettings.s3ScreenState.userSignatures.clear()
                     screenStateSettings.s3ScreenState.userSignatures.addAll(scanSettings.userSignatures)
                     screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
-                    screenStateSettings.save()
+                    withContext(Dispatchers.IO) { screenStateSettings.save() }
                 }
             }
         }
     }
-    
+
     LaunchedEffect(isOnS3Screen, scanSettings.fastScan.value) {
         if (isOnS3Screen) {
             screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
 

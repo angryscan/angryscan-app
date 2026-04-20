@@ -21,8 +21,10 @@ import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.path
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.*
@@ -76,7 +78,7 @@ fun FileShareScreen(
             screenStateSettings.fileShareScreenState.userSignatures.clear()
             screenStateSettings.fileShareScreenState.userSignatures.addAll(scanSettings.userSignatures)
             screenStateSettings.fileShareScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
     
@@ -101,7 +103,7 @@ fun FileShareScreen(
                 scanSettings.userSignatures.clear()
                 scanSettings.userSignatures.addAll(screenStateSettings.fileShareScreenState.userSignatures)
                 scanSettings.fastScan.value = screenStateSettings.fileShareScreenState.fastScan.value
-                scanSettings.save()
+                withContext(Dispatchers.IO) { scanSettings.save() }
             }
             hasLoadedFileShareSettings = true
         } else if (!isOnFileShareScreen) {
@@ -133,16 +135,16 @@ fun FileShareScreen(
                 screenStateSettings.fileShareScreenState.userSignatures.addAll(scanSettings.userSignatures)
                 screenStateSettings.fileShareScreenState.fastScan.value = scanSettings.fastScan.value
                 screenStateSettings.fileShareScreenState.selectionType.value = selectionType
-                screenStateSettings.save()
+                withContext(Dispatchers.IO) { screenStateSettings.save() }
             }
         }
     }
-    
+
     LaunchedEffect(isOnFileShareScreen, scanSettings.fastScan.value, selectionType) {
         if (isOnFileShareScreen) {
             screenStateSettings.fileShareScreenState.fastScan.value = scanSettings.fastScan.value
             screenStateSettings.fileShareScreenState.selectionType.value = selectionType
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
 
@@ -199,7 +201,7 @@ fun FileShareScreen(
             coroutineScope.launch {
                 delay(100)
                 screenStateSettings.fileShareScreenState.path = path
-                screenStateSettings.save()
+                withContext(Dispatchers.IO) { screenStateSettings.save() }
             }
             if (focusRequested)
                 ScanPathHelper.resetFocus()
@@ -440,10 +442,12 @@ fun FileShareScreen(
                     selectionType = detectedType
                     path = normalizedPath
                     saveScreenState()
-                    scanSettings.save()
                     screenStateSettings.fileShareScreenState.matchers.clear()
                     screenStateSettings.fileShareScreenState.matchers.addAll(scanSettings.matchers)
-                    screenStateSettings.save()
+                    coroutineScope.launch(Dispatchers.IO) {
+                        scanSettings.save()
+                        screenStateSettings.save()
+                    }
                     coroutineScope.launch {
                         val task = scanService.createTask(
                             name = if (detectedType == SelectionTypes.FileWithPaths) normalizedPath else null,

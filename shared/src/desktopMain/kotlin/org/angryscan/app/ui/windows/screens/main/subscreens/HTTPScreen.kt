@@ -11,8 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.MainScreen_Placeholder_HTTP
@@ -62,7 +64,7 @@ fun HTTPScreen(
             screenStateSettings.httpScreenState.userSignatures.clear()
             screenStateSettings.httpScreenState.userSignatures.addAll(scanSettings.userSignatures)
             screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
     
@@ -85,7 +87,7 @@ fun HTTPScreen(
                 scanSettings.userSignatures.clear()
                 scanSettings.userSignatures.addAll(screenStateSettings.httpScreenState.userSignatures)
                 scanSettings.fastScan.value = screenStateSettings.httpScreenState.fastScan.value
-                scanSettings.save()
+                withContext(Dispatchers.IO) { scanSettings.save() }
             }
             hasLoadedHTTPSettings = true
         } else if (!isOnHTTPScreen) {
@@ -117,16 +119,16 @@ fun HTTPScreen(
                     screenStateSettings.httpScreenState.userSignatures.clear()
                     screenStateSettings.httpScreenState.userSignatures.addAll(scanSettings.userSignatures)
                     screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
-                    screenStateSettings.save()
+                    withContext(Dispatchers.IO) { screenStateSettings.save() }
                 }
             }
         }
     }
-    
+
     LaunchedEffect(isOnHTTPScreen, scanSettings.fastScan.value) {
         if (isOnHTTPScreen) {
             screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
 

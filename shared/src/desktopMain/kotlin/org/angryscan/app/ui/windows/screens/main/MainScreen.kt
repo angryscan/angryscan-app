@@ -121,7 +121,9 @@ fun MainScreen(
 
     val headerRouteEntry by navController.currentBackStackEntryAsState()
     val pendingReplay by TaskReplayHelper.pending.collectAsState()
+    val fileShareSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.FileShare::class) == true
     val s3SourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
+    val httpSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.HTTP::class) == true
     val sqlSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
     val centralPanelTopPadding = when {
         // When scan settings are open we don't show extra under-radio rows (incl. S3 params),
@@ -304,9 +306,9 @@ fun MainScreen(
             }
         }
 
-        screenStateSettings.save()
         settingsPanelOpened = false
         screenStateSettings.mainScreenSource = connectorToStorageValue(destination)
+        screenStateSettings.save()
         navController.navigate(destination)
         TaskReplayHelper.clear()
     }
@@ -468,8 +470,16 @@ fun MainScreen(
                         highlightMissingMatchers = false
                     },
                     setSidebarContent = { },
-                    setBottomBarContent = { content -> bottomBarContent = content },
-                    setUnderSourceContent = { content -> underSourceContent = content }
+                    setBottomBarContent = { content ->
+                        if (fileShareSourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (fileShareSourceActive) {
+                            underSourceContent = content
+                        }
+                    }
                 )
             }
             composable<MainScreenConnector.S3> {
@@ -487,8 +497,16 @@ fun MainScreen(
                         highlightMissingMatchers = false
                     },
                     setSidebarContent = { },
-                    setBottomBarContent = { content -> bottomBarContent = content },
-                    setUnderSourceContent = { content -> underSourceContent = content }
+                    setBottomBarContent = { content ->
+                        if (s3SourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (s3SourceActive) {
+                            underSourceContent = content
+                        }
+                    }
                 )
             }
             composable<MainScreenConnector.HTTP> {
@@ -506,8 +524,16 @@ fun MainScreen(
                         highlightMissingMatchers = false
                     },
                     setSidebarContent = { },
-                    setBottomBarContent = { content -> bottomBarContent = content },
-                    setUnderSourceContent = { content -> underSourceContent = content }
+                    setBottomBarContent = { content ->
+                        if (httpSourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (httpSourceActive) {
+                            underSourceContent = content
+                        }
+                    }
                 )
             }
             composable<MainScreenConnector.Postgres> {
@@ -524,8 +550,16 @@ fun MainScreen(
                         highlightMissingMatchers = false
                     },
                     setSidebarContent = { },
-                    setBottomBarContent = { content -> bottomBarContent = content },
-                    setUnderSourceContent = { content -> underSourceContent = content }
+                    setBottomBarContent = { content ->
+                        if (sqlSourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (sqlSourceActive) {
+                            underSourceContent = content
+                        }
+                    }
                 )
             }
         }

@@ -30,7 +30,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.TaskEntityViewModel
-import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.calculateTaskScore
 import org.angryscan.app.scan.common.connectors.*
 import org.angryscan.app.ui.extensions.toHumanReadable
 import org.angryscan.app.ui.strings.composableName
@@ -38,8 +38,6 @@ import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import kotlin.time.*
 
 val ScanListFinishedColumnWidth = 92.dp
@@ -245,8 +243,7 @@ fun ScanTaskCard(
 
     val deltaDuration = (deltaSeconds ?: 0L).toDuration(DurationUnit.SECONDS)
 
-    val taskFilesViewModel = koinInject<TaskFilesViewModel> { parametersOf(taskEntity.dbTask) }
-    val scoreSum by taskFilesViewModel.scoreSum.collectAsState()
+    val scoreSum = remember(foundAttributes) { calculateTaskScore(foundAttributes) }
 
     val scanDuration: Duration = if (startedAt != null) {
         when (state) {

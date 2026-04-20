@@ -21,8 +21,10 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 private val logger = KotlinLogging.logger {}
+private const val StartupStatsTaskLimit = 24
 
 data class TaskReplaySettings(
     val path: String,
@@ -46,6 +48,7 @@ class ScanService : KoinComponent {
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
     val changingThreadsCount = AtomicBoolean(false)
+    private val historyBatchPauseRequests = AtomicInteger(0)
 
     init {
         DatabaseMigration.migrate()
@@ -96,21 +99,83 @@ class ScanService : KoinComponent {
                     totalFiles = task.filesCount,
                     foundAttributes = null,
                     foundFiles = null,
-                    folderSize = task.size
+                    folderSize = task.size,
+                    bootstrapProgress = false
                 )
             }
             tasks.setAll(entities)
 
-            val (foundFilesMap, foundAttributesMap) = database.transaction {
-                val foundFilesByTask = (TaskFiles innerJoin TaskFileScanResults)
-                    .select(TaskFiles.task, TaskFiles.id)
-                    .withDistinct()
-                    .map { row -> row[TaskFiles.task].value to row[TaskFiles.id].value }
-                    .groupBy({ it.first }, { it.second })
-                    .mapValues { it.value.distinct().size }
+            val prioritizedTaskIds = allTasks
+                .sortedByDescending { it.finishedAt }
+                .sortedByDescending { it.pauseDate }
+                .sortedByDescending { it.startedAt }
+                .map { it.id.value }
+                .take(StartupStatsTaskLimit)
+                .toList()
+            val prioritizedTaskIdsSet = prioritizedTaskIds.toSet()
+            val entitiesByTaskId = entities
+                .mapNotNull { entity -> entity.id.value?.let { it to entity } }
+                .toMap()
 
-                val foundAttrsByTask = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
+            // Let interactive screens (e.g. Database source controls) win DB queue right after startup.
+            delay(250)
+
+            loadStatsForTaskIds(
+                taskIds = prioritizedTaskIds,
+                entitiesByTaskId = entitiesByTaskId,
+                batchSize = 8,
+                interBatchDelayMs = 0
+            )
+
+            val remainingTaskIds = allTasks
+                .sortedByDescending { it.finishedAt }
+                .sortedByDescending { it.pauseDate }
+                .sortedByDescending { it.startedAt }
+                .map { it.id.value }
+                .filter { it !in prioritizedTaskIdsSet }
+
+            if (remainingTaskIds.isNotEmpty()) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    // Defer non-priority historical stats to keep the UI responsive.
+                    delay(1200)
+                    loadStatsForTaskIds(
+                        taskIds = remainingTaskIds,
+                        entitiesByTaskId = entitiesByTaskId,
+                        batchSize = 6,
+                        interBatchDelayMs = 120
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun loadStatsForTaskIds(
+        taskIds: List<Int>,
+        entitiesByTaskId: Map<Int, TaskEntityViewModel>,
+        batchSize: Int,
+        interBatchDelayMs: Long
+    ) {
+        if (taskIds.isEmpty()) return
+
+        taskIds.chunked(batchSize).forEach { chunkIds ->
+            if (chunkIds.isEmpty()) return@forEach
+            waitWhileHistoryBatchesPaused()
+
+            val (foundFilesStatsByTaskId, foundAttributesByTaskId) = database.transaction {
+                val foundFilesStats = (TaskFiles innerJoin TaskFileScanResults)
+                    .select(TaskFiles.task, TaskFiles.id, TaskFiles.size)
+                    .where { TaskFiles.task inList chunkIds }
+                    .withDistinct()
+                    .groupBy { row -> row[TaskFiles.task].value }
+                    .mapValues { (_, rows) ->
+                        val foundFilesCount = rows.size.toLong()
+                        val foundFilesSize = rows.sumOf { row -> row[TaskFiles.size] }
+                        foundFilesCount to foundFilesSize
+                    }
+
+                val foundAttributesStats = (TaskFileScanResults innerJoin TaskFiles innerJoin TaskMatchers)
                     .select(TaskFiles.task, TaskMatchers.matcher, TaskFileScanResults.count.sum())
+                    .where { TaskFiles.task inList chunkIds }
                     .groupBy(TaskFiles.task, TaskMatchers.matcher)
                     .map { row ->
                         val taskId = row[TaskFiles.task].value
@@ -118,20 +183,47 @@ class ScanService : KoinComponent {
                         val sum = row[TaskFileScanResults.count.sum()] ?: 0
                         Triple(taskId, matcher, sum)
                     }
-                    .filter { it.third > 0 }
-                    .groupBy({ it.first }, { it.second to it.third })
-                    .mapValues { entries -> entries.value.associate { it.first to it.second } }
+                    .groupBy { it.first }
+                    .mapValues { (_, rows) ->
+                        rows
+                            .asSequence()
+                            .map { (_, matcher, sum) -> matcher to sum }
+                            .filter { it.second > 0 }
+                            .associate { it.first to it.second }
+                    }
 
-                Pair(foundFilesByTask, foundAttrsByTask)
+                foundFilesStats to foundAttributesStats
             }
 
-            entities.forEach { entity ->
-                val taskId = entity.id.value ?: return@forEach
+            chunkIds.forEach { taskId ->
+                val entity = entitiesByTaskId[taskId] ?: return@forEach
+                val (foundFilesCount, foundFilesSize) = foundFilesStatsByTaskId[taskId] ?: (0L to 0L)
+                val foundAttributes = foundAttributesByTaskId[taskId].orEmpty()
                 entity.setFoundStats(
-                    foundFiles = foundFilesMap.getOrDefault(taskId, 0).toLong(),
-                    foundAttributes = foundAttributesMap.getOrDefault(taskId, emptyMap())
+                    foundFiles = foundFilesCount,
+                    foundAttributes = foundAttributes,
+                    foundFilesSize = foundFilesSize
                 )
             }
+
+            yield()
+            if (interBatchDelayMs > 0) delay(interBatchDelayMs)
+        }
+    }
+
+    private suspend fun waitWhileHistoryBatchesPaused() {
+        while (historyBatchPauseRequests.get() > 0) {
+            delay(60)
+        }
+    }
+
+    suspend fun <T> withHistoryBatchesPaused(block: suspend () -> T): T {
+        historyBatchPauseRequests.incrementAndGet()
+        return try {
+            block()
+        } finally {
+            val left = historyBatchPauseRequests.decrementAndGet()
+            if (left < 0) historyBatchPauseRequests.set(0)
         }
     }
 
@@ -190,70 +282,72 @@ class ScanService : KoinComponent {
         fastScan: Boolean? = null,
         connector: IConnector
     ): TaskEntityViewModel {
-        return database.transaction {
-            val task = Task.new {
-                this.name = name
-                this.path = path
-                this.taskState = TaskState.PENDING
-                this.fastScan = fastScan ?: scanSettings.fastScan.value
-                this.connector = connector
-            }
-            logger.info(throwable = null, LogMarkers.UserAction) {
-                "Creating task. " +
-                        "ID: ${task.id.value}. " +
-                        "Path: \"$path\". " +
-                        "Extensions: ${
-                            extensions.joinToString { it.name }
-                        }. " +
-                        "Detect functions: ${
-                            matchers.joinToString { it.name }
-                        }. " +
-                        "Fast scan: ${fastScan ?: scanSettings.fastScan.value}. " +
-                        "Threads: ${appSettings.threadCount.value}. " +
-                        "Connector: $connector ." +
-                        if (connector is ConnectorS3) {
-                            "Endpoind: ${connector.endpointStr}. " +
-                                    "Bucket: ${connector.bucketStr}. " +
-                                    "Region: ${connector.regionStr}. "
-                        } else if (connector is ConnectorPostgres) {
-                            "Host: ${connector.host}. " +
-                                    "Port: ${connector.port}. " +
-                                    "Database: ${connector.database}. "
-                        } else ""
-            }
-
-            matchers.forEach { m ->
-                TaskMatcher.new {
-                    this.task = task
-                    matcher = m
+        return withHistoryBatchesPaused {
+            database.transaction {
+                val task = Task.new {
+                    this.name = name
+                    this.path = path
+                    this.taskState = TaskState.PENDING
+                    this.fastScan = fastScan ?: scanSettings.fastScan.value
+                    this.connector = connector
                 }
-            }
-
-            val taskExtensions = extensions.toMutableList()
-            if (matchers.contains(CodeDetectFun)) {
-                CodeFileType.entries.forEach {
-                    if (!taskExtensions.contains(it))
-                        taskExtensions.add(it)
+                logger.info(throwable = null, LogMarkers.UserAction) {
+                    "Creating task. " +
+                            "ID: ${task.id.value}. " +
+                            "Path: \"$path\". " +
+                            "Extensions: ${
+                                extensions.joinToString { it.name }
+                            }. " +
+                            "Detect functions: ${
+                                matchers.joinToString { it.name }
+                            }. " +
+                            "Fast scan: ${fastScan ?: scanSettings.fastScan.value}. " +
+                            "Threads: ${appSettings.threadCount.value}. " +
+                            "Connector: $connector ." +
+                            if (connector is ConnectorS3) {
+                                "Endpoind: ${connector.endpointStr}. " +
+                                        "Bucket: ${connector.bucketStr}. " +
+                                        "Region: ${connector.regionStr}. "
+                            } else if (connector is ConnectorPostgres) {
+                                "Host: ${connector.host}. " +
+                                        "Port: ${connector.port}. " +
+                                        "Database: ${connector.database}. "
+                            } else ""
                 }
-            }
 
-            if (matchers.contains(CertDetectFun)) {
-                CertFileType.entries.forEach {
-                    if (!taskExtensions.contains(it))
-                        taskExtensions.add(it)
+                matchers.forEach { m ->
+                    TaskMatcher.new {
+                        this.task = task
+                        matcher = m
+                    }
                 }
-            }
 
-            taskExtensions.forEach { ext ->
-                TaskFileExtension.new {
-                    this.task = task
-                    this.extension = ext
+                val taskExtensions = extensions.toMutableList()
+                if (matchers.contains(CodeDetectFun)) {
+                    CodeFileType.entries.forEach {
+                        if (!taskExtensions.contains(it))
+                            taskExtensions.add(it)
+                    }
                 }
-            }
 
-            val taskEntity = TaskEntityViewModel(task)
-            tasks.add(taskEntity)
-            taskEntity
+                if (matchers.contains(CertDetectFun)) {
+                    CertFileType.entries.forEach {
+                        if (!taskExtensions.contains(it))
+                            taskExtensions.add(it)
+                    }
+                }
+
+                taskExtensions.forEach { ext ->
+                    TaskFileExtension.new {
+                        this.task = task
+                        this.extension = ext
+                    }
+                }
+
+                val taskEntity = TaskEntityViewModel(task)
+                tasks.add(taskEntity)
+                taskEntity
+            }
         }
     }
 
