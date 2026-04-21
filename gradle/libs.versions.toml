@@ -19,7 +19,7 @@ mordant = "3.0.2"
 knotify = "0.4.3"
 #Angryscan libraries
 gitleaks = "0.1.1"
-core = "1.5.0-dev"
+core = "1.5.0"
 
 [libraries]
 #Hyperscan
