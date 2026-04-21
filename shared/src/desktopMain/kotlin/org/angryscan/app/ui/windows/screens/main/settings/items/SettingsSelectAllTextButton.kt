@@ -2,6 +2,7 @@ package org.angryscan.app.ui.windows.screens.main.settings.items
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.angryscan.app.resources.Res
@@ -44,6 +46,7 @@ fun SettingsSelectAllTextButton(
     Text(
         text = label,
         modifier = modifier
+            .offset { IntOffset(x = 0, y = 1) }
             .padding(horizontal = 10.dp)
             .clip(shape)
             .clickable(

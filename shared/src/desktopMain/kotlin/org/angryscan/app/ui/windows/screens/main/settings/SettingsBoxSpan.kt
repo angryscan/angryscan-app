@@ -99,8 +99,8 @@ internal fun SettingsTableColumnDivider() {
 }
 
 private val SectionCardShape = RoundedCornerShape(12.dp)
-private val SectionHeaderPadding = 4.dp
-private val SectionContentPadding = 4.dp
+private val SectionHeaderPadding = 14.dp
+private val SectionContentPadding = 14.dp
 
 @Composable
 private fun SettingsSectionHeaderRow(

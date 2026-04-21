@@ -81,8 +81,11 @@ private val MainScanSettingsPanelTopBelowRadios = 168.dp
 
 /** То же, что [DesktopMainLayout.mainContentColumnMaxWidth]: путь и панель scan settings. */
 private val MainContentColumnMaxWidth = DesktopMainLayout.mainContentColumnMaxWidth
+private val MainLatestScansBlockMaxWidth = 1160.dp
 private val MainContentOuterPaddingH = 24.dp
 private val MainContentInnerPaddingH = 18.dp
+private val MainScanSettingsInnerPaddingH = MainContentInnerPaddingH
+private val MainScanSettingsLabelAlignOffset = 18.dp
 
 private fun connectorToStorageValue(connector: Any): String = when (connector) {
     MainScreenConnector.FileShare -> "fileshare"
@@ -150,11 +153,11 @@ fun MainScreen(
         else ->
             MainCentralPanelTopInset + MainPathBlockToRadioRowSpacing - MainCentralPanelTopLiftFromHeaderTightening
     }
+    val topActionBlockMaxWidth = MainLatestScansBlockMaxWidth + (MainContentInnerPaddingH * 2)
     val centralPanelMaxWidth = if (settingsPanelOpened) {
-        MainContentColumnMaxWidth
+        topActionBlockMaxWidth
     } else {
-        // Latest scans table can use a bit more horizontal space.
-        1160.dp
+        MainLatestScansBlockMaxWidth
     }
 
     fun applyDetectionSettings(
@@ -360,7 +363,7 @@ fun MainScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 18.dp)
-                    .widthIn(max = MainContentColumnMaxWidth)
+                    .widthIn(max = topActionBlockMaxWidth)
                     .fillMaxWidth()
                     .padding(horizontal = MainContentInnerPaddingH, vertical = 12.dp)
             ) {
@@ -524,7 +527,12 @@ fun MainScreen(
                 modifier = if (settingsPanelOpened) {
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = MainContentInnerPaddingH, vertical = 8.dp)
+                        .padding(
+                            start = MainScanSettingsInnerPaddingH + MainScanSettingsLabelAlignOffset,
+                            end = MainScanSettingsInnerPaddingH,
+                            top = 8.dp,
+                            bottom = 8.dp
+                        )
                 } else {
                     Modifier
                         .wrapContentHeight()

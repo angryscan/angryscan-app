@@ -382,7 +382,7 @@ fun S3Screen(
                         .align(Alignment.CenterStart)
                         .widthIn(min = blockMinWidth)
                         .fillMaxWidth()
-                        .padding(horizontal = 0.dp, vertical = 2.dp),
+                        .padding(start = 12.dp, end = 0.dp, top = 2.dp, bottom = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -477,7 +477,7 @@ fun S3Screen(
                             value = endpoint,
                             onValueChange = { endpoint = it; saveScreenState(); connectionTestOk = null; connectionTestMessage = null },
                             placeholder = "Endpoint",
-                            modifier = Modifier.weight(1.35f).widthIn(min = 200.dp),
+                            modifier = Modifier.weight(1.2f).widthIn(min = 180.dp),
                             isError = incorrectConnection && endpoint.isBlank()
                         )
                         CompactField(
