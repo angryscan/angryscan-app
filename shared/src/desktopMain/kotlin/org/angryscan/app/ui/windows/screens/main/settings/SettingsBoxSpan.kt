@@ -101,6 +101,7 @@ internal fun SettingsTableColumnDivider() {
 private val SectionCardShape = RoundedCornerShape(12.dp)
 private val SectionHeaderPadding = 14.dp
 private val SectionContentPadding = 14.dp
+private val SectionHeaderTextAlignToPathEditOffset = 14.dp
 
 @Composable
 private fun SettingsSectionHeaderRow(
@@ -126,6 +127,7 @@ private fun SettingsSectionHeaderRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.offset(x = SectionHeaderTextAlignToPathEditOffset),
             )
         } else {
             Text(
@@ -134,7 +136,9 @@ private fun SettingsSectionHeaderRow(
                 fontSize = 12.sp,
                 lineHeight = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .offset(x = SectionHeaderTextAlignToPathEditOffset)
             )
         }
         if (titleTrailingInline) {
@@ -197,7 +201,11 @@ fun SettingsUnifiedSubsection(
                     .fillMaxWidth()
                     .weight(1f, fill = true)
                     .verticalScroll(rememberScrollState())
-                    .padding(top = contentTopPadding, bottom = 2.dp),
+                    .padding(
+                        start = SectionHeaderTextAlignToPathEditOffset,
+                        top = contentTopPadding,
+                        bottom = 2.dp
+                    ),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
                 content = content
             )
@@ -213,7 +221,11 @@ fun SettingsUnifiedSubsection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = contentTopPadding, bottom = 2.dp),
+                    .padding(
+                        start = SectionHeaderTextAlignToPathEditOffset,
+                        top = contentTopPadding,
+                        bottom = 2.dp
+                    ),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
                 content = content
             )
@@ -262,7 +274,11 @@ fun SettingsSectionCard(
                         .fillMaxWidth()
                         .weight(1f, fill = true)
                         .verticalScroll(rememberScrollState())
-                        .padding(top = contentTopPadding, bottom = 2.dp),
+                        .padding(
+                            start = SectionHeaderTextAlignToPathEditOffset,
+                            top = contentTopPadding,
+                            bottom = 2.dp
+                        ),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                     content = content
                 )
@@ -282,7 +298,11 @@ fun SettingsSectionCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = contentTopPadding, bottom = 2.dp),
+                        .padding(
+                            start = SectionHeaderTextAlignToPathEditOffset,
+                            top = contentTopPadding,
+                            bottom = 2.dp
+                        ),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                     content = content
                 )

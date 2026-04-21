@@ -84,8 +84,6 @@ private val MainContentColumnMaxWidth = DesktopMainLayout.mainContentColumnMaxWi
 private val MainLatestScansBlockMaxWidth = 1160.dp
 private val MainContentOuterPaddingH = 24.dp
 private val MainContentInnerPaddingH = 18.dp
-private val MainScanSettingsInnerPaddingH = MainContentInnerPaddingH
-private val MainScanSettingsLabelAlignOffset = 18.dp
 
 private fun connectorToStorageValue(connector: Any): String = when (connector) {
     MainScreenConnector.FileShare -> "fileshare"
@@ -527,12 +525,7 @@ fun MainScreen(
                 modifier = if (settingsPanelOpened) {
                     Modifier
                         .fillMaxSize()
-                        .padding(
-                            start = MainScanSettingsInnerPaddingH + MainScanSettingsLabelAlignOffset,
-                            end = MainScanSettingsInnerPaddingH,
-                            top = 8.dp,
-                            bottom = 8.dp
-                        )
+                        .padding(horizontal = MainContentInnerPaddingH, vertical = 8.dp)
                 } else {
                     Modifier
                         .wrapContentHeight()
