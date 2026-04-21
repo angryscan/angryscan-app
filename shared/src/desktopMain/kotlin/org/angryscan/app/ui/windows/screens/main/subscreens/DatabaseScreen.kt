@@ -57,6 +57,7 @@ fun DatabaseScreen(
     var validationErrorDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val postgresConnectionErrorMessage = stringResource(Res.string.Validation_PostgresConnectionMessage)
+    val postgresConnectionValidMessage = stringResource(Res.string.ScanSettings_PostgresConnectionSuccess)
     val connectionNameRequiredMessage = stringResource(Res.string.MainScreen_ConnectionNameRequired)
 
     val coroutineScope = rememberCoroutineScope()
@@ -235,7 +236,7 @@ fun DatabaseScreen(
             sqlConnectionTestInProgress = false
             if (validationError == null) {
                 sqlConnectionTestSuccessful = true
-                sqlConnectionTestMessage = "Connection is valid"
+                sqlConnectionTestMessage = postgresConnectionValidMessage
             } else {
                 sqlConnectionTestSuccessful = false
                 sqlConnectionTestMessage = postgresConnectionErrorMessage
@@ -793,6 +794,8 @@ fun DatabaseScreen(
             } * 0.75f
             val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
             val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
+            val inlineContentHorizontalPadding = 12.dp
+            val inlineControlsGap = 10.dp
             val compactSize = MaterialTheme.typography.bodySmall.fontSize
             val compactLineHeight = MaterialTheme.typography.bodySmall.lineHeight
             val fieldTextStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -1004,8 +1007,10 @@ fun DatabaseScreen(
             ) {
                 // DB type chips (minimal)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = inlineContentHorizontalPadding),
+                    horizontalArrangement = Arrangement.spacedBy(inlineControlsGap),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     DatabaseType.entries.forEach { dbType ->
@@ -1069,7 +1074,8 @@ fun DatabaseScreen(
                 when (sqlScreenState.databaseType) {
                     DatabaseType.SQLite -> {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(horizontal = inlineContentHorizontalPadding),
+                            horizontalArrangement = Arrangement.spacedBy(inlineControlsGap),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val canTest = sqlScreenState.hasRequiredConnectionSettings()
@@ -1081,7 +1087,8 @@ fun DatabaseScreen(
                     }
                     else -> {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(horizontal = inlineContentHorizontalPadding),
+                            horizontalArrangement = Arrangement.spacedBy(inlineControlsGap),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             CompactField(
@@ -1122,7 +1129,7 @@ fun DatabaseScreen(
                                     coroutineScope.launch { screenStateSettings.save() }
                                 },
                                 placeholder = "Password",
-                                modifier = Modifier.weight(0.34f),
+                                modifier = Modifier.weight(0.28f),
                                 isError = DatabaseConnectionRequiredField.PASSWORD in highlightedConnectionFields,
                                 isPassword = true
                             )
@@ -1135,16 +1142,26 @@ fun DatabaseScreen(
                     }
                 }
 
-                sqlConnectionTestMessage?.let { message ->
-                    val color = if (sqlConnectionTestSuccessful)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.error
-                    Text(
-                        text = message,
-                        color = color,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(18.dp)
+                        .padding(horizontal = inlineContentHorizontalPadding),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    sqlConnectionTestMessage?.let { message ->
+                        val color = if (sqlConnectionTestSuccessful)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.error
+                        Text(
+                            text = message,
+                            color = color,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }

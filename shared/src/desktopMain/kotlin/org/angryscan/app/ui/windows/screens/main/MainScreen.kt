@@ -14,10 +14,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -104,6 +110,9 @@ fun MainScreen(
     var settingsPanelOpened by remember { mutableStateOf(false) }
     var highlightMissingExtensions by remember { mutableStateOf(false) }
     var highlightMissingMatchers by remember { mutableStateOf(false) }
+    var databaseRadioBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var databaseUnderBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var databaseContourContainerBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val scanService = koinInject<ScanService>()
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
@@ -117,6 +126,7 @@ fun MainScreen(
     }
 
     val colorScheme = MaterialTheme.colorScheme
+    val databaseContourColor = colorScheme.outlineVariant.copy(alpha = 0.62f)
     val focusManager = LocalFocusManager.current
 
     val headerRouteEntry by navController.currentBackStackEntryAsState()
@@ -125,6 +135,13 @@ fun MainScreen(
     val s3SourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
     val httpSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.HTTP::class) == true
     val sqlSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
+    LaunchedEffect(sqlSourceActive, settingsPanelOpened) {
+        if (!sqlSourceActive || settingsPanelOpened) {
+            databaseRadioBounds = null
+            databaseUnderBounds = null
+            databaseContourContainerBounds = null
+        }
+    }
     val centralPanelTopPadding = when {
         // When scan settings are open we don't show extra under-radio rows (incl. S3 params),
         // so the panel can start right under the radios for all sources.
@@ -347,40 +364,118 @@ fun MainScreen(
                     .fillMaxWidth()
                     .padding(horizontal = MainContentInnerPaddingH, vertical = 12.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { coordinates ->
+                            databaseContourContainerBounds = coordinates.boundsInRoot()
+                        }
+                        .drawBehind {
+                            val containerBounds = databaseContourContainerBounds
+                            val radioRootBounds = databaseRadioBounds
+                            val underRootBounds = databaseUnderBounds
+                            if (
+                                sqlSourceActive &&
+                                !settingsPanelOpened &&
+                                containerBounds != null &&
+                                radioRootBounds != null &&
+                                underRootBounds != null
+                            ) {
+                                val radioBounds = androidx.compose.ui.geometry.Rect(
+                                    left = radioRootBounds.left - containerBounds.left,
+                                    top = radioRootBounds.top - containerBounds.top,
+                                    right = radioRootBounds.right - containerBounds.left,
+                                    bottom = radioRootBounds.bottom - containerBounds.top
+                                )
+                                val underBounds = androidx.compose.ui.geometry.Rect(
+                                    left = underRootBounds.left - containerBounds.left,
+                                    top = underRootBounds.top - containerBounds.top,
+                                    right = underRootBounds.right - containerBounds.left,
+                                    bottom = underRootBounds.bottom - containerBounds.top
+                                )
+                                val strokeWidth = 1.dp.toPx()
+                                val half = strokeWidth / 2f
+                                val radioTopY = radioBounds.top + 1.dp.toPx() + half
+                                val minBranchY = radioBounds.bottom - half
+                                val maxBranchY = (underBounds.top - half).coerceAtLeast(minBranchY)
+                                val branchY = (radioBounds.bottom + 2.dp.toPx()).coerceIn(minBranchY, maxBranchY)
+                                val cornerRadius = 10.dp.toPx()
+                                val path = Path().apply {
+                                    moveTo(radioBounds.left + half, radioTopY)
+                                    lineTo(radioBounds.right - half, radioTopY)
+                                    lineTo(radioBounds.right - half, branchY)
+                                    lineTo(underBounds.right - half, branchY)
+                                    lineTo(underBounds.right - half, underBounds.bottom - half)
+                                    lineTo(underBounds.left + half, underBounds.bottom - half)
+                                    lineTo(underBounds.left + half, branchY)
+                                    lineTo(radioBounds.left + half, branchY)
+                                    lineTo(radioBounds.left + half, radioTopY)
+                                    close()
+                                }
+                                drawPath(
+                                    path = path,
+                                    color = databaseContourColor,
+                                    style = Stroke(
+                                        width = strokeWidth,
+                                        pathEffect = PathEffect.cornerPathEffect(cornerRadius)
+                                    )
+                                )
+                            }
+                        }
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(MainPathBlockToRadioRowSpacing),
                         horizontalAlignment = Alignment.Start,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         bottomBarContent()
-                        SourceRadioRow(
-                            navController = navController,
-                            settingsOpen = settingsPanelOpened,
-                            onSelectedLabelClick = {
-                                val nextOpened = !settingsPanelOpened
-                                settingsPanelOpened = nextOpened
-                                if (!nextOpened) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(MainPathBlockToRadioRowSpacing),
+                            horizontalAlignment = Alignment.Start,
+                        ) {
+                            SourceRadioRow(
+                                navController = navController,
+                                settingsOpen = settingsPanelOpened,
+                                onSelectedLabelClick = {
+                                    val nextOpened = !settingsPanelOpened
+                                    settingsPanelOpened = nextOpened
+                                    if (!nextOpened) {
+                                        highlightMissingExtensions = false
+                                        highlightMissingMatchers = false
+                                    }
+                                },
+                                onSourceSwitch = { sourceToken ->
+                                    settingsPanelOpened = false
                                     highlightMissingExtensions = false
                                     highlightMissingMatchers = false
+                                    screenStateSettings.mainScreenSource = sourceToken
+                                    screenStateSettings.save()
+                                },
+                                highlightDatabase = false,
+                                highlightColor = databaseContourColor,
+                                onDatabaseItemBoundsChanged = { databaseRadioBounds = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 12.dp)
+                            )
+                        }
+                        if (!settingsPanelOpened) {
+                            Box(
+                                modifier = if (sqlSourceActive) {
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .onGloballyPositioned { coordinates ->
+                                            databaseUnderBounds = coordinates.boundsInRoot()
+                                        }
+                                        .padding(start = 1.dp, end = 1.dp, top = 1.dp, bottom = 3.dp)
+                                } else {
+                                    Modifier.fillMaxWidth()
                                 }
-                            },
-                            onSourceSwitch = { sourceToken ->
-                                settingsPanelOpened = false
-                                highlightMissingExtensions = false
-                                highlightMissingMatchers = false
-                                screenStateSettings.mainScreenSource = sourceToken
-                                screenStateSettings.save()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    if (!settingsPanelOpened) {
-                        underSourceContent()
+                            ) {
+                                underSourceContent()
+                            }
+                        }
                     }
                 }
             }
@@ -580,6 +675,9 @@ fun MainScreen(
 private fun SourceRadioRow(
     navController: androidx.navigation.NavController,
     settingsOpen: Boolean,
+    highlightDatabase: Boolean,
+    highlightColor: Color,
+    onDatabaseItemBoundsChanged: (androidx.compose.ui.geometry.Rect?) -> Unit = {},
     modifier: Modifier = Modifier,
     onSelectedLabelClick: () -> Unit,
     onSourceSwitch: (String) -> Unit,
@@ -635,18 +733,35 @@ private fun SourceRadioRow(
             },
             onSelectedLabelClick = onSelectedLabelClick
         )
-        SourceRadioItem(
-            selected = selectedRoute == MainScreenConnector.Postgres,
-            label = "Database",
-            settingsOpen = settingsOpen,
-            onSelect = {
-                if (selectedRoute != MainScreenConnector.Postgres) {
-                    onSourceSwitch("database")
-                    navController.navigate(MainScreenConnector.Postgres)
+        Box(
+            modifier = if (highlightDatabase) {
+                Modifier
+                    .border(
+                        width = 1.dp,
+                        color = highlightColor,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            } else {
+                Modifier
+            }
+                .onGloballyPositioned { coordinates ->
+                    onDatabaseItemBoundsChanged(coordinates.boundsInRoot())
                 }
-            },
-            onSelectedLabelClick = onSelectedLabelClick
-        )
+        ) {
+            SourceRadioItem(
+                selected = selectedRoute == MainScreenConnector.Postgres,
+                label = "Database",
+                settingsOpen = settingsOpen,
+                onSelect = {
+                    if (selectedRoute != MainScreenConnector.Postgres) {
+                        onSourceSwitch("database")
+                        navController.navigate(MainScreenConnector.Postgres)
+                    }
+                },
+                onSelectedLabelClick = onSelectedLabelClick
+            )
+        }
     }
 }
 
