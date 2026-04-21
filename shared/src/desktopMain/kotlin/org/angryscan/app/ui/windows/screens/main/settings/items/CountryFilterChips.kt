@@ -1,8 +1,6 @@
 package org.angryscan.app.ui.windows.screens.main.settings.items
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,10 +15,37 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
+
+/** Тон-заливка и обводка как у QuickFilterChip (TopNavigation). */
+@Composable
+private fun scanFilterChipStyle(
+    selected: Boolean,
+    hovered: Boolean,
+): Triple<Color, Color, Color> {
+    val cs = MaterialTheme.colorScheme
+    val fill = when {
+        selected && hovered -> cs.primary.copy(alpha = 0.20f)
+        selected -> cs.primary.copy(alpha = 0.16f)
+        hovered -> cs.primary.copy(alpha = 0.10f)
+        else -> cs.surfaceVariant.copy(alpha = 0.24f)
+    }
+    val stroke = when {
+        selected -> cs.primary.copy(alpha = 0.28f)
+        hovered -> cs.primary.copy(alpha = 0.28f)
+        else -> cs.outlineVariant.copy(alpha = 0.26f)
+    }
+    val label = when {
+        selected || hovered -> cs.primary
+        else -> cs.onSurfaceVariant
+    }
+    return Triple(fill, stroke, label)
+}
 
 @Composable
 fun CountryFilterChips(
@@ -31,7 +56,7 @@ fun CountryFilterChips(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         MatcherCountry.entries.forEach { country ->
@@ -58,32 +83,7 @@ private fun CountryChip(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
-
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primaryContainer
-            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        },
-        animationSpec = tween(200),
-        label = "chip_background"
-    )
-
-    val textColor by animateColorAsState(
-        targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-            isHovered -> MaterialTheme.colorScheme.onSurface
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        },
-        animationSpec = tween(200),
-        label = "chip_text"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = if (isSelected) 4.dp else if (isHovered) 2.dp else 0.dp,
-        animationSpec = tween(200),
-        label = "chip_elevation"
-    )
+    val (fill, stroke, labelColor) = scanFilterChipStyle(isSelected, isHovered)
 
     DescriptionTooltip(
         description = country.getLocalizedName(useShort = false),
@@ -97,8 +97,10 @@ private fun CountryChip(
                 ) { onClick() }
                 .hoverable(interactionSource = interactionSource),
             shape = RoundedCornerShape(20.dp),
-            color = backgroundColor,
-            shadowElevation = elevation
+            color = fill,
+            border = BorderStroke(1.dp, stroke),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
         ) {
             Row(
                 modifier = Modifier
@@ -110,14 +112,13 @@ private fun CountryChip(
                     text = country.flag,
                     fontSize = 20.sp
                 )
-                
-                // Счетчик выбранных/всего
+
                 if (selectedCount != null && totalCount != null) {
                     Text(
                         text = "$selectedCount/$totalCount",
                         fontSize = 10.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                        color = textColor
+                        color = labelColor
                     )
                 }
             }
@@ -127,24 +128,33 @@ private fun CountryChip(
 
 @Composable
 fun CompactCountryFilterChips(
-    selectedCountry: MatcherCountry,
-    onCountrySelected: (MatcherCountry) -> Unit,
+    selectedCountry: MatcherCountry?,
+    onCountrySelected: (MatcherCountry?) -> Unit,
     modifier: Modifier = Modifier,
-    getCountryStats: ((MatcherCountry) -> Pair<Int, Int>)? = null
+    getCountryStats: ((MatcherCountry) -> Pair<Int, Int>)? = null,
+    dense: Boolean = false,
+    horizontalSpacing: Dp? = null,
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing ?: (if (dense) 8.dp else 10.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MatcherCountry.entries.forEach { country ->
+        MatcherCountry.entries
+            .filter { it != MatcherCountry.ALL }
+            .forEach { country ->
             val stats = getCountryStats?.invoke(country)
             CompactCountryChip(
                 country = country,
                 isSelected = country == selectedCountry,
-                onClick = { onCountrySelected(country) },
+                onClick = {
+                    if (country != selectedCountry) {
+                        onCountrySelected(country)
+                    }
+                },
                 selectedCount = stats?.first,
-                totalCount = stats?.second
+                totalCount = stats?.second,
+                dense = dense,
             )
         }
     }
@@ -157,64 +167,52 @@ private fun CompactCountryChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selectedCount: Int? = null,
-    totalCount: Int? = null
+    totalCount: Int? = null,
+    dense: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
-
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primaryContainer
-            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        },
-        animationSpec = tween(200),
-        label = "compact_chip_background"
-    )
+    val (fill, stroke, labelColor) = scanFilterChipStyle(isSelected, isHovered)
 
     DescriptionTooltip(
         description = country.getLocalizedName(useShort = false),
         delay = 300
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+        Surface(
+            modifier = modifier
+                .defaultMinSize(minHeight = if (dense) 22.dp else 36.dp)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) { onClick() }
+                .hoverable(interactionSource = interactionSource),
+            shape = RoundedCornerShape(if (dense) 8.dp else 10.dp),
+            color = fill,
+            border = BorderStroke(1.dp, stroke),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
         ) {
-            Surface(
-                modifier = modifier
-                    .size(36.dp)
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) { onClick() }
-                    .hoverable(interactionSource = interactionSource),
-                shape = RoundedCornerShape(10.dp),
-                color = backgroundColor,
-                shadowElevation = if (isSelected) 3.dp else 0.dp
+            Row(
+                modifier = Modifier.padding(
+                    horizontal = if (dense) 5.dp else 8.dp,
+                    vertical = if (dense) 2.dp else 4.dp
+                ),
+                horizontalArrangement = Arrangement.spacedBy(if (dense) 3.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
+                Text(
+                    text = country.flag,
+                    fontSize = if (dense) 13.sp else 20.sp
+                )
+                if (selectedCount != null && totalCount != null) {
                     Text(
-                        text = country.flag,
-                        fontSize = 20.sp
+                        text = "$selectedCount/$totalCount",
+                        fontSize = if (dense) 8.sp else 9.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = labelColor
                     )
                 }
-            }
-            
-            // Компактный счетчик
-            if (selectedCount != null && totalCount != null) {
-                Text(
-                    text = "$selectedCount/$totalCount",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isSelected)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
             }
         }
     }
 }
-

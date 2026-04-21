@@ -10,11 +10,7 @@ import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.FileSize
 import org.angryscan.app.scan.common.connectors.IDatabaseConnector
-import org.angryscan.app.scan.functions.CertDetectFun
-import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.common.engine.IMatcher
-import org.angryscan.common.matchers.CardNumber
-import org.angryscan.common.matchers.FullName
 import org.jetbrains.exposed.sql.and
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -84,23 +80,14 @@ class TaskFilesViewModel(val task: Task) : KoinComponent, ViewModel() {
                     val (fileId, path, size) = key.first
                     val columnName = key.second
                     val detectRows = groupRows.map { it.third }
-                    val containsFIO = detectRows.map { it.first }.contains(FullName)
+                    val foundAttributes = detectRows.groupingBy { it.first }.fold(0) { acc, (_, c) -> acc + c }
                     TaskFileResult(
                         id = fileId,
                         path = path,
                         size = size,
-                        foundAttributes = detectRows.groupingBy { it.first }.fold(0) { acc, (_, c) -> acc + c },
+                        foundAttributes = foundAttributes,
                         count = detectRows.sumOf { it.second },
-                        score = detectRows.sumOf { row ->
-                            (if (containsFIO) 20 else detectRows.size - 1) +
-                                    (when (row.first) {
-                                        is FullName -> 5f
-                                        is CardNumber -> 30f
-                                        is CodeDetectFun -> 0.01f
-                                        is CertDetectFun -> 100f
-                                        else -> 1f
-                                    } * row.second).toLong()
-                        },
+                        score = calculateTaskScore(foundAttributes),
                         columnName = columnName
                     )
                 }
@@ -123,25 +110,15 @@ class TaskFilesViewModel(val task: Task) : KoinComponent, ViewModel() {
                         .select(TaskMatchers.matcher, TaskFileScanResults.count)
                         .where { TaskFileScanResults.file.eq(fileRow[TaskFiles.id]) }
                         .map { it[TaskMatchers.matcher] to it[TaskFileScanResults.count] }
-
-                    val containsFIO = detectRows.map { it.first }.contains(FullName)
+                    val foundAttributes = detectRows.toMap()
 
                     TaskFileResult(
                         id = fileRow[TaskFiles.id].value,
                         path = fileRow[TaskFiles.path],
                         size = FileSize(fileRow[TaskFiles.size]),
-                        foundAttributes = detectRows.toMap(),
+                        foundAttributes = foundAttributes,
                         count = detectRows.sumOf { it.second },
-                        score = detectRows.sumOf { row ->
-                            (if (containsFIO) 20 else detectRows.size - 1) +
-                                    (when (row.first) {
-                                        is FullName -> 5f
-                                        is CardNumber -> 30f
-                                        is CodeDetectFun -> 0.01f
-                                        is CertDetectFun -> 100f
-                                        else -> 1f
-                                    } * row.second).toLong()
-                        }
+                        score = calculateTaskScore(foundAttributes)
                     )
                 }
             }

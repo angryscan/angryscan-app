@@ -12,10 +12,19 @@ val LightColors = lightColorScheme(
     secondary = Color(0xFF0F4A84),
     tertiary = Color(0xFF269336),
     onSecondary = Color(0xFFF0F0F0),
-    surface = Color(0xFFF5F8FC),
+    background = Color(0xFFEEF3F8),
+    onBackground = Color(0xFF1A1D21),
+    surface = Color(0xFFFFFFFF),
     onSurface = Color(0xFF1A1D21),
-    surfaceVariant = Color(0xFFE3EAF2),
-    onSurfaceVariant = Color(0xFF42474E),
+    surfaceVariant = Color(0xFFD8E2ED),
+    onSurfaceVariant = Color(0xFF37414C),
+    outline = Color(0xFF8E9AA8),
+    outlineVariant = Color(0xFFB4C0CD),
+    // Saturated error for visible destructive affordances (window close, etc.).
+    error = Color(0xFFDC2626),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFCDD2),
+    onErrorContainer = Color(0xFF410E0B),
 )
 
 val DarkColors = darkColorScheme(

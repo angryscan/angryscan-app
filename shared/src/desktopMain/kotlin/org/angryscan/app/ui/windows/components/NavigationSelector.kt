@@ -11,6 +11,8 @@ fun WindowScope.NavigationSelector(
     navController: NavController,
     windowPlacement: WindowPlacement? = null,
     expanded: Boolean = false,
+    settingsExpanded: Boolean = false,
+    onSettingsExpandedChange: (Boolean) -> Unit = {},
     onMinimizeClick: (() -> Unit)? = null,
     onExpandClick: (() -> Unit)? = null,
     onCloseClick: (() -> Unit)? = null
@@ -21,6 +23,8 @@ fun WindowScope.NavigationSelector(
                 navController = navController,
                 windowPlacement = windowPlacement,
                 expanded = expanded,
+                settingsExpanded = settingsExpanded,
+                onSettingsExpandedChange = onSettingsExpandedChange,
                 onMinimizeClick = onMinimizeClick,
                 onExpandClick = onExpandClick,
                 onCloseClick = onCloseClick
@@ -31,6 +35,8 @@ fun WindowScope.NavigationSelector(
             navController = navController,
             windowPlacement = windowPlacement,
             expanded = expanded,
+            settingsExpanded = settingsExpanded,
+            onSettingsExpandedChange = onSettingsExpandedChange,
             onMinimizeClick = onMinimizeClick,
             onExpandClick = onExpandClick,
             onCloseClick = onCloseClick

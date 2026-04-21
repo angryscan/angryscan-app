@@ -1,324 +1,864 @@
 package org.angryscan.app.ui.windows.screens.main
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircleOutline
-import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.angryscan.app.resources.MainScreen_SettingsTitle
-import org.angryscan.app.resources.MainScreen_SidebarTitle
-import org.angryscan.app.resources.Res
-import org.angryscan.app.resources.close
+import org.angryscan.app.common.DatabaseType
+import org.angryscan.app.common.ScanSettings
+import org.angryscan.app.common.ScreenStateSettings
+import org.angryscan.app.db.models.TaskState
+import org.angryscan.app.resources.*
+import org.angryscan.app.scan.ScanService
+import org.angryscan.app.scan.TaskReplayHelper
+import org.angryscan.app.scan.common.connectors.*
+import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.ui.DesktopMainLayout
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
-import org.angryscan.app.ui.windows.screens.main.components.MainScreenSidebar
-import org.angryscan.app.ui.windows.screens.main.components.SourceSelector
-import org.angryscan.app.ui.windows.screens.main.components.SourceSelectorTabs
 import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
+import org.angryscan.app.ui.windows.screens.main.subscreens.DatabaseScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.FileShareScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.HTTPScreen
-import org.angryscan.app.ui.windows.screens.main.subscreens.DatabaseScreen
 import org.angryscan.app.ui.windows.screens.main.subscreens.S3Screen
+import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskCard
+import org.angryscan.app.ui.windows.screens.scans.components.ScanTaskHeaderRow
+import org.angryscan.app.ui.windows.screens.scans.components.StatusFilter
+import org.angryscan.common.engine.IMatcher
+import org.angryscan.common.matchers.UserSignature
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+
+/** Top inset for settings / recent scans panel: clears path row, source radios, and optional S3 connection row. */
+private val MainCentralPanelTopInset = 200.dp
+
+/** Extra vertical space between the path / action block and the source radio row. */
+private val MainPathBlockToRadioRowSpacing = 0.dp
 
 /**
- * Вариант селектора источника данных.
- * - [SourceSelectorVariant.Sidebar] — боковая панель (современный layout)
- * - [SourceSelectorVariant.FloatingIcons] — плавающая панель с иконками
- * - [SourceSelectorVariant.Tabs] — табы сверху
+ * Снятый за счёт ужатия отступов у радиостроки/колонки зазор переносим вверх: панель настроек и recent scans начинаются выше.
  */
-private val SOURCE_SELECTOR_VARIANT = SourceSelectorVariant.Sidebar
+private val MainCentralPanelTopLiftFromHeaderTightening = 20.dp
 
-private enum class SourceSelectorVariant {
-    Sidebar,
-    FloatingIcons,
-    Tabs
+/**
+ * When scan settings are open (File Share / HTTP only): panel starts just under the source radios for more height.
+ * S3 keeps [MainCentralPanelTopInset] — extra row under radios must stay clear.
+ */
+private val MainScanSettingsPanelTopBelowRadios = 168.dp
+
+/** То же, что [DesktopMainLayout.mainContentColumnMaxWidth]: путь и панель scan settings. */
+private val MainContentColumnMaxWidth = DesktopMainLayout.mainContentColumnMaxWidth
+private val MainContentOuterPaddingH = 24.dp
+private val MainContentInnerPaddingH = 18.dp
+
+private fun connectorToStorageValue(connector: Any): String = when (connector) {
+    MainScreenConnector.FileShare -> "fileshare"
+    MainScreenConnector.S3 -> "s3"
+    MainScreenConnector.HTTP -> "http"
+    MainScreenConnector.Postgres -> "database"
+    else -> "fileshare"
 }
 
-// Единый вертикальный отступ: меню→path+scan, path+scan→лейблы, лейблы→контент, снизу блоков
-private val MainContentVerticalSpacing = 18.dp
+private fun storageValueToConnector(value: String): Any = when (value.lowercase()) {
+    "s3" -> MainScreenConnector.S3
+    "http" -> MainScreenConnector.HTTP
+    "database", "postgres", "sql" -> MainScreenConnector.Postgres
+    else -> MainScreenConnector.FileShare
+}
 
 @Composable
 fun MainScreen(
-    showScan:(taskId:Int) -> Unit
+    showScan: (taskId: Int) -> Unit,
+    showScansHistory: () -> Unit
 ) {
     val navController = rememberNavController()
-
-    var sidebarExtraContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
     var bottomBarContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
+    var underSourceContent by remember { mutableStateOf<@Composable () -> Unit>({}) }
+    var settingsPanelOpened by remember { mutableStateOf(false) }
+    var highlightMissingExtensions by remember { mutableStateOf(false) }
+    var highlightMissingMatchers by remember { mutableStateOf(false) }
+    val scanService = koinInject<ScanService>()
+    val scanSettings = koinInject<ScanSettings>()
+    val screenStateSettings = koinInject<ScreenStateSettings>()
 
-    val settingsTransition = updateTransition(targetState = true, label = "settings")
-
-
-    var sqlConnectionBlinkSignal by remember { mutableIntStateOf(0) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    val closeLabel = stringResource(Res.string.close)
-
-    suspend fun showMainSnackbar(message: String, isError: Boolean) {
-        snackbarHostState.currentSnackbarData?.dismiss()
-        snackbarHostState.showSnackbar(
-            visuals = MainScreenSnackbarVisuals(
-                message = message,
-                actionLabel = closeLabel,
-                isError = isError
-            )
-        )
+    LaunchedEffect(highlightMissingExtensions, highlightMissingMatchers) {
+        if (highlightMissingExtensions || highlightMissingMatchers) {
+            delay(2000)
+            highlightMissingExtensions = false
+            highlightMissingMatchers = false
+        }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Блок путь + кнопка Scan — сверху
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = 24.dp,
-                        top = MainContentVerticalSpacing,
-                        end = 24.dp,
-                        bottom = MainContentVerticalSpacing
-                    )
-            ) {
-                bottomBarContent()
-            }
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-            if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar) {
-                Column(
-                    modifier = Modifier
-                        .width(420.dp)
-                        .padding(
-                            top = 0.dp,
-                            bottom = MainContentVerticalSpacing,
-                            start = 24.dp,
-                            end = 8.dp
-                        )
-                        .fillMaxHeight()
-                ) {
-                    Text(
-                        text = stringResource(Res.string.MainScreen_SidebarTitle),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = MainContentVerticalSpacing)
-                    )
-                    MainScreenSidebar(
-                        navController = navController,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        extraContent = sidebarExtraContent
-                    )
-                }
+    val colorScheme = MaterialTheme.colorScheme
+    val focusManager = LocalFocusManager.current
+
+    val headerRouteEntry by navController.currentBackStackEntryAsState()
+    val pendingReplay by TaskReplayHelper.pending.collectAsState()
+    val fileShareSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.FileShare::class) == true
+    val s3SourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
+    val httpSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.HTTP::class) == true
+    val sqlSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
+    val centralPanelTopPadding = when {
+        // When scan settings are open we don't show extra under-radio rows (incl. S3 params),
+        // so the panel can start right under the radios for all sources.
+        settingsPanelOpened ->
+            MainScanSettingsPanelTopBelowRadios - MainCentralPanelTopLiftFromHeaderTightening
+        else ->
+            MainCentralPanelTopInset + MainPathBlockToRadioRowSpacing - MainCentralPanelTopLiftFromHeaderTightening
+    }
+    val centralPanelMaxWidth = if (settingsPanelOpened) {
+        MainContentColumnMaxWidth
+    } else {
+        // Latest scans table can use a bit more horizontal space.
+        1160.dp
+    }
+
+    fun applyDetectionSettings(
+        extensionsTarget: MutableList<IFileType>,
+        matchersTarget: MutableList<IMatcher>,
+        userSignaturesTarget: MutableList<UserSignature>,
+        fastScanTarget: MutableState<Boolean>,
+        extensions: List<IFileType>,
+        matchers: List<IMatcher>,
+        userSignatures: List<UserSignature>,
+        fastScan: Boolean
+    ) {
+        extensionsTarget.clear()
+        extensionsTarget.addAll(extensions)
+        matchersTarget.clear()
+        matchersTarget.addAll(matchers)
+        userSignaturesTarget.clear()
+        userSignaturesTarget.addAll(userSignatures)
+        fastScanTarget.value = fastScan
+    }
+
+    LaunchedEffect(pendingReplay) {
+        val replay = pendingReplay ?: return@LaunchedEffect
+        val replayUserSignatures = replay.matchers.filterIsInstance<UserSignature>()
+        val replayMatchers = replay.matchers.filterNot { it is UserSignature }
+
+        applyDetectionSettings(
+            extensionsTarget = scanSettings.extensions,
+            matchersTarget = scanSettings.matchers,
+            userSignaturesTarget = scanSettings.userSignatures,
+            fastScanTarget = scanSettings.fastScan,
+            extensions = replay.extensions,
+            matchers = replayMatchers,
+            userSignatures = replayUserSignatures,
+            fastScan = replay.fastScan
+        )
+        scanSettings.save()
+
+        val destination = when (val connector = replay.connector) {
+            is ConnectorS3 -> {
+                screenStateSettings.s3ScreenState.path = replay.path
+                screenStateSettings.s3ScreenState.endpoint = connector.endpointStr
+                screenStateSettings.s3ScreenState.accessKey = connector.accessKey
+                screenStateSettings.s3ScreenState.secretKey = connector.secretKey
+                screenStateSettings.s3ScreenState.bucket = connector.bucketStr
+                applyDetectionSettings(
+                    extensionsTarget = screenStateSettings.s3ScreenState.extensions,
+                    matchersTarget = screenStateSettings.s3ScreenState.matchers,
+                    userSignaturesTarget = screenStateSettings.s3ScreenState.userSignatures,
+                    fastScanTarget = screenStateSettings.s3ScreenState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.S3
             }
 
-            if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .padding(
-                            top = 0.dp,
-                            bottom = MainContentVerticalSpacing,
-                            start = 8.dp,
-                            end = 24.dp
-                        )
-                ) {
-                    Text(
-                        text = stringResource(Res.string.MainScreen_SettingsTitle),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = MainContentVerticalSpacing)
-                    )
-                    Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                        SettingsBox(
-                            transition = settingsTransition,
-                            navController = navController,
-                            sqlConnectionBlinkSignal = sqlConnectionBlinkSignal,
-                            showSnackbar = ::showMainSnackbar
-                        )
-                    }
-                }
+            is ConnectorHTTP -> {
+                screenStateSettings.httpScreenState.path = replay.path
+                applyDetectionSettings(
+                    extensionsTarget = screenStateSettings.httpScreenState.extensions,
+                    matchersTarget = screenStateSettings.httpScreenState.matchers,
+                    userSignaturesTarget = screenStateSettings.httpScreenState.userSignatures,
+                    fastScanTarget = screenStateSettings.httpScreenState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.HTTP
             }
 
-            Column(
-                modifier = if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar) {
-                    Modifier
-                        .width(0.dp)
-                        .fillMaxHeight()
-                        .padding(
-                            start = 0.dp,
-                            end = 0.dp,
-                            top = 24.dp,
-                            bottom = 40.dp
-                        )
-                } else {
-                    Modifier
-                        .weight(1f)
-                        .fillMaxSize()
-                        .padding(
-                            start = 56.dp,
-                            end = 0.dp,
-                            top = 32.dp,
-                            bottom = 40.dp
-                        )
-                },
-                horizontalAlignment = if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Sidebar)
-                    Alignment.Start
-                else
-                    Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
-                if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.Tabs) {
-                    SourceSelectorTabs(
-                        navController = navController,
-                        modifier = Modifier.fillMaxWidth()
+            is IDatabaseConnector -> {
+                val currentSql = screenStateSettings.sqlScreenState.value
+                screenStateSettings.sqlScreenState.value = when (connector) {
+                    is ConnectorPostgres -> currentSql.copy(
+                        databaseType = DatabaseType.PostgreSQL,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
                     )
-                    Spacer(modifier = Modifier.height(36.dp))
+                    is ConnectorMySQL -> currentSql.copy(
+                        databaseType = DatabaseType.MySQL,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
+                    is ConnectorGreenPlum -> currentSql.copy(
+                        databaseType = DatabaseType.GreenPlum,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
+                    is ConnectorHive -> currentSql.copy(
+                        databaseType = DatabaseType.Hive,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
+                    is ConnectorCockroachDB -> currentSql.copy(
+                        databaseType = DatabaseType.CockroachDB,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
+                    is ConnectorClickHouse -> currentSql.copy(
+                        databaseType = DatabaseType.ClickHouse,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
+                    is ConnectorSqlite -> currentSql.copy(
+                        databaseType = DatabaseType.SQLite,
+                        filePath = connector.filePath,
+                        schema = "",
+                        host = "",
+                        port = "5432",
+                        database = "",
+                        user = "",
+                        password = ""
+                    )
+                    else -> currentSql
                 }
-
-                NavHost(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    navController = navController,
-                    startDestination = MainScreenConnector.FileShare,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Start, tween(700)
-                        ) + fadeIn(tween(700))
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.End, tween(700)
-                        ) + fadeOut(tween(700))
-                    }
-                ) {
-                    composable<MainScreenConnector.FileShare> {
-                        FileShareScreen(
-                            navController = navController,
-                            expandScanState = { taskId ->
-                                showScan(taskId)
-                            },
-                            setSidebarContent = { content -> sidebarExtraContent = content },
-                            setBottomBarContent = { content -> bottomBarContent = content }
-                        )
-                    }
-                    composable<MainScreenConnector.S3> {
-                        S3Screen(
-                            navController = navController,
-                            expandScanState = { taskId ->
-                                showScan(taskId)
-                            },
-                            setSidebarContent = { content -> sidebarExtraContent = content },
-                            setBottomBarContent = { content -> bottomBarContent = content }
-                        )
-                    }
-                    composable<MainScreenConnector.HTTP> {
-                        HTTPScreen(
-                            navController = navController,
-                            expandScanState = { taskId ->
-                                showScan(taskId)
-                            },
-                            setSidebarContent = { content -> sidebarExtraContent = content },
-                            setBottomBarContent = { content -> bottomBarContent = content }
-                        )
-                    }
-                    composable<MainScreenConnector.Postgres> {
-                        DatabaseScreen(
-                            expandScanState = { taskId ->
-                                showScan(taskId)
-                            },
-                            setSidebarContent = { content -> sidebarExtraContent = content },
-                            setBottomBarContent = { content -> bottomBarContent = content },
-                            onSqlConnectionError = {
-                                sqlConnectionBlinkSignal++
-                            },
-                            showErrorSnackbar = { message ->
-                                coroutineScope.launch {
-                                    showMainSnackbar(message, true)
-                                }
-                            }
-                        )
-                    }
-                }
+                val sqlState = screenStateSettings.sqlScreenState.value
+                applyDetectionSettings(
+                    extensionsTarget = sqlState.extensions,
+                    matchersTarget = sqlState.matchers,
+                    userSignaturesTarget = sqlState.userSignatures,
+                    fastScanTarget = sqlState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.Postgres
             }
+
+            else -> {
+                screenStateSettings.fileShareScreenState.path = replay.path
+                applyDetectionSettings(
+                    extensionsTarget = screenStateSettings.fileShareScreenState.extensions,
+                    matchersTarget = screenStateSettings.fileShareScreenState.matchers,
+                    userSignaturesTarget = screenStateSettings.fileShareScreenState.userSignatures,
+                    fastScanTarget = screenStateSettings.fileShareScreenState.fastScan,
+                    extensions = replay.extensions,
+                    matchers = replayMatchers,
+                    userSignatures = replayUserSignatures,
+                    fastScan = replay.fastScan
+                )
+                MainScreenConnector.FileShare
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            snackbar = { snackbarData ->
-                val visuals = snackbarData.visuals as? MainScreenSnackbarVisuals
-                val isError = visuals?.isError != false
-                Snackbar(
-                    dismissAction = {
-                        snackbarData.visuals.actionLabel?.let { actionLabel ->
-                            TextButton(
-                                onClick = { snackbarData.performAction() }
-                            ) {
-                                Text(
-                                    text = actionLabel,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    },
-                    actionOnNewLine = false,
-                    containerColor = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionContentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
-                    dismissActionContentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+        settingsPanelOpened = false
+        screenStateSettings.mainScreenSource = connectorToStorageValue(destination)
+        screenStateSettings.save()
+        navController.navigate(destination)
+        TaskReplayHelper.clear()
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Tap outside interactive controls clears path field / any focused editor (children are above this layer).
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { focusManager.clearFocus() }
+        )
+        // Primary action block is centered in the full window.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = MainContentOuterPaddingH)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 18.dp)
+                    .widthIn(max = MainContentColumnMaxWidth)
+                    .fillMaxWidth()
+                    .padding(horizontal = MainContentInnerPaddingH, vertical = 12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(MainPathBlockToRadioRowSpacing),
+                        horizontalAlignment = Alignment.Start,
                     ) {
-                        Icon(
-                            imageVector = if (isError) Icons.Outlined.ErrorOutline else Icons.Outlined.CheckCircleOutline,
-                            contentDescription = null,
-                            tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        bottomBarContent()
+                        SourceRadioRow(
+                            navController = navController,
+                            settingsOpen = settingsPanelOpened,
+                            onSelectedLabelClick = {
+                                val nextOpened = !settingsPanelOpened
+                                settingsPanelOpened = nextOpened
+                                if (!nextOpened) {
+                                    highlightMissingExtensions = false
+                                    highlightMissingMatchers = false
+                                }
+                            },
+                            onSourceSwitch = { sourceToken ->
+                                settingsPanelOpened = false
+                                highlightMissingExtensions = false
+                                highlightMissingMatchers = false
+                                screenStateSettings.mainScreenSource = sourceToken
+                                screenStateSettings.save()
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        Text(snackbarData.visuals.message)
+                    }
+                    if (!settingsPanelOpened) {
+                        underSourceContent()
                     }
                 }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-        )
+            }
+        }
 
-        if (SOURCE_SELECTOR_VARIANT == SourceSelectorVariant.FloatingIcons) {
-            SourceSelector(
-                navController = navController,
-                modifier = Modifier
+        Surface(
+            modifier = (if (settingsPanelOpened) {
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(
+                        start = MainContentOuterPaddingH,
+                        end = MainContentOuterPaddingH,
+                        top = centralPanelTopPadding,
+                        bottom = 8.dp
+                    )
+                    .widthIn(max = centralPanelMaxWidth)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+            } else {
+                Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 28.dp)
-            )
+                    .padding(
+                        start = MainContentOuterPaddingH,
+                        end = MainContentOuterPaddingH,
+                        bottom = 12.dp
+                    )
+                    .widthIn(max = centralPanelMaxWidth)
+                    .fillMaxWidth()
+                    .border(
+                        width = 1.dp,
+                        color = colorScheme.outlineVariant.copy(alpha = 0.62f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .wrapContentHeight()
+            }).clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { focusManager.clearFocus() },
+            shape = RoundedCornerShape(16.dp),
+            color = if (settingsPanelOpened) Color.Transparent else colorScheme.surfaceVariant.copy(alpha = 0.28f),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp
+        ) {
+            // Ensure identical inner content frame for settings/recent scans
+            Box(
+                modifier = if (settingsPanelOpened) {
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = MainContentInnerPaddingH, vertical = 8.dp)
+                } else {
+                    Modifier
+                        .wrapContentHeight()
+                        .padding(horizontal = MainContentInnerPaddingH, vertical = 8.dp)
+                }
+            ) {
+                if (settingsPanelOpened) {
+                    SettingsBox(
+                        transition = updateTransition(targetState = true, label = "settings-inline"),
+                        allowExtensionsEditing = !sqlSourceActive,
+                        highlightMissingExtensions = highlightMissingExtensions,
+                        highlightMissingMatchers = highlightMissingMatchers
+                    )
+                } else {
+                    RecentScansPreview(
+                        scanService = scanService,
+                        onTaskClick = showScan,
+                        onViewAllClick = showScansHistory
+                    )
+                }
+            }
+        }
+
+        // Source selection moved under the path block (radio row).
+    }
+
+    // Keep subscreen-specific state and bottom bar logic active.
+    Box(modifier = Modifier.size(0.dp)) {
+        val initialConnector = remember(screenStateSettings.mainScreenSource) {
+            storageValueToConnector(screenStateSettings.mainScreenSource)
+        }
+        NavHost(
+            navController = navController,
+            startDestination = initialConnector
+        ) {
+            composable<MainScreenConnector.FileShare> {
+                FileShareScreen(
+                    navController = navController,
+                    expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
+                    setSidebarContent = { },
+                    setBottomBarContent = { content ->
+                        if (fileShareSourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (fileShareSourceActive) {
+                            underSourceContent = content
+                        }
+                    }
+                )
+            }
+            composable<MainScreenConnector.S3> {
+                S3Screen(
+                    navController = navController,
+                    expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
+                    setSidebarContent = { },
+                    setBottomBarContent = { content ->
+                        if (s3SourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (s3SourceActive) {
+                            underSourceContent = content
+                        }
+                    }
+                )
+            }
+            composable<MainScreenConnector.HTTP> {
+                HTTPScreen(
+                    navController = navController,
+                    expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
+                    setSidebarContent = { },
+                    setBottomBarContent = { content ->
+                        if (httpSourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (httpSourceActive) {
+                            underSourceContent = content
+                        }
+                    }
+                )
+            }
+            composable<MainScreenConnector.Postgres> {
+                DatabaseScreen(
+                    expandScanState = { taskId -> showScan(taskId) },
+                    onRequireScanSettings = { missingExtensions, missingMatchers ->
+                        settingsPanelOpened = true
+                        highlightMissingExtensions = missingExtensions
+                        highlightMissingMatchers = missingMatchers
+                    },
+                    onRequireSourceInputs = {
+                        settingsPanelOpened = false
+                        highlightMissingExtensions = false
+                        highlightMissingMatchers = false
+                    },
+                    setSidebarContent = { },
+                    setBottomBarContent = { content ->
+                        if (sqlSourceActive) {
+                            bottomBarContent = content
+                        }
+                    },
+                    setUnderSourceContent = { content ->
+                        if (sqlSourceActive) {
+                            underSourceContent = content
+                        }
+                    }
+                )
+            }
         }
     }
 }
 
-private data class MainScreenSnackbarVisuals(
-    override val message: String,
-    override val actionLabel: String? = null,
-    val isError: Boolean,
-    override val withDismissAction: Boolean = true,
-    override val duration: SnackbarDuration = SnackbarDuration.Long
-) : SnackbarVisuals
+@Composable
+private fun SourceRadioRow(
+    navController: androidx.navigation.NavController,
+    settingsOpen: Boolean,
+    modifier: Modifier = Modifier,
+    onSelectedLabelClick: () -> Unit,
+    onSourceSwitch: (String) -> Unit,
+) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val destination = backStackEntry?.destination
+    val selectedRoute = when {
+        destination?.hasRoute(MainScreenConnector.FileShare::class) == true -> MainScreenConnector.FileShare
+        destination?.hasRoute(MainScreenConnector.S3::class) == true -> MainScreenConnector.S3
+        destination?.hasRoute(MainScreenConnector.HTTP::class) == true -> MainScreenConnector.HTTP
+        destination?.hasRoute(MainScreenConnector.Postgres::class) == true -> MainScreenConnector.Postgres
+        else -> MainScreenConnector.FileShare
+    }
 
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SourceRadioItem(
+            selected = selectedRoute == MainScreenConnector.FileShare,
+            label = "File Share",
+            settingsOpen = settingsOpen,
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.FileShare) {
+                    onSourceSwitch("fileshare")
+                    navController.navigate(MainScreenConnector.FileShare)
+                }
+            },
+            onSelectedLabelClick = onSelectedLabelClick
+        )
+        SourceRadioItem(
+            selected = selectedRoute == MainScreenConnector.S3,
+            label = "AWS S3",
+            settingsOpen = settingsOpen,
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.S3) {
+                    onSourceSwitch("s3")
+                    navController.navigate(MainScreenConnector.S3)
+                }
+            },
+            onSelectedLabelClick = onSelectedLabelClick
+        )
+        SourceRadioItem(
+            selected = selectedRoute == MainScreenConnector.HTTP,
+            label = "HTTP",
+            settingsOpen = settingsOpen,
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.HTTP) {
+                    onSourceSwitch("http")
+                    navController.navigate(MainScreenConnector.HTTP)
+                }
+            },
+            onSelectedLabelClick = onSelectedLabelClick
+        )
+        SourceRadioItem(
+            selected = selectedRoute == MainScreenConnector.Postgres,
+            label = "Database",
+            settingsOpen = settingsOpen,
+            onSelect = {
+                if (selectedRoute != MainScreenConnector.Postgres) {
+                    onSourceSwitch("database")
+                    navController.navigate(MainScreenConnector.Postgres)
+                }
+            },
+            onSelectedLabelClick = onSelectedLabelClick
+        )
+    }
+}
+
+@Composable
+private fun SourceRadioItem(
+    selected: Boolean,
+    label: String,
+    settingsOpen: Boolean,
+    onSelect: () -> Unit,
+    onSelectedLabelClick: () -> Unit,
+) {
+    val labelInteractionSource = remember { MutableInteractionSource() }
+    val labelHovered by labelInteractionSource.collectIsHoveredAsState()
+    val radioInteractionSource = remember { MutableInteractionSource() }
+    val underline = selected && (labelHovered || settingsOpen)
+    val color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+        alpha = when {
+            selected -> 0.95f
+            labelHovered -> 0.88f
+            else -> 0.72f
+        }
+    )
+    val radioColors = RadioButtonDefaults.colors(
+        selectedColor = color,
+        unselectedColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+    )
+
+    @Composable
+    fun MainRow() {
+        Row(
+            modifier = Modifier
+                .heightIn(min = 32.dp)
+                .padding(horizontal = 2.dp, vertical = 0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable(
+                        interactionSource = radioInteractionSource,
+                        indication = null
+                    ) {
+                        if (!selected) onSelect()
+                    }
+            ) {
+                RadioButton(
+                    selected = selected,
+                    onClick = null,
+                    modifier = Modifier.scale(0.82f),
+                    colors = radioColors
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .width(IntrinsicSize.Max)
+                    .padding(start = 1.dp, top = 2.dp, bottom = 2.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = label,
+                    modifier = Modifier
+                        .hoverable(labelInteractionSource)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(
+                            interactionSource = labelInteractionSource,
+                            indication = null,
+                            onClick = {
+                                if (selected) onSelectedLabelClick() else onSelect()
+                            }
+                        ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = color,
+                    textDecoration = if (underline) TextDecoration.Underline else TextDecoration.None,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    softWrap = false
+                )
+            }
+        }
+    }
+
+    if (selected) {
+        DescriptionTooltip(
+            description = stringResource(
+                if (settingsOpen) {
+                    Res.string.MainScreen_SourceLabel_ScanSettingsTooltip
+                } else {
+                    Res.string.MainScreen_SourceLabel_LatestScansTooltip
+                }
+            ),
+            delay = 350
+        ) {
+            MainRow()
+        }
+    } else {
+        MainRow()
+    }
+}
+
+@OptIn(ExperimentalTime::class)
+@Composable
+private fun RecentScansPreview(
+    scanService: ScanService,
+    onTaskClick: (Int) -> Unit,
+    onViewAllClick: () -> Unit,
+) {
+    val allTasks by scanService.tasks.tasks.collectAsState()
+    var statusFilter by remember { mutableStateOf(StatusFilter.ALL) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val visibleTasks = allTasks
+        .filter { it.state.value != TaskState.LOADING }
+        .sortedByDescending { it.finishedAt.value }
+        .sortedByDescending { it.pausedAt.value }
+        .sortedByDescending { it.startedAt.value }
+    val filteredTasks = visibleTasks
+        .filter { task ->
+            val states = statusFilter.states
+            if (states.isEmpty()) true else task.state.value in states
+        }
+        .take(5)
+
+    var expandedTaskId by remember { mutableStateOf<Int?>(null) }
+
+    var currentTime by remember { mutableStateOf(Clock.System.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime = Clock.System.now()
+            delay(1000)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 0.dp, vertical = 0.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(Res.string.MainScreen_RecentScans_Title),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        if (visibleTasks.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(Res.string.MainScreen_RecentScans_Empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            val countActive = visibleTasks.count { it.state.value == TaskState.SCANNING || it.state.value == TaskState.SEARCHING }
+            val countPaused = visibleTasks.count { it.state.value == TaskState.STOPPED || it.state.value == TaskState.PENDING }
+            val countError = visibleTasks.count { it.state.value == TaskState.FAILED }
+            val countCompleted = visibleTasks.count { it.state.value == TaskState.COMPLETED }
+
+            ScanTaskHeaderRow(
+                statusFilter = statusFilter,
+                statusCounts = mapOf(
+                    StatusFilter.ALL to visibleTasks.size,
+                    StatusFilter.ACTIVE to countActive,
+                    StatusFilter.PAUSED to countPaused,
+                    StatusFilter.ERROR to countError,
+                    StatusFilter.COMPLETED to countCompleted
+                ),
+                onStatusFilterChange = { statusFilter = it }
+            )
+            val recentScansListHeight = 280.dp
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = recentScansListHeight),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(filteredTasks, key = { it.id.value ?: it.hashCode() }) { task ->
+                    ScanTaskCard(
+                        taskEntity = task,
+                        onClick = {
+                            task.id.value?.let { onTaskClick(it) }
+                        },
+                        currentTime = currentTime,
+                        attributesExpanded = task.id.value != null && expandedTaskId == task.id.value,
+                        onAttributesExpandClick = {
+                            val id = task.id.value ?: return@ScanTaskCard
+                            expandedTaskId = if (expandedTaskId == id) null else id
+                        },
+                        onRescanClick = {
+                            coroutineScope.launch {
+                                val newTask = scanService.startNewScanFromTask(task)
+                                newTask.id.value?.let { onTaskClick(it) }
+                            }
+                        },
+                        onEditAndRunClick = {
+                            coroutineScope.launch {
+                                TaskReplayHelper.set(scanService.snapshotTaskReplaySettings(task))
+                            }
+                        }
+                    )
+                }
+            }
+            TextButton(
+                onClick = onViewAllClick,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.MainScreen_RecentScans_ViewFullHistory),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}

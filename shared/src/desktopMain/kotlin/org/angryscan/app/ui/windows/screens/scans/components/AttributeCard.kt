@@ -33,8 +33,8 @@ fun AttributeChip(
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f))
-                .padding(vertical = 4.dp, horizontal = 8.dp)
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.55f))
+                .padding(vertical = 3.dp, horizontal = 6.dp)
         ) {
             Text(
                 text = attribute.composableName(),
@@ -61,12 +61,12 @@ fun AttributeChip(
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f))
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.55f))
                 .clickable(
                     onClick = onClick,
                     enabled = enabled
                 )
-                .padding(vertical = 4.dp, horizontal = 8.dp)
+                .padding(vertical = 3.dp, horizontal = 6.dp)
         ) {
             Text(
                 text = attribute.composableName(),

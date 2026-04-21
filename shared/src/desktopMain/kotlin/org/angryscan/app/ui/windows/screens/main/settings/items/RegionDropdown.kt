@@ -48,7 +48,9 @@ fun RegionDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            MatcherCountry.entries.forEach { region ->
+            MatcherCountry.entries
+                .filter { it != MatcherCountry.ALL }
+                .forEach { region ->
                 DropdownMenuItem(
                     text = {
                         Text(

@@ -13,8 +13,8 @@ import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.ObjectCounter
-import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.connectors.FoundedFile
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.common.engine.IMatcher
@@ -34,7 +34,8 @@ class TaskEntityViewModel(
     foundAttributes: Map<IMatcher, Int>? = null,
     foundFiles: Long? = null,
     folderSize: String? = null,
-    state: TaskState = TaskState.LOADING
+    state: TaskState = TaskState.LOADING,
+    bootstrapProgress: Boolean = true
 ) : ViewModel(), KoinComponent {
     private val database: DatabaseConnector by inject()
     private val tasksViewModel: TasksViewModel by inject()
@@ -151,14 +152,17 @@ class TaskEntityViewModel(
         if (folderSize != null) _folderSize.value = folderSize
         else _folderSize.value = dbTask.size ?: ""
 
-        taskScope.launch {
-            checkProgress()
+        if (bootstrapProgress) {
+            taskScope.launch {
+                checkProgress()
+            }
         }
     }
 
-    fun setFoundStats(foundFiles: Long, foundAttributes: Map<IMatcher, Int>) {
+    fun setFoundStats(foundFiles: Long, foundAttributes: Map<IMatcher, Int>, foundFilesSize: Long = 0L) {
         _foundFiles.value = foundFiles
         _foundAttributes.value = foundAttributes.filter { it.value > 0 }
+        _foundFilesSize.value = foundFilesSize
     }
 
     fun deleteFoundAttribute(fileId: Int, matcher: IMatcher) {

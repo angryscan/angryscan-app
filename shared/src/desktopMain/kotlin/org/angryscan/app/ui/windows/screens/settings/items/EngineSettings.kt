@@ -54,7 +54,9 @@ fun EngineSettingsContent(
     val engines: List<KClass<out IScanEngine>> = listOf(HyperScanEngine::class, KotlinEngine::class)
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (showDescription) {
@@ -85,6 +87,21 @@ fun EngineSettingsContent(
                     )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        val details = when (engine) {
+            HyperScanEngine::class -> "Fast for large datasets. Best choice for intensive scans."
+            KotlinEngine::class -> "Portable and lightweight. Good for compatibility and quick checks."
+            else -> null
+        }
+        if (!details.isNullOrBlank()) {
+            Text(
+                text = details,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

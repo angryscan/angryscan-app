@@ -1,6 +1,8 @@
 package org.angryscan.app.ui.strings
 
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
@@ -11,6 +13,7 @@ import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import java.util.*
 import kotlin.reflect.KClass
 
 private val matcherResources: Map<KClass<out IMatcher>, Pair<StringResource, StringResource>> = buildMap {
@@ -95,6 +98,21 @@ suspend fun IMatcher.readableName(): String {
     return matcherResources[this::class]?.first?.let { getString(it) }
         ?: this.name
 }
+
+suspend fun IMatcher.readableNameForLocale(localeTag: String): String {
+    val res = matcherResources[this::class]?.first ?: return this.name
+    return localeOverrideMutex.withLock {
+        val prev = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag(localeTag))
+            getString(res)
+        } finally {
+            Locale.setDefault(prev)
+        }
+    }
+}
+
+private val localeOverrideMutex = Mutex()
 
 @Composable
 fun IMatcher.composableName(): String {

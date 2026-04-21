@@ -3,8 +3,6 @@ package org.angryscan.app.ui.windows.screens.main.subscreens
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,16 +11,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.MainScreen_ScanHint_HTTP
+import org.angryscan.app.resources.MainScreen_Placeholder_HTTP
 import org.angryscan.app.resources.Res
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
-import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -31,8 +31,11 @@ import org.koin.compose.koinInject
 fun HTTPScreen(
     navController: androidx.navigation.NavController,
     expandScanState: (Int) -> Unit,
+    onRequireScanSettings: (missingExtensions: Boolean, missingMatchers: Boolean) -> Unit = { _, _ -> },
+    onRequireSourceInputs: () -> Unit = {},
     setSidebarContent: (@Composable () -> Unit) -> Unit = {},
-    setBottomBarContent: (@Composable () -> Unit) -> Unit = {}
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
+    setUnderSourceContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
@@ -41,9 +44,6 @@ fun HTTPScreen(
 
     val helperPath by ScanPathHelper.path.collectAsState()
     var path by remember { mutableStateOf(screenStateSettings.httpScreenState.path) }
-
-    var scanNotCorrectPath by remember { mutableStateOf(false) }
-
     var selectPathError by remember { mutableStateOf(false) }
     
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
@@ -64,7 +64,7 @@ fun HTTPScreen(
             screenStateSettings.httpScreenState.userSignatures.clear()
             screenStateSettings.httpScreenState.userSignatures.addAll(scanSettings.userSignatures)
             screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
     
@@ -79,10 +79,7 @@ fun HTTPScreen(
             val hasSavedDetectionSettings = screenStateSettings.httpScreenState.extensions.isNotEmpty() || 
                                            screenStateSettings.httpScreenState.matchers.isNotEmpty() || 
                                            screenStateSettings.httpScreenState.userSignatures.isNotEmpty()
-            val hasOtherSavedState = screenStateSettings.httpScreenState.path.isNotEmpty()
-            val hasSavedState = hasSavedDetectionSettings || hasOtherSavedState
-            
-            if (hasSavedState) {
+            if (hasSavedDetectionSettings) {
                 scanSettings.extensions.clear()
                 scanSettings.extensions.addAll(screenStateSettings.httpScreenState.extensions)
                 scanSettings.matchers.clear()
@@ -90,7 +87,7 @@ fun HTTPScreen(
                 scanSettings.userSignatures.clear()
                 scanSettings.userSignatures.addAll(screenStateSettings.httpScreenState.userSignatures)
                 scanSettings.fastScan.value = screenStateSettings.httpScreenState.fastScan.value
-                scanSettings.save()
+                withContext(Dispatchers.IO) { scanSettings.save() }
             }
             hasLoadedHTTPSettings = true
         } else if (!isOnHTTPScreen) {
@@ -122,56 +119,60 @@ fun HTTPScreen(
                     screenStateSettings.httpScreenState.userSignatures.clear()
                     screenStateSettings.httpScreenState.userSignatures.addAll(scanSettings.userSignatures)
                     screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
-                    screenStateSettings.save()
+                    withContext(Dispatchers.IO) { screenStateSettings.save() }
                 }
             }
         }
     }
-    
+
     LaunchedEffect(isOnHTTPScreen, scanSettings.fastScan.value) {
         if (isOnHTTPScreen) {
             screenStateSettings.httpScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
 
-    LaunchedEffect(scanNotCorrectPath) {
-        if (scanNotCorrectPath) {
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            delay(400)
-            selectPathError = true
-            delay(200)
-            selectPathError = false
-            scanNotCorrectPath = false
+    LaunchedEffect(selectPathError) {
+        if (selectPathError) {
+            delay(2000)
+            if (selectPathError) {
+                selectPathError = false
+            }
         }
     }
 
     setSidebarContent { }
+    setUnderSourceContent { }
     setBottomBarContent {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val controlHeight = 68.dp
+            val controlShape = RoundedCornerShape(18.dp)
+            val scanButtonWidth = when {
+                maxWidth >= 1500.dp -> 240.dp
+                maxWidth < 1200.dp -> 220.dp
+                else -> 232.dp
+            } * 0.75f
+            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
+            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(controlGap, Alignment.Start)
+            ) {
             Surface(
                 modifier = Modifier
-                    .weight(0.5f)
-                    .height(72.dp)
+                    .weight(1f)
+                    .widthIn(min = pathMinWidth)
+                    .height(controlHeight)
                     .then(
                         if (selectPathError) Modifier.border(
                             2.dp,
                             MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            RoundedCornerShape(20.dp)
+                            controlShape
                         )
                         else Modifier
                     ),
-                shape = RoundedCornerShape(20.dp),
+                shape = controlShape,
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 tonalElevation = 0.dp
             ) {
@@ -179,9 +180,9 @@ fun HTTPScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                     OutlinedTextField(
                         value = path,
                         onValueChange = {
@@ -191,10 +192,10 @@ fun HTTPScreen(
                                 .joinToString(";")
                             saveScreenState()
                         },
-                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
                         placeholder = {
                             Text(
-                                text = "Enter URLs separated by space or semicolon (;)",
+                                text = stringResource(Res.string.MainScreen_Placeholder_HTTP),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
@@ -206,81 +207,66 @@ fun HTTPScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,
                             unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                            errorBorderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            disabledBorderColor = Color.Transparent,
+                            errorBorderColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            errorContainerColor = Color.Transparent
                         )
-                    )
-                    Icon(
-                        imageVector = Icons.Outlined.Link,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-            if (path.isNotEmpty()) {
-                Button(
-                    enabled = true,
-                    onClick = {
-                        if (!path.split(";").all {
-                                it.startsWith("http://") || it.startsWith("https://")
-                            }
-                        ) {
-                            scanNotCorrectPath = true
-                            return@Button
-                        }
-                        if (!validateAndShowError()) return@Button
-                        saveScreenState()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                path = path,
-                                extensions = scanSettings.extensions,
-                                matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorHTTP()
-                            )
-                            scanService.startTask(task)
-                            task.id.value?.let { expandScanState(it) }
-                        }
-                    },
-                    modifier = ScanButtonModifier(
-                        isReady = true,
-                        modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                    ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                        disabledElevation = 0.dp
-                    ),
-                    colors = startScanButtonColors()
-                ) {
-                    StartScanButtonContent()
-                }
-            } else {
-                DescriptionTooltip(
-                    description = stringResource(Res.string.MainScreen_ScanHint_HTTP),
-                    delay = 400
-                ) {
-                    Button(
-                        enabled = false,
-                        onClick = { },
-                        modifier = ScanButtonModifier(
-                            isReady = false,
-                            modifier = Modifier.wrapContentWidth().height(72.dp).widthIn(min = 200.dp)
-                        ).scanButtonHoverFeedback(enabled = false).scanButtonChipBorder(),
-                        shape = RoundedCornerShape(20.dp),
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp,
-                            disabledElevation = 0.dp
-                        ),
-                        colors = startScanButtonColors()
-                    ) {
-                        StartScanButtonContent()
+            Button(
+                enabled = true,
+                onClick = {
+                    val urls = path.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+                    if (urls.isEmpty()) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
                     }
-                }
+                    val missingExtensions = scanSettings.extensions.isEmpty()
+                    val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
+                    if (missingExtensions || missingMatchers) {
+                        onRequireScanSettings(missingExtensions, missingMatchers)
+                        return@Button
+                    }
+                    if (!urls.all { it.startsWith("http://") || it.startsWith("https://") }) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
+                    }
+                    if (!validateAndShowError()) return@Button
+                    val normalizedPath = urls.joinToString(";")
+                    path = normalizedPath
+                    saveScreenState()
+                    coroutineScope.launch {
+                        val task = scanService.createTask(
+                            path = normalizedPath,
+                            extensions = scanSettings.extensions,
+                            matchers = scanSettings.matchers + scanSettings.userSignatures,
+                            fastScan = scanSettings.fastScan.value,
+                            connector = ConnectorHTTP()
+                        )
+                        scanService.startTask(task)
+                        task.id.value?.let { expandScanState(it) }
+                    }
+                },
+                modifier = ScanButtonModifier(
+                    isReady = true,
+                    modifier = Modifier.width(scanButtonWidth).height(controlHeight)
+                ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                shape = controlShape,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    disabledElevation = 0.dp
+                ),
+                colors = startScanButtonColors()
+            ) {
+                StartScanButtonContent()
+            }
             }
         }
     }

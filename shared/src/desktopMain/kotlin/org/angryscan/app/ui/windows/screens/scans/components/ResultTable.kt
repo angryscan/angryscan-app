@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -22,7 +23,6 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.path
@@ -53,7 +53,13 @@ import java.io.File
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
+@OptIn(
+    ExperimentalLayoutApi::class,
+    ExperimentalComposeUiApi::class,
+    ExperimentalTime::class,
+    ExperimentalMaterialApi::class,
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun ResultTable(
     taskFilesViewModel: TaskFilesViewModel,
@@ -204,17 +210,17 @@ fun ResultTable(
 
 
     val colorScheme = MaterialTheme.colorScheme
-    val containerShape = RoundedCornerShape(24.dp)
+    val containerShape = RoundedCornerShape(16.dp)
 
     Scaffold(
         containerColor = Color.Transparent,
         modifier = modifier
             .fillMaxSize()
             .clip(containerShape)
-            .background(colorScheme.surfaceVariant.copy(alpha = 0.22f), containerShape)
+            .background(colorScheme.surfaceVariant.copy(alpha = 0.34f), containerShape)
             .border(
                 width = 1.dp,
-                color = colorScheme.outlineVariant.copy(alpha = 0.25f),
+                color = colorScheme.outlineVariant.copy(alpha = 0.62f),
                 shape = containerShape
             ),
         floatingActionButton = {
@@ -287,28 +293,30 @@ fun ResultTable(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
-                    Checkbox(
-                        checked = selectedFiles.isNotEmpty() && selectedFiles.containsAll(sortedFiles.map { it.id }),
-                        onCheckedChange = { checkState ->
-                            if (checkState) {
-                                selectedFiles.addAll(
-                                    sortedFiles.map { it.id }
-                                        .filter { id -> !selectedFiles.contains(id) && id in filesExists }
-                                )
-                            } else {
-                                selectedFiles.clear()
-                            }
-                        },
-                        modifier = Modifier.size(40.dp),
-                        colors = CheckboxDefaults.colors().copy(
-                            checkedBorderColor = MaterialTheme.colorScheme.primary,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.primary
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                        Checkbox(
+                            checked = selectedFiles.isNotEmpty() && selectedFiles.containsAll(sortedFiles.map { it.id }),
+                            onCheckedChange = { checkState ->
+                                if (checkState) {
+                                    selectedFiles.addAll(
+                                        sortedFiles.map { it.id }
+                                            .filter { id -> !selectedFiles.contains(id) && id in filesExists }
+                                    )
+                                } else {
+                                    selectedFiles.clear()
+                                }
+                            },
+                            modifier = Modifier.size(26.dp),
+                            colors = CheckboxDefaults.colors().copy(
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                                uncheckedBorderColor = MaterialTheme.colorScheme.primary
+                            )
                         )
-                    )
+                    }
                     Box(
                         modifier = Modifier
                             .weight(0.25f)
@@ -331,15 +339,15 @@ fun ResultTable(
                             Text(
                                 text = stringResource(Res.string.Result_ColumnFile),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (sortColumn == SortColumn.Path) {
                                 Icon(
                                     imageVector = if (sortDescending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward,
                                     contentDescription = "Sort",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
                                     modifier = Modifier
-                                        .size(20.dp)
+                                        .size(16.dp)
                                 )
                             }
                         }
@@ -365,23 +373,23 @@ fun ResultTable(
                             Text(
                                 text = stringResource(Res.string.Result_ColumnAttributes),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (sortColumn == SortColumn.Attribute) {
                                 Icon(
                                     imageVector = if (sortDescending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward,
                                     contentDescription = "Sort",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
                                     modifier = Modifier
-                                        .size(20.dp)
+                                        .size(16.dp)
                                 )
                             }
                         }
                     }
                     Box(
                         modifier = Modifier
-                            .weight(0.1f)
-                            .widthIn(min = 56.dp)
+                            .weight(0.16f)
+                            .widthIn(min = 92.dp)
                             .clip(shape = MaterialTheme.shapes.small)
                             .clickable {
                                 if (sortColumn == SortColumn.Score) {
@@ -400,15 +408,17 @@ fun ResultTable(
                             Text(
                                 text = stringResource(Res.string.Result_ColumnScore),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             if (sortColumn == SortColumn.Score) {
                                 Icon(
                                     imageVector = if (sortDescending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward,
                                     contentDescription = "Sort",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
                                     modifier = Modifier
-                                        .size(20.dp)
+                                        .size(16.dp)
                                 )
                             }
                         }
@@ -435,15 +445,15 @@ fun ResultTable(
                             Text(
                                 text = stringResource(Res.string.Result_ColumnCount),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (sortColumn == SortColumn.Count) {
                                 Icon(
                                     imageVector = if (sortDescending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward,
                                     contentDescription = "Sort",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
                                     modifier = Modifier
-                                        .size(20.dp)
+                                        .size(16.dp)
                                 )
                             }
                         }
@@ -470,22 +480,23 @@ fun ResultTable(
                             Text(
                                 text = stringResource(Res.string.Result_ColumnSize),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (sortColumn == SortColumn.Size) {
                                 Icon(
                                     imageVector = if (sortDescending) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward,
                                     contentDescription = "Sort",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
                                     modifier = Modifier
-                                        .size(20.dp)
+                                        .size(16.dp)
                                 )
                             }
                         }
                     }
                 }
+                HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.48f))
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     state = scrollState
                 ) {
                     items(
@@ -499,10 +510,16 @@ fun ResultTable(
                         val exportSupported = fileType.any { LocationFinder.isExportSupported(it) }
                         val exist = filesExists.contains(file.id)
                         var menuExpanded by remember { mutableStateOf(false) }
+                        val rowShape = RoundedCornerShape(12.dp)
                         Box(
                             modifier = Modifier
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clip(rowShape)
+                                .background(colorScheme.surface.copy(alpha = 0.66f), rowShape)
+                                .border(
+                                    width = 1.dp,
+                                    color = colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    shape = rowShape
+                                )
                                 .clickable(
                                     enabled = exist
                                 ) {
@@ -628,25 +645,27 @@ fun ResultTable(
                             }
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
 
-                                Checkbox(
-                                    checked = selectedFiles.contains(file.id),
-                                    onCheckedChange = { checkState ->
-                                        if (checkState) {
-                                            selectedFiles.add(file.id)
-                                        } else {
-                                            selectedFiles.remove(file.id)
-                                        }
-                                    },
-                                    modifier = Modifier.size(40.dp),
-                                    colors = CheckboxDefaults.colors().copy(
-                                        checkedBorderColor = MaterialTheme.colorScheme.primary,
-                                        uncheckedBorderColor = MaterialTheme.colorScheme.primary
-                                    ),
-                                    enabled = exist
-                                )
+                                CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                                    Checkbox(
+                                        checked = selectedFiles.contains(file.id),
+                                        onCheckedChange = { checkState ->
+                                            if (checkState) {
+                                                selectedFiles.add(file.id)
+                                            } else {
+                                                selectedFiles.remove(file.id)
+                                            }
+                                        },
+                                        modifier = Modifier.size(26.dp),
+                                        colors = CheckboxDefaults.colors().copy(
+                                            checkedBorderColor = MaterialTheme.colorScheme.primary,
+                                            uncheckedBorderColor = MaterialTheme.colorScheme.primary
+                                        ),
+                                        enabled = exist
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .weight(0.25f)
@@ -666,10 +685,7 @@ fun ResultTable(
                                                         .substringAfterLast("/")
                                                         .substringAfterLast("\\")
                                                 },
-                                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                            letterSpacing = 0.1.sp,
-                                            fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
+                                            style = MaterialTheme.typography.bodySmall,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             modifier = Modifier.fillMaxWidth(),
@@ -677,8 +693,8 @@ fun ResultTable(
                                     }
                                 }
                                 FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
                                     modifier = Modifier
                                         .weight(0.75f)
                                 ) {
@@ -699,8 +715,8 @@ fun ResultTable(
                                     text = file.score.toString(),
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier
-                                        .weight(0.1f)
-                                        .widthIn(min = 56.dp),
+                                        .weight(0.16f)
+                                        .widthIn(min = 92.dp),
                                     textAlign = TextAlign.Center
                                 )
                                 Text(

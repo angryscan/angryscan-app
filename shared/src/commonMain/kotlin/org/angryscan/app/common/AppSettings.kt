@@ -6,10 +6,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.serializers.MutableStateSerializer
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.io.File
 import java.util.*
 import kotlin.math.max
@@ -112,5 +112,12 @@ class AppSettings : KoinComponent {
 
     fun save () {
         settingsFile.writeText(Json.encodeToString(this))
+    }
+
+    /** Effective UI/locale tag (`ru` / `en`) for Default / RU / EN. */
+    fun effectiveLocaleTag(): String = when (language.value) {
+        LanguageType.RU -> "ru"
+        LanguageType.EN -> "en"
+        LanguageType.Default -> LanguageType.Default.locale
     }
 }
