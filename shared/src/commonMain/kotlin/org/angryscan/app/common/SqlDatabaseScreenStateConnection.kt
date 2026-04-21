@@ -5,6 +5,7 @@ private const val DefaultMySqlPort = 3306
 private const val DefaultGreenPlumPort = 5432
 private const val DefaultHivePort = 10000
 private const val DefaultCockroachDBPort = 26257
+private const val DefaultClickHousePort = 8123
 
 /**
  * Required connection fields for database types.
@@ -23,7 +24,7 @@ enum class DatabaseConnectionRequiredField {
 
 fun ScreenStateSettings.SqlDatabaseScreenState.missingRequiredConnectionFields(): Set<DatabaseConnectionRequiredField> =
     when (databaseType) {
-        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB -> buildSet {
+        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse -> buildSet {
             if (host.isBlank()) add(DatabaseConnectionRequiredField.HOST)
             if (port.toIntOrNull() == null) add(DatabaseConnectionRequiredField.PORT)
             if (database.isBlank()) add(DatabaseConnectionRequiredField.DATABASE)
@@ -50,5 +51,6 @@ fun ScreenStateSettings.SqlDatabaseScreenState.connectionPort(): Int =
         DatabaseType.GreenPlum -> port.toIntOrNull() ?: DefaultGreenPlumPort
         DatabaseType.Hive -> port.toIntOrNull() ?: DefaultHivePort
         DatabaseType.CockroachDB -> port.toIntOrNull() ?: DefaultCockroachDBPort
+        DatabaseType.ClickHouse -> port.toIntOrNull() ?: DefaultClickHousePort
         DatabaseType.SQLite -> 0
     }

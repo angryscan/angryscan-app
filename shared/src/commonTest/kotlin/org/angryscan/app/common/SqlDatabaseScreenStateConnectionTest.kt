@@ -244,4 +244,49 @@ internal class SqlDatabaseScreenStateConnectionTest {
 
         assertEquals(26257, state.connectionPort())
     }
+
+    @Test
+    fun `ClickHouse requires same server fields as PostgreSQL`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.ClickHouse,
+            host = "localhost",
+            port = "8123",
+            database = "default",
+            user = "default",
+            password = "secret"
+        )
+
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(8123, state.connectionPort())
+    }
+
+    @Test
+    fun `ClickHouse missing database is detected`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.ClickHouse,
+            host = "localhost",
+            port = "8123",
+            database = "",
+            user = "default",
+            password = "secret"
+        )
+
+        assertEquals(setOf(DatabaseConnectionRequiredField.DATABASE), state.missingRequiredConnectionFields())
+        assertFalse(state.hasRequiredConnectionSettings())
+    }
+
+    @Test
+    fun `ClickHouse default port is 8123`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.ClickHouse,
+            host = "localhost",
+            port = "invalid",
+            database = "default",
+            user = "default",
+            password = "secret"
+        )
+
+        assertEquals(8123, state.connectionPort())
+    }
 }

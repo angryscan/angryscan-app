@@ -40,6 +40,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import org.angryscan.app.common.DatabaseType
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.Res
+import org.angryscan.app.resources.db_clickhouse_logo
 import org.angryscan.app.resources.db_cockroachdb_logo
 import org.angryscan.app.resources.db_greenplum_logo
 import org.angryscan.app.resources.db_hive_logo
@@ -157,6 +158,7 @@ fun MainScreenSidebar(
                             DatabaseType.GreenPlum -> Res.drawable.db_greenplum_logo
                             DatabaseType.Hive -> Res.drawable.db_hive_logo
                             DatabaseType.CockroachDB -> Res.drawable.db_cockroachdb_logo
+                            DatabaseType.ClickHouse -> Res.drawable.db_clickhouse_logo
                         },
                         isSelected = currentDbType == dbType,
                         onClick = {
@@ -166,6 +168,7 @@ fun MainScreenSidebar(
                                 DatabaseType.GreenPlum -> "5432"
                                 DatabaseType.Hive -> "10000"
                                 DatabaseType.CockroachDB -> "26257"
+                                DatabaseType.ClickHouse -> "8123"
                                 DatabaseType.SQLite -> sqlScreenState.port
                             }
                             screenStateSettings.sqlScreenState.value = sqlScreenState.copy(

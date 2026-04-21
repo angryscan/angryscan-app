@@ -9,9 +9,9 @@ import java.sql.DriverManager
 import java.util.Properties
 
 @Serializable
-class ConnectorCockroachDB(
+class ConnectorClickHouse(
     val host: String,
-    val port: Int = 26257,
+    val port: Int = 8123,
     val database: String,
     val user: String,
     val password: String,
@@ -19,7 +19,7 @@ class ConnectorCockroachDB(
 ) : IDatabaseConnector {
 
     private val jdbcUrl: String
-        get() = "jdbc:postgresql://$host:$port/$database"
+        get() = "jdbc:clickhouse://$host:$port/$database"
 
     override suspend fun scanTables(
         path: String,
@@ -27,25 +27,25 @@ class ConnectorCockroachDB(
     ): ObjectCounter = withContext(Dispatchers.IO) {
         val filesCounter = ObjectCounter()
         openConnection().use { connection ->
-            val schemas = if (path.isBlank()) emptyList() else path.split(";").map { it.trim() }.filter { it.isNotEmpty() }
-            val query = buildTablesQuery(schemas)
+            val databases = if (path.isBlank()) emptyList() else path.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+            val query = buildTablesQuery(databases)
 
             connection.prepareStatement(query).use { statement ->
-                if (schemas.isNotEmpty()) {
-                    schemas.forEachIndexed { index, schema ->
-                        statement.setString(index + 1, schema)
+                if (databases.isNotEmpty()) {
+                    databases.forEachIndexed { index, db ->
+                        statement.setString(index + 1, db)
                     }
                 }
 
                 statement.executeQuery().use { resultSet ->
                     while (resultSet.next()) {
-                        val schema = resultSet.getString("table_schema")
-                        val table = resultSet.getString("table_name")
-                        val rowCount = getRowCount(connection, schema, table)
+                        val db = resultSet.getString("database")
+                        val table = resultSet.getString("name")
+                        val rowCount = getRowCount(connection, db, table)
 
                         tableSelected(
                             FoundedFile(
-                                path = "$schema.$table",
+                                path = "$db.$table",
                                 size = rowCount
                             )
                         )
@@ -58,10 +58,10 @@ class ConnectorCockroachDB(
     }
 
     override suspend fun getTableContent(tablePath: String): String = withContext(Dispatchers.IO) {
-        val (schema, table) = parseTablePath(tablePath)
+        val (db, table) = parseTablePath(tablePath)
         openConnection().use { connection ->
             connection.prepareStatement(
-                """SELECT * FROM ${escapeIdentifier(schema)}.${escapeIdentifier(table)} LIMIT ?"""
+                """SELECT * FROM ${escapeIdentifier(db)}.${escapeIdentifier(table)} LIMIT ?"""
             ).use { statement ->
                 statement.setInt(1, rowLimit)
                 statement.executeQuery().use { resultSet ->
@@ -77,10 +77,10 @@ class ConnectorCockroachDB(
     }
 
     override suspend fun getTableContentStructured(tablePath: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
-        val (schema, table) = parseTablePath(tablePath)
+        val (db, table) = parseTablePath(tablePath)
         openConnection().use { connection ->
             connection.prepareStatement(
-                """SELECT * FROM ${escapeIdentifier(schema)}.${escapeIdentifier(table)} LIMIT ?"""
+                """SELECT * FROM ${escapeIdentifier(db)}.${escapeIdentifier(table)} LIMIT ?"""
             ).use { statement ->
                 statement.setInt(1, rowLimit)
                 statement.executeQuery().use { resultSet ->
@@ -99,26 +99,29 @@ class ConnectorCockroachDB(
         }
     }
 
-    private fun buildTablesQuery(schemas: List<String>): String {
-        val schemaFilter = if (schemas.isNotEmpty()) {
-            "AND t.table_schema IN (${schemas.joinToString(",") { "?" }})"
+    private fun buildTablesQuery(databases: List<String>): String {
+        // ClickHouse does not support boolean filter on is_temporary via JDBC consistently;
+        // exclude system databases and views via engine.
+        val dbFilter = if (databases.isNotEmpty()) {
+            "AND database IN (${databases.joinToString(",") { "?" }})"
         } else {
-            "AND t.table_schema NOT IN ('pg_catalog', 'information_schema', 'crdb_internal', 'pg_extension')"
+            "AND database NOT IN ('system', 'INFORMATION_SCHEMA', 'information_schema')"
         }
 
         return """
-            SELECT t.table_schema, t.table_name
-            FROM information_schema.tables t
-            WHERE t.table_type = 'BASE TABLE'
-            $schemaFilter
-            ORDER BY t.table_schema, t.table_name
+            SELECT database, name
+            FROM system.tables
+            WHERE is_temporary = 0
+              AND engine NOT LIKE '%View%'
+              $dbFilter
+            ORDER BY database, name
         """.trimIndent()
     }
 
-    private fun getRowCount(connection: Connection, schema: String, table: String): Long {
+    private fun getRowCount(connection: Connection, db: String, table: String): Long {
         connection.createStatement().use { statement ->
             statement.executeQuery(
-                """SELECT COUNT(*) FROM ${escapeIdentifier(schema)}.${escapeIdentifier(table)}"""
+                """SELECT count() FROM ${escapeIdentifier(db)}.${escapeIdentifier(table)}"""
             ).use { resultSet ->
                 return if (resultSet.next()) resultSet.getLong(1) else 0L
             }
@@ -128,27 +131,30 @@ class ConnectorCockroachDB(
     private fun parseTablePath(tablePath: String): Pair<String, String> {
         val separatorIndex = tablePath.indexOf('.')
         require(separatorIndex > 0 && separatorIndex < tablePath.length - 1) {
-            "Table path must be in schema.table format"
+            "Table path must be in database.table format"
         }
-
         return tablePath.substring(0, separatorIndex) to tablePath.substring(separatorIndex + 1)
     }
 
     private fun openConnection(): Connection {
+        // Both timeouts are milliseconds in the clickhouse-jdbc client options.
+        // Note: property name is `connection_timeout` (not `connect_timeout`); unknown
+        // keys are silently ignored by ClickHouseClient.
         val props = Properties().apply {
             setProperty("user", user)
             setProperty("password", password)
-            setProperty("connectTimeout", "10")
-            setProperty("socketTimeout", "30")
+            setProperty("connection_timeout", "10000")
+            setProperty("socket_timeout", "30000")
         }
         return DriverManager.getConnection(jdbcUrl, props)
     }
 
+    /** ClickHouse uses backticks for identifier escaping. */
     private fun escapeIdentifier(value: String): String =
-        "\"" + value.replace("\"", "\"\"") + "\""
+        "`" + value.replace("`", "``") + "`"
 
     override fun logSummary(): String =
         "Host: $host. Port: $port. Database: $database. Row limit: $rowLimit."
 
-    override fun toString(): String = "ConnectorCockroachDB"
+    override fun toString(): String = "ConnectorClickHouse"
 }

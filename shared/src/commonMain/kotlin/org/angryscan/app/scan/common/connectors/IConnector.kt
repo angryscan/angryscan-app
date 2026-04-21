@@ -25,4 +25,7 @@ interface IDatabaseConnector : IConnector {
 
     /** Returns table rows as list of column-name to string value. Used for per-column scanning. */
     suspend fun getTableContentStructured(tablePath: String): List<Map<String, String>>
+
+    /** Human-readable one-line summary of connection parameters for logs (no secrets). */
+    fun logSummary(): String
 }

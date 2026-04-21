@@ -34,6 +34,7 @@ kotlin {
                 implementation(libs.sql.sqlite)
                 implementation(libs.sql.postgresql)
                 implementation(libs.sql.mysql)
+                implementation(libs.sql.clickhouse)
                 implementation("org.apache.hive:hive-jdbc:4.2.0")
                 implementation(libs.sql.flyway)
 

@@ -7,9 +7,9 @@ import org.angryscan.app.common.LogMarkers
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
-import org.angryscan.app.scan.common.connectors.ConnectorPostgres
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.scan.common.connectors.IConnector
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.files.types.CertFileType
 import org.angryscan.app.scan.common.files.types.CodeFileType
 import org.angryscan.app.scan.common.files.types.IFileType
@@ -21,6 +21,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.milliseconds
 
 private val logger = KotlinLogging.logger {}
 
@@ -133,7 +134,7 @@ class ScanService : KoinComponent {
         }
         coroutineScope.launch {
             while (changingThreadsCount.get())
-                delay(1000)
+                delay(1000.milliseconds)
 
             scanThreads.forEach {
                 if (!it.started)
@@ -207,11 +208,8 @@ class ScanService : KoinComponent {
                             "Endpoind: ${connector.endpointStr}. " +
                                     "Bucket: ${connector.bucketStr}. " +
                                     "Region: ${connector.regionStr}. "
-                        } else if (connector is ConnectorPostgres) {
-                            "Host: ${connector.host}. " +
-                                    "Port: ${connector.port}. " +
-                                    "Database: ${connector.database}. " +
-                                    "Row limit: ${connector.rowLimit}. "
+                        } else if (connector is IDatabaseConnector) {
+                            connector.logSummary()
                         } else ""
             }
 

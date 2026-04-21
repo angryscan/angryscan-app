@@ -49,6 +49,7 @@ import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
 import org.angryscan.app.ui.windows.screens.main.settings.items.SettingsTextField
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SettingsBoxScan(
@@ -77,9 +78,9 @@ fun SettingsBoxScan(
         if (sqlConnectionBlinkSignal == 0) return@LaunchedEffect
         repeat(3) {
             sqlFieldsBlinking = true
-            delay(360)
+            delay(360.milliseconds)
             sqlFieldsBlinking = false
-            delay(280)
+            delay(280.milliseconds)
         }
     }
 
@@ -208,9 +209,14 @@ fun SettingsBoxScan(
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 when (sqlScreenState.databaseType) {
-                    DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB -> {
+                    DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse -> {
+                        val schemaPlaceholder = if (sqlScreenState.databaseType == DatabaseType.ClickHouse) {
+                            "Databases (optional, e.g. default;analytics)"
+                        } else {
+                            "Schema (optional, e.g. public;auth)"
+                        }
                         SettingsTextField(
-                            placeholder = "Schema (optional, e.g. public;auth)",
+                            placeholder = schemaPlaceholder,
                             value = sqlScreenState.schema,
                             onValueChange = { updateSqlScreenState(sqlScreenState.copy(schema = it)) }
                         )

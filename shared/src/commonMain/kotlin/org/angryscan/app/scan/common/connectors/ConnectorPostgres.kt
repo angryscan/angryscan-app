@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 import org.angryscan.app.scan.common.ObjectCounter
 import java.sql.Connection
 import java.sql.DriverManager
-import java.sql.ResultSet
 import java.util.Properties
 
 @Serializable
@@ -148,45 +147,8 @@ class ConnectorPostgres(
     private fun escapeIdentifier(value: String): String =
         "\"" + value.replace("\"", "\"\"") + "\""
 
-    private fun ResultSet.toJsonRow(): String {
-        val metaData = metaData
-        return buildString {
-            append('{')
-            for (index in 1..metaData.columnCount) {
-                if (index > 1) {
-                    append(',')
-                }
-                append('"')
-                append(metaData.getColumnLabel(index).escapeJson())
-                append('"')
-                append(':')
-                append(getObject(index).toJsonValue())
-            }
-            append('}')
-        }
-    }
-
-    private fun Any?.toJsonValue(): String =
-        when (this) {
-            null -> "null"
-            is Number, is Boolean -> toString()
-            else -> "\"${toString().escapeJson()}\""
-        }
-
-    private fun String.escapeJson(): String = buildString(length) {
-        for (char in this@escapeJson) {
-            when (char) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '\b' -> append("\\b")
-                '\u000C' -> append("\\f")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> append(char)
-            }
-        }
-    }
+    override fun logSummary(): String =
+        "Host: $host. Port: $port. Database: $database. Row limit: $rowLimit."
 
     override fun toString(): String = "ConnectorPostgres"
 }

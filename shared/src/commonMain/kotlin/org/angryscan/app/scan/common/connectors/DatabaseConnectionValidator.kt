@@ -29,6 +29,8 @@ object DatabaseConnectionValidator {
                 HiveConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.CockroachDB ->
                 CockroachDBConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.ClickHouse ->
+                ClickHouseConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.SQLite ->
                 SqliteConnectionValidator.validate(filePath)
         }
