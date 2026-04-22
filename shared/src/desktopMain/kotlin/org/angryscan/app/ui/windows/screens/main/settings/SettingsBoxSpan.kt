@@ -157,7 +157,7 @@ fun SettingsScanUnifiedPanel(
     Surface(
         modifier = modifier,
         shape = SectionCardShape,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
         border = BorderStroke(
             1.dp,
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -168,7 +168,12 @@ fun SettingsScanUnifiedPanel(
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(horizontal = SectionHeaderPadding, vertical = 3.dp),
+                .padding(
+                    start = SectionHeaderPadding,
+                    end = SectionHeaderPadding,
+                    top = 6.dp,
+                    bottom = 3.dp
+                ),
             content = content
         )
     }
