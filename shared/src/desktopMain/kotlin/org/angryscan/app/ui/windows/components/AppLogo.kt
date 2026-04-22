@@ -80,7 +80,7 @@ fun AppLogo(
                 .scale(scale)
                 .clickable(
                     interactionSource = interactionSource,
-                    indication = ripple(bounded = true, radius = 28.dp),
+                    indication = ripple(bounded = false, radius = 22.dp),
                     onClick = {
                         try {
                             if (!isMainScreen) {
