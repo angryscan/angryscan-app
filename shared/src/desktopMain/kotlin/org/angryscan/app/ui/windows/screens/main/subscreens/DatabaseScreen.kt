@@ -118,6 +118,7 @@ fun DatabaseScreen(
         DatabaseType.Hive -> "Hive"
         DatabaseType.CockroachDB -> "CockroachDB"
         DatabaseType.ClickHouse -> "ClickHouse"
+        DatabaseType.Redshift -> "Amazon Redshift"
     }
 
     fun savedConnectionLabel(conn: SavedSqlConnection): String = buildString {
@@ -343,18 +344,25 @@ fun DatabaseScreen(
                             user = sqlScreenState.user,
                             password = sqlScreenState.password
                         )
+                        DatabaseType.Redshift -> ConnectorRedshift(
+                            host = sqlScreenState.host,
+                            port = sqlScreenState.connectionPort(),
+                            database = sqlScreenState.database,
+                            user = sqlScreenState.user,
+                            password = sqlScreenState.password
+                        )
                         DatabaseType.SQLite -> ConnectorSqlite(
                             filePath = sqlScreenState.filePath
                         )
                     }
                     val taskName = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse ->
-                            "${sqlScreenState.host}:${sqlScreenState.port}/${sqlScreenState.database}" +
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift ->
+                            "${sqlScreenState.host}:${sqlScreenState.connectionPort()}/${sqlScreenState.database}" +
                                 if (sqlScreenState.schema.isNotEmpty()) " schema: ${sqlScreenState.schema}" else ""
                         DatabaseType.SQLite -> sqlScreenState.filePath
                     }
                     val path = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse -> sqlScreenState.schema
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift -> sqlScreenState.schema
                         DatabaseType.SQLite -> ""
                     }
                     val task = scanService.createTask(
@@ -392,7 +400,7 @@ fun DatabaseScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         when (sqlScreenState.databaseType) {
-                            DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse -> {
+                            DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift -> {
                                 OutlinedTextField(
                                     value = sqlScreenState.host,
                                     onValueChange = {
@@ -1010,15 +1018,7 @@ fun DatabaseScreen(
                 ) {
                     DatabaseType.entries.forEach { dbType ->
                         val selected = sqlScreenState.databaseType == dbType
-                        val iconRes = when (dbType) {
-                            DatabaseType.PostgreSQL -> Res.drawable.db_postgresql_logo
-                            DatabaseType.MySQL -> Res.drawable.db_mysql_logo
-                            DatabaseType.SQLite -> Res.drawable.db_sqlite_logo
-                            DatabaseType.GreenPlum -> Res.drawable.db_greenplum_logo
-                            DatabaseType.Hive -> Res.drawable.db_hive_logo
-                            DatabaseType.CockroachDB -> Res.drawable.db_cockroachdb_logo
-                            DatabaseType.ClickHouse -> Res.drawable.db_clickhouse_logo
-                        }
+                        val iconRes = dbType.drawableResource()
                         DatabaseTypeChip(
                             dbType = dbType,
                             iconRes = iconRes,
@@ -1031,6 +1031,7 @@ fun DatabaseScreen(
                                     DatabaseType.Hive -> "10000"
                                     DatabaseType.CockroachDB -> "26257"
                                     DatabaseType.ClickHouse -> "8123"
+                                    DatabaseType.Redshift -> "5439"
                                     DatabaseType.SQLite -> sqlScreenState.port
                                 }
                                 val updated = sqlScreenState.copy(databaseType = dbType, port = defaultPort)

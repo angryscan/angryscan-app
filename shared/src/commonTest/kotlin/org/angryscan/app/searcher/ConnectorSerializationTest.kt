@@ -92,6 +92,29 @@ internal class ConnectorSerializationTest {
     }
 
     @Test
+    fun `ConnectorRedshift is serialized polymorphically`() {
+        val connector: IConnector = ConnectorRedshift(
+            host = "cluster.region.redshift.amazonaws.com",
+            port = 5439,
+            database = "dev",
+            user = "admin",
+            password = "secret",
+            rowLimit = 1000
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val redshift = assertIs<ConnectorRedshift>(decoded)
+
+        assertEquals("cluster.region.redshift.amazonaws.com", redshift.host)
+        assertEquals(5439, redshift.port)
+        assertEquals("dev", redshift.database)
+        assertEquals("admin", redshift.user)
+        assertEquals("secret", redshift.password)
+        assertEquals(1000, redshift.rowLimit)
+    }
+
+    @Test
     fun `ConnectorHive is serialized polymorphically`() {
         val connector: IConnector = ConnectorHive(
             host = "localhost",
@@ -155,6 +178,14 @@ internal class ConnectorSerializationTest {
             database = "default",
             user = "hive",
             password = "hive",
+            rowLimit = 1000
+        ))
+        assertIs<IDatabaseConnector>(ConnectorRedshift(
+            host = "cluster.region.redshift.amazonaws.com",
+            port = 5439,
+            database = "dev",
+            user = "admin",
+            password = "secret",
             rowLimit = 1000
         ))
     }

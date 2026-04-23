@@ -39,14 +39,7 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import org.angryscan.app.common.DatabaseType
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.Res
-import org.angryscan.app.resources.db_clickhouse_logo
-import org.angryscan.app.resources.db_cockroachdb_logo
-import org.angryscan.app.resources.db_greenplum_logo
-import org.angryscan.app.resources.db_hive_logo
-import org.angryscan.app.resources.db_mysql_logo
-import org.angryscan.app.resources.db_postgresql_logo
-import org.angryscan.app.resources.db_sqlite_logo
+import org.angryscan.app.resources.drawableResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -151,15 +144,7 @@ fun MainScreenSidebar(
                 DatabaseType.entries.forEach { dbType ->
                     SidebarDbTypeItem(
                         label = dbType.name,
-                        iconDrawable = when (dbType) {
-                            DatabaseType.PostgreSQL -> Res.drawable.db_postgresql_logo
-                            DatabaseType.MySQL -> Res.drawable.db_mysql_logo
-                            DatabaseType.SQLite -> Res.drawable.db_sqlite_logo
-                            DatabaseType.GreenPlum -> Res.drawable.db_greenplum_logo
-                            DatabaseType.Hive -> Res.drawable.db_hive_logo
-                            DatabaseType.CockroachDB -> Res.drawable.db_cockroachdb_logo
-                            DatabaseType.ClickHouse -> Res.drawable.db_clickhouse_logo
-                        },
+                        iconDrawable = dbType.drawableResource(),
                         isSelected = currentDbType == dbType,
                         onClick = {
                             val defaultPort = when (dbType) {
@@ -169,6 +154,7 @@ fun MainScreenSidebar(
                                 DatabaseType.Hive -> "10000"
                                 DatabaseType.CockroachDB -> "26257"
                                 DatabaseType.ClickHouse -> "8123"
+                                DatabaseType.Redshift -> "5439"
                                 DatabaseType.SQLite -> sqlScreenState.port
                             }
                             screenStateSettings.sqlScreenState.value = sqlScreenState.copy(

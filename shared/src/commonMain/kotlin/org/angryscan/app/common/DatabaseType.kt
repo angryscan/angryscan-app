@@ -13,5 +13,6 @@ enum class DatabaseType {
     GreenPlum,
     Hive,
     CockroachDB,
-    ClickHouse
+    ClickHouse,
+    Redshift
 }
