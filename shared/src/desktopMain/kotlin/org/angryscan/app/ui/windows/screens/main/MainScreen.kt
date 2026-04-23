@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -400,17 +401,23 @@ fun MainScreen(
                                 val minBranchY = radioBounds.bottom - half
                                 val maxBranchY = (underBounds.top - half).coerceAtLeast(minBranchY)
                                 val branchY = (radioBounds.bottom + 2.dp.toPx()).coerceIn(minBranchY, maxBranchY)
+                                val bridgeInset = 0.dp.toPx()
+                                val radioCenterX = (radioBounds.left + radioBounds.right) / 2f
+                                val branchHalfWidth = (radioBounds.width / 2f) + bridgeInset
+                                val branchLeft = radioCenterX - branchHalfWidth
+                                val rightOpticalCompensation = 2.dp.toPx()
+                                val branchRight = radioCenterX + branchHalfWidth + rightOpticalCompensation
                                 val cornerRadius = 10.dp.toPx()
                                 val path = Path().apply {
-                                    moveTo(radioBounds.left + half, radioTopY)
-                                    lineTo(radioBounds.right - half, radioTopY)
-                                    lineTo(radioBounds.right - half, branchY)
+                                    moveTo(branchLeft + half, radioTopY)
+                                    lineTo(branchRight - half, radioTopY)
+                                    lineTo(branchRight - half, branchY)
                                     lineTo(underBounds.right - half, branchY)
                                     lineTo(underBounds.right - half, underBounds.bottom - half)
                                     lineTo(underBounds.left + half, underBounds.bottom - half)
                                     lineTo(underBounds.left + half, branchY)
-                                    lineTo(radioBounds.left + half, branchY)
-                                    lineTo(radioBounds.left + half, radioTopY)
+                                    lineTo(branchLeft + half, branchY)
+                                    lineTo(branchLeft + half, radioTopY)
                                     close()
                                 }
                                 drawPath(
@@ -418,6 +425,7 @@ fun MainScreen(
                                     color = databaseContourColor,
                                     style = Stroke(
                                         width = strokeWidth,
+                                        join = StrokeJoin.Round,
                                         pathEffect = PathEffect.cornerPathEffect(cornerRadius)
                                     )
                                 )
