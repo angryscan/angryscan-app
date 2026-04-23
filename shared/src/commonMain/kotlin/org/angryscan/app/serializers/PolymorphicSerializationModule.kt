@@ -107,6 +107,7 @@ val PolymorphicSerializationModule = SerializersModule {
         subclass(ConnectorCockroachDB::class)
         subclass(ConnectorClickHouse::class)
         subclass(ConnectorRedshift::class)
+        subclass(ConnectorSqlServer::class)
     }
     polymorphic(IScanEngine::class) {
         subclass(KotlinEngine::class)

@@ -7,10 +7,11 @@ private const val DefaultHivePort = 10000
 private const val DefaultCockroachDBPort = 26257
 private const val DefaultClickHousePort = 8123
 private const val DefaultRedshiftPort = 5439
+private const val DefaultSqlServerPort = 1433
 
 /**
  * Required connection fields for database types.
- * - Server DBs (PostgreSQL, MySQL, GreenPlum, Hive, Redshift, …): HOST, PORT, DATABASE, USER, PASSWORD
+ * - Server DBs (PostgreSQL, MySQL, GreenPlum, Hive, Redshift, Microsoft SQL Server, …): HOST, PORT, DATABASE, USER, PASSWORD
  * - SQLite: FILE_PATH only
  */
 enum class DatabaseConnectionRequiredField {
@@ -25,7 +26,7 @@ enum class DatabaseConnectionRequiredField {
 
 fun ScreenStateSettings.SqlDatabaseScreenState.missingRequiredConnectionFields(): Set<DatabaseConnectionRequiredField> =
     when (databaseType) {
-        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift -> buildSet {
+        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> buildSet {
             if (host.isBlank()) add(DatabaseConnectionRequiredField.HOST)
             if (port.toIntOrNull() == null) add(DatabaseConnectionRequiredField.PORT)
             if (database.isBlank()) add(DatabaseConnectionRequiredField.DATABASE)
@@ -54,5 +55,6 @@ fun ScreenStateSettings.SqlDatabaseScreenState.connectionPort(): Int =
         DatabaseType.CockroachDB -> port.toIntOrNull() ?: DefaultCockroachDBPort
         DatabaseType.ClickHouse -> port.toIntOrNull() ?: DefaultClickHousePort
         DatabaseType.Redshift -> port.toIntOrNull() ?: DefaultRedshiftPort
+        DatabaseType.SqlServer -> port.toIntOrNull() ?: DefaultSqlServerPort
         DatabaseType.SQLite -> 0
     }

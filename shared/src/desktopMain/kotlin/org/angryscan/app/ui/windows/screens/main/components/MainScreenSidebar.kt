@@ -38,6 +38,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import org.angryscan.app.common.DatabaseType
+import org.angryscan.app.common.typePickerLabel
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.drawableResource
 import org.jetbrains.compose.resources.DrawableResource
@@ -143,7 +144,7 @@ fun MainScreenSidebar(
             ) {
                 DatabaseType.entries.forEach { dbType ->
                     SidebarDbTypeItem(
-                        label = dbType.name,
+                        label = dbType.typePickerLabel(),
                         iconDrawable = dbType.drawableResource(),
                         isSelected = currentDbType == dbType,
                         onClick = {
@@ -155,6 +156,7 @@ fun MainScreenSidebar(
                                 DatabaseType.CockroachDB -> "26257"
                                 DatabaseType.ClickHouse -> "8123"
                                 DatabaseType.Redshift -> "5439"
+                                DatabaseType.SqlServer -> "1433"
                                 DatabaseType.SQLite -> sqlScreenState.port
                             }
                             screenStateSettings.sqlScreenState.value = sqlScreenState.copy(

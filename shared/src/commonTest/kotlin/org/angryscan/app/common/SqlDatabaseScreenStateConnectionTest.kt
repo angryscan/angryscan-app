@@ -334,4 +334,49 @@ internal class SqlDatabaseScreenStateConnectionTest {
 
         assertEquals(5439, state.connectionPort())
     }
+
+    @Test
+    fun `SqlServer requires same server fields as PostgreSQL`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.SqlServer,
+            host = "localhost",
+            port = "1433",
+            database = "master",
+            user = "sa",
+            password = "secret"
+        )
+
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(1433, state.connectionPort())
+    }
+
+    @Test
+    fun `SqlServer missing database is detected`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.SqlServer,
+            host = "localhost",
+            port = "1433",
+            database = "",
+            user = "sa",
+            password = "secret"
+        )
+
+        assertEquals(setOf(DatabaseConnectionRequiredField.DATABASE), state.missingRequiredConnectionFields())
+        assertFalse(state.hasRequiredConnectionSettings())
+    }
+
+    @Test
+    fun `SqlServer default port is 1433`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.SqlServer,
+            host = "localhost",
+            port = "invalid",
+            database = "master",
+            user = "sa",
+            password = "secret"
+        )
+
+        assertEquals(1433, state.connectionPort())
+    }
 }

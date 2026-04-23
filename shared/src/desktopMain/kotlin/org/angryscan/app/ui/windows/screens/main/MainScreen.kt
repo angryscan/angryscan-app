@@ -284,6 +284,16 @@ fun MainScreen(
                         password = connector.password,
                         filePath = ""
                     )
+                    is ConnectorSqlServer -> currentSql.copy(
+                        databaseType = DatabaseType.SqlServer,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
                     is ConnectorSqlite -> currentSql.copy(
                         databaseType = DatabaseType.SQLite,
                         filePath = connector.filePath,

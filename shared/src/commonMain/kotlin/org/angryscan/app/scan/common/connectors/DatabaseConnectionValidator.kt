@@ -33,6 +33,8 @@ object DatabaseConnectionValidator {
                 ClickHouseConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.Redshift ->
                 RedshiftConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.SqlServer ->
+                SqlServerConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.SQLite ->
                 SqliteConnectionValidator.validate(filePath)
         }

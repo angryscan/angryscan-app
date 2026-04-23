@@ -13,4 +13,5 @@ fun DatabaseType.drawableResource(): DrawableResource = when (this) {
     DatabaseType.CockroachDB -> Res.drawable.db_cockroachdb_logo
     DatabaseType.ClickHouse -> Res.drawable.db_clickhouse_logo
     DatabaseType.Redshift -> Res.drawable.db_redshift_logo
+    DatabaseType.SqlServer -> Res.drawable.db_sqlserver_logo
 }

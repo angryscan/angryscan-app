@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" aria-label="SQL Server">
+  <ellipse cx="16" cy="7" rx="11" ry="4.5" fill="#c62828"/>
+  <rect x="5" y="7" width="22" height="12" fill="#c62828"/>
+  <ellipse cx="16" cy="19" rx="11" ry="4.5" fill="#8e0000"/>
+  <ellipse cx="16" cy="24" rx="11" ry="4.5" fill="#5c0000"/>
+</svg>

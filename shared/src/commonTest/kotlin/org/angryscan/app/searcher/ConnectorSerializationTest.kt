@@ -115,6 +115,29 @@ internal class ConnectorSerializationTest {
     }
 
     @Test
+    fun `ConnectorSqlServer is serialized polymorphically`() {
+        val connector: IConnector = ConnectorSqlServer(
+            host = "localhost",
+            port = 1433,
+            database = "master",
+            user = "sa",
+            password = "secret",
+            rowLimit = 1000
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val sqlServer = assertIs<ConnectorSqlServer>(decoded)
+
+        assertEquals("localhost", sqlServer.host)
+        assertEquals(1433, sqlServer.port)
+        assertEquals("master", sqlServer.database)
+        assertEquals("sa", sqlServer.user)
+        assertEquals("secret", sqlServer.password)
+        assertEquals(1000, sqlServer.rowLimit)
+    }
+
+    @Test
     fun `ConnectorHive is serialized polymorphically`() {
         val connector: IConnector = ConnectorHive(
             host = "localhost",
@@ -185,6 +208,14 @@ internal class ConnectorSerializationTest {
             port = 5439,
             database = "dev",
             user = "admin",
+            password = "secret",
+            rowLimit = 1000
+        ))
+        assertIs<IDatabaseConnector>(ConnectorSqlServer(
+            host = "localhost",
+            port = 1433,
+            database = "master",
+            user = "sa",
             password = "secret",
             rowLimit = 1000
         ))

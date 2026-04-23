@@ -266,6 +266,9 @@ fun ScanTaskCard(
         is ConnectorGreenPlum -> "${connector.host}:${connector.port}/${connector.database}"
         is ConnectorHive -> "${connector.host}:${connector.port}/${connector.database}"
         is ConnectorCockroachDB -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorClickHouse -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorRedshift -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorSqlServer -> "${connector.host}:${connector.port}/${connector.database}"
         is ConnectorSqlite -> connector.filePath
         else -> null
     }

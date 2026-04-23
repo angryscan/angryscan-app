@@ -16,20 +16,20 @@ internal object SqliteConnectionValidator {
         if (filePath.isBlank()) {
             return@withContext DatabaseConnectionError(
                 field = DatabaseConnectionErrorField.FILE_PATH,
-                message = "File path is required"
+                message = sanitizedConnectionErrorMessage(DatabaseConnectionErrorField.FILE_PATH)
             )
         }
         val file = File(filePath)
         if (!file.exists()) {
             return@withContext DatabaseConnectionError(
                 field = DatabaseConnectionErrorField.FILE_PATH,
-                message = "File does not exist: $filePath"
+                message = "The selected file does not exist."
             )
         }
         if (!file.isFile) {
             return@withContext DatabaseConnectionError(
                 field = DatabaseConnectionErrorField.FILE_PATH,
-                message = "Path is not a file: $filePath"
+                message = "The selected path is not a file."
             )
         }
         val jdbcUrl = "jdbc:sqlite:$filePath"
@@ -43,12 +43,12 @@ internal object SqliteConnectionValidator {
         } catch (e: SQLException) {
             DatabaseConnectionError(
                 field = DatabaseConnectionErrorField.FILE_PATH,
-                message = e.message ?: "Failed to open database"
+                message = sanitizedConnectionErrorMessage(DatabaseConnectionErrorField.FILE_PATH)
             )
         } catch (e: Exception) {
             DatabaseConnectionError(
                 field = DatabaseConnectionErrorField.FILE_PATH,
-                message = e.message ?: "Connection failed"
+                message = sanitizedConnectionErrorMessage(DatabaseConnectionErrorField.FILE_PATH)
             )
         }
     }
