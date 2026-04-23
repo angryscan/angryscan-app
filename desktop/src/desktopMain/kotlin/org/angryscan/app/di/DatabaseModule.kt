@@ -1,8 +1,6 @@
 package org.angryscan.app.di
 
-import org.angryscan.app.common.AppFiles
-import org.angryscan.app.common.DesktopSqlConnectionSecretStore
-import org.angryscan.app.common.SqlConnectionSecretStore
+import org.angryscan.app.common.*
 import org.angryscan.app.db.DatabaseSettings
 import org.koin.dsl.module
 
@@ -14,4 +12,5 @@ val databaseModule = module {
         )
     }
     single<SqlConnectionSecretStore> { DesktopSqlConnectionSecretStore() }
+    single<S3ConnectionSecretStore> { DesktopS3ConnectionSecretStore() }
 }

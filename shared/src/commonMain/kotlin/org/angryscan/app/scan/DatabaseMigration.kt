@@ -66,7 +66,8 @@ object DatabaseMigration: KoinComponent {
                 TaskFileExtensions,
                 TaskMatchers,
                 TaskFileScanResults,
-                SavedSqlConnections
+                SavedSqlConnections,
+                SavedS3Connections
             )
 
 
@@ -76,7 +77,8 @@ object DatabaseMigration: KoinComponent {
                 TaskFileExtensions,
                 TaskMatchers,
                 TaskFileScanResults,
-                SavedSqlConnections
+                SavedSqlConnections,
+                SavedS3Connections
             )
             val statements = MigrationUtils.statementsRequiredForDatabaseMigration(*allTables, withLogs = false)
             if (statements.isNotEmpty()) {

@@ -6,6 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.angryscan.app.scan.common.files.types.*
 import org.angryscan.app.scan.functions.CertDetectFun
 import org.angryscan.app.scan.functions.CodeDetectFun
@@ -275,7 +279,7 @@ class ScreenStateSettings : KoinComponent {
                 this.httpScreenState.fastScan = prop.httpScreenState.fastScan
 
                 // Restore SqlDatabase state (migration: old PostgresScreenState → SqlDatabaseScreenState, databaseType defaults to PostgreSQL)
-                this.sqlScreenState.value = prop.sqlScreenState.value
+                this.sqlScreenState.value = prop.sqlScreenState.value.copy(password = "")
                 this.sqlScreenState.value.extensions.clear()
                 this.sqlScreenState.value.extensions.addAll(prop.sqlScreenState.value.extensions)
                 this.sqlScreenState.value.matchers.clear()
@@ -336,12 +340,66 @@ class ScreenStateSettings : KoinComponent {
 
     fun save() {
         try {
-            settingsFile.writeText(PolymorphicFormatter.encodeToString(this))
+            val root = PolymorphicFormatter.encodeToJsonElement(ScreenStateSettings.serializer(), this)
+            val sanitizedRoot = sanitizeSecrets(root)
+            settingsFile.writeText(
+                PolymorphicFormatter.encodeToString(
+                    JsonElement.serializer(),
+                    sanitizedRoot
+                )
+            )
         } catch (e: Exception) {
             logger.error(e) {
                 "Failed to save ScreenStateSettings."
             }
         }
+    }
+
+    private fun sanitizeSecrets(root: JsonElement): JsonElement {
+        val obj = root as? JsonObject ?: return root
+        val mutable = obj.toMutableMap()
+
+        val s3State = mutable["s3ScreenState"] as? JsonObject
+        if (s3State != null) {
+            mutable["s3ScreenState"] = JsonObject(
+                s3State.toMutableMap().apply {
+                    this["secretKey"] = JsonPrimitive("")
+                }
+            )
+        }
+
+        val sqlState = mutable["sqlScreenState"] as? JsonObject
+        if (sqlState != null) {
+            val sqlValue = sqlState["value"] as? JsonObject
+            if (sqlValue != null) {
+                val redactedValue = JsonObject(
+                    sqlValue.toMutableMap().apply {
+                        this["password"] = JsonPrimitive("")
+                    }
+                )
+                mutable["sqlScreenState"] = JsonObject(
+                    sqlState.toMutableMap().apply {
+                        this["value"] = redactedValue
+                    }
+                )
+            }
+        }
+
+        val sqlSavedConnections = mutable["sqlSavedConnections"] as? JsonArray
+        if (sqlSavedConnections != null) {
+            mutable["sqlSavedConnections"] = JsonArray(
+                sqlSavedConnections.map { item ->
+                    val connObj = item as? JsonObject ?: return@map item
+                    JsonObject(
+                        connObj.toMutableMap().apply {
+                            this["password"] = JsonPrimitive("")
+                        }
+                    )
+                }
+            )
+        }
+
+        return JsonObject(mutable)
     }
 }
 

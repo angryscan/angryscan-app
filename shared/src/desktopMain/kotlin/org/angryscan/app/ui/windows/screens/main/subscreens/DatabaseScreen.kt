@@ -189,6 +189,46 @@ fun DatabaseScreen(
         }
     }
 
+    suspend fun tryRestorePasswordForCurrentSqlConnection() {
+        if (sqlScreenState.databaseType == DatabaseType.SQLite) return
+        if (sqlScreenState.password.isNotBlank()) return
+
+        if (sqlScreenState.host.isBlank() ||
+            sqlScreenState.port.isBlank() ||
+            sqlScreenState.database.isBlank() ||
+            sqlScreenState.user.isBlank()
+        ) {
+            return
+        }
+
+        val key = savedConnectionsRepository.connectionKey(
+            databaseType = sqlScreenState.databaseType,
+            host = sqlScreenState.host,
+            port = sqlScreenState.port,
+            schema = sqlScreenState.schema,
+            user = sqlScreenState.user
+        )
+        val restored = scanService.withHistoryBatchesPaused {
+            savedConnectionsRepository.getPassword(key)
+                ?: savedConnectionsRepository
+                    .list(sqlScreenState.databaseType)
+                    .firstOrNull { conn ->
+                        conn.host.trim().equals(sqlScreenState.host.trim(), ignoreCase = true) &&
+                            conn.port.trim() == sqlScreenState.port.trim() &&
+                            conn.user.trim().equals(sqlScreenState.user.trim(), ignoreCase = true) &&
+                            (
+                                sqlScreenState.schema.isBlank() ||
+                                    conn.schema.trim().equals(sqlScreenState.schema.trim(), ignoreCase = true)
+                                )
+                    }
+                    ?.let { matched -> savedConnectionsRepository.getPassword(matched.connectionKey) }
+        }.orEmpty()
+        if (restored.isNotEmpty()) {
+            sqlScreenState = sqlScreenState.copy(password = restored)
+            selectedSavedConnectionKey = key
+        }
+    }
+
     fun removeSavedConnection(conn: SavedSqlConnection) {
         coroutineScope.launch {
             scanService.withHistoryBatchesPaused {
@@ -213,6 +253,7 @@ fun DatabaseScreen(
             screenStateSettings.save()
         }
         refreshSavedConnections()
+        tryRestorePasswordForCurrentSqlConnection()
     }
 
     LaunchedEffect(sqlScreenState.databaseType) {

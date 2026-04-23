@@ -494,4 +494,5 @@
     <string name="ScanSettings-PostgresConnectionSuccess">Подключение успешно установлено.</string>
     <string name="Validation-PostgresConnectionTitle">Ошибка подключения к базе данных</string>
     <string name="Validation-PostgresConnectionMessage">Не удалось подключиться к базе данных. Проверьте корректность данных для подключения к БД.</string>
+    <string name="Validation-S3ConnectionMessage">Не удалось подключиться к AWS S3. Проверьте корректность данных подключения.</string>
 </resources>

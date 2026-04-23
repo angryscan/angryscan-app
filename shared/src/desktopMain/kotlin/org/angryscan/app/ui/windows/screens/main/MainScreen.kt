@@ -112,6 +112,8 @@ fun MainScreen(
     var settingsPanelOpened by remember { mutableStateOf(false) }
     var highlightMissingExtensions by remember { mutableStateOf(false) }
     var highlightMissingMatchers by remember { mutableStateOf(false) }
+    var s3RadioBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var s3UnderBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var databaseRadioBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var databaseUnderBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var databaseContourContainerBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
@@ -137,8 +139,10 @@ fun MainScreen(
     val s3SourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.S3::class) == true
     val httpSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.HTTP::class) == true
     val sqlSourceActive = headerRouteEntry?.destination?.hasRoute(MainScreenConnector.Postgres::class) == true
-    LaunchedEffect(sqlSourceActive, settingsPanelOpened) {
-        if (!sqlSourceActive || settingsPanelOpened) {
+    LaunchedEffect(sqlSourceActive, s3SourceActive, settingsPanelOpened) {
+        if ((!sqlSourceActive && !s3SourceActive) || settingsPanelOpened) {
+            s3RadioBounds = null
+            s3UnderBounds = null
             databaseRadioBounds = null
             databaseUnderBounds = null
             databaseContourContainerBounds = null
@@ -374,11 +378,20 @@ fun MainScreen(
                         }
                         .drawBehind {
                             val containerBounds = databaseContourContainerBounds
-                            val radioRootBounds = databaseRadioBounds
-                            val underRootBounds = databaseUnderBounds
+                            val isSqlContour = sqlSourceActive && !settingsPanelOpened
+                            val isS3Contour = s3SourceActive && !settingsPanelOpened
+                            val radioRootBounds = when {
+                                isSqlContour -> databaseRadioBounds
+                                isS3Contour -> s3RadioBounds
+                                else -> null
+                            }
+                            val underRootBounds = when {
+                                isSqlContour -> databaseUnderBounds
+                                isS3Contour -> s3UnderBounds
+                                else -> null
+                            }
                             if (
-                                sqlSourceActive &&
-                                !settingsPanelOpened &&
+                                (isSqlContour || isS3Contour) &&
                                 containerBounds != null &&
                                 radioRootBounds != null &&
                                 underRootBounds != null
@@ -463,6 +476,7 @@ fun MainScreen(
                                 },
                                 highlightDatabase = false,
                                 highlightColor = databaseContourColor,
+                                onS3ItemBoundsChanged = { s3RadioBounds = it },
                                 onDatabaseItemBoundsChanged = { databaseRadioBounds = it },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -471,11 +485,15 @@ fun MainScreen(
                         }
                         if (!settingsPanelOpened) {
                             Box(
-                                modifier = if (sqlSourceActive) {
+                                modifier = if (sqlSourceActive || s3SourceActive) {
                                     Modifier
                                         .fillMaxWidth()
                                         .onGloballyPositioned { coordinates ->
-                                            databaseUnderBounds = coordinates.boundsInRoot()
+                                            if (sqlSourceActive) {
+                                                databaseUnderBounds = coordinates.boundsInRoot()
+                                            } else if (s3SourceActive) {
+                                                s3UnderBounds = coordinates.boundsInRoot()
+                                            }
                                         }
                                         .padding(start = 1.dp, end = 1.dp, top = 1.dp, bottom = 3.dp)
                                 } else {
@@ -686,6 +704,7 @@ private fun SourceRadioRow(
     settingsOpen: Boolean,
     highlightDatabase: Boolean,
     highlightColor: Color,
+    onS3ItemBoundsChanged: (androidx.compose.ui.geometry.Rect?) -> Unit = {},
     onDatabaseItemBoundsChanged: (androidx.compose.ui.geometry.Rect?) -> Unit = {},
     modifier: Modifier = Modifier,
     onSelectedLabelClick: () -> Unit,
@@ -718,18 +737,24 @@ private fun SourceRadioRow(
             },
             onSelectedLabelClick = onSelectedLabelClick
         )
-        SourceRadioItem(
-            selected = selectedRoute == MainScreenConnector.S3,
-            label = "AWS S3",
-            settingsOpen = settingsOpen,
-            onSelect = {
-                if (selectedRoute != MainScreenConnector.S3) {
-                    onSourceSwitch("s3")
-                    navController.navigate(MainScreenConnector.S3)
-                }
-            },
-            onSelectedLabelClick = onSelectedLabelClick
-        )
+        Box(
+            modifier = Modifier.onGloballyPositioned { coordinates ->
+                onS3ItemBoundsChanged(coordinates.boundsInRoot())
+            }
+        ) {
+            SourceRadioItem(
+                selected = selectedRoute == MainScreenConnector.S3,
+                label = "AWS S3",
+                settingsOpen = settingsOpen,
+                onSelect = {
+                    if (selectedRoute != MainScreenConnector.S3) {
+                        onSourceSwitch("s3")
+                        navController.navigate(MainScreenConnector.S3)
+                    }
+                },
+                onSelectedLabelClick = onSelectedLabelClick
+            )
+        }
         SourceRadioItem(
             selected = selectedRoute == MainScreenConnector.HTTP,
             label = "HTTP",

@@ -1,5 +1,6 @@
 package org.angryscan.app.di
 
+import org.angryscan.app.common.SavedS3ConnectionsRepository
 import org.angryscan.app.common.SavedSqlConnectionsRepository
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.scan.ScanService
@@ -16,5 +17,6 @@ val scanModule = module {
     singleOf(::ScanService)
     singleOf(::DomainRepository)
     singleOf(::SavedSqlConnectionsRepository)
+    singleOf(::SavedS3ConnectionsRepository)
     factoryOf(::TaskFilesViewModel)
 }
