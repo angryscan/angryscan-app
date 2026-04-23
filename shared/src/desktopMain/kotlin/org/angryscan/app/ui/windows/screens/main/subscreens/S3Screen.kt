@@ -33,6 +33,7 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
 import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
+import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -352,15 +353,16 @@ fun S3Screen(
     setSidebarContent { }
     setBottomBarContent {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val controlHeight = 68.dp
-            val controlShape = RoundedCornerShape(18.dp)
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlHeight = sourceTokens.controlHeight
+            val controlShape = RoundedCornerShape(sourceTokens.controlCorner)
             val scanButtonWidth = when {
-                maxWidth >= 1500.dp -> 240.dp
-                maxWidth < 1200.dp -> 220.dp
-                else -> 232.dp
-            } * 0.75f
-            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
-            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
             val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
 
             Column(
@@ -394,14 +396,17 @@ fun S3Screen(
                         Row(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(
+                                    horizontal = sourceTokens.inlinePaddingHorizontal,
+                                    vertical = sourceTokens.inlinePaddingVertical
+                                ),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
                     ) {
                             OutlinedTextField(
                                 value = path,
                                 onValueChange = { path = it; saveScreenState() },
-                                modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                                modifier = Modifier.weight(1f).heightIn(min = sourceTokens.fieldMinHeight),
                                 placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
                                 textStyle = MaterialTheme.typography.bodyMedium,
                                 singleLine = true,
@@ -426,9 +431,9 @@ fun S3Screen(
                                         incorrectConnection = true
                                     }
                                 },
-                                modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(sourceTokens.iconButtonSize)
                             ) {
-                                Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(22.dp), tint = SourceActionBlue)
+                                Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(sourceTokens.iconSize), tint = SourceActionBlue)
                             }
                         }
                     }
@@ -499,13 +504,14 @@ fun S3Screen(
     // AWS connection params should appear under the source radio buttons.
     setUnderSourceContent {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
             val scanButtonWidth = when {
-                maxWidth >= 1500.dp -> 240.dp
-                maxWidth < 1200.dp -> 220.dp
-                else -> 232.dp
-            } * 0.75f
-            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
             val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
 
             // Connection parameters (compact, single row)
@@ -515,7 +521,12 @@ fun S3Screen(
                         .align(Alignment.CenterStart)
                         .widthIn(min = blockMinWidth)
                         .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 2.dp),
+                        .padding(
+                            start = sourceTokens.inlinePaddingHorizontal,
+                            end = sourceTokens.inlinePaddingHorizontal,
+                            top = 2.dp,
+                            bottom = 2.dp
+                        ),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     // Same "feel" as the path block (bodyMedium), but keep compact size.
@@ -539,10 +550,10 @@ fun S3Screen(
                         visualTransformation: VisualTransformation = VisualTransformation.None,
                         isPassword: Boolean = false
                     ) {
-                        val shape = RoundedCornerShape(10.dp)
+                        val shape = RoundedCornerShape(sourceTokens.compactFieldCorner)
                         Surface(
                             modifier = modifier
-                                .height(32.dp)
+                                .height(sourceTokens.compactFieldHeight)
                                 .border(
                                     width = 1.dp,
                                     color = if (isError) {
@@ -559,7 +570,10 @@ fun S3Screen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    .padding(
+                                        horizontal = sourceTokens.inlineControlGap,
+                                        vertical = sourceTokens.inlinePaddingVertical - 2.dp
+                                    ),
                                 contentAlignment = Alignment.CenterStart
                             ) {
                                 BasicTextField(
@@ -571,7 +585,7 @@ fun S3Screen(
                                     visualTransformation = if (isPassword && !secretKeyVisible) PasswordVisualTransformation() else visualTransformation,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(end = if (isPassword) 24.dp else 0.dp),
+                                        .padding(end = if (isPassword) sourceTokens.iconSize + 2.dp else 0.dp),
                                     decorationBox = { inner ->
                                         if (value.isEmpty()) {
                                             Text(placeholder, style = placeholderStyle, maxLines = 1)
@@ -584,13 +598,13 @@ fun S3Screen(
                                         onClick = { secretKeyVisible = !secretKeyVisible },
                                         modifier = Modifier
                                             .align(Alignment.CenterEnd)
-                                            .size(20.dp)
+                                            .size(sourceTokens.iconSize - 2.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (secretKeyVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                             contentDescription = if (secretKeyVisible) "Hide secret key" else "Show secret key",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
-                                            modifier = Modifier.size(14.dp)
+                                            modifier = Modifier.size(sourceTokens.iconSize - 8.dp)
                                         )
                                     }
                                 }
@@ -600,7 +614,7 @@ fun S3Screen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         CompactField(
@@ -688,9 +702,9 @@ fun S3Screen(
                                     isTestingConnection = false
                                 }
                             },
-                            modifier = Modifier.height(32.dp),
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
                             colors = startScanButtonColors()
                         ) {
                             Text(
@@ -706,9 +720,9 @@ fun S3Screen(
                                 pendingConnectionNameError = false
                                 pendingConnectionNameDialog = true
                             },
-                            modifier = Modifier.height(32.dp),
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
                             border = BorderStroke(
                                 width = 1.dp,
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
@@ -730,8 +744,8 @@ fun S3Screen(
                             onClick = { savedConnectionsExpanded = true },
                             enabled = savedConnections.isNotEmpty(),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.height(32.dp)
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight)
                         ) {
                             Text(
                                 text = stringResource(Res.string.MainScreen_SavedConnections, savedConnections.size),

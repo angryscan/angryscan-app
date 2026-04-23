@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 
 /** Ширина левой колонки «группа» в табличных блоках (extensions / detection rules). */
 object SettingsScanTable {
@@ -36,6 +37,24 @@ object SettingsScanTable {
 @Composable
 private fun settingsTableGridLineColor() =
     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.56f)
+
+@Composable
+private fun settingsScanTableScaled(): SettingsScanTableScaled {
+    val tokens = LocalMainScreenAdaptiveTokens.current.settings
+    return remember(tokens) {
+        SettingsScanTableScaled(
+            groupLabelWidth = tokens.groupLabelWidth,
+            headerInlineActionSpacing = tokens.headerInlineActionSpacing,
+            contentBelowHeaderSpacing = tokens.contentBelowHeaderSpacing
+        )
+    }
+}
+
+private data class SettingsScanTableScaled(
+    val groupLabelWidth: Dp,
+    val headerInlineActionSpacing: Dp,
+    val contentBelowHeaderSpacing: Dp,
+)
 
 /** Горизонтальная линия между строками таблицы — минимальный зазор, без «высоких» полей. */
 @Composable
@@ -98,11 +117,6 @@ internal fun SettingsTableColumnDivider() {
     )
 }
 
-private val SectionCardShape = RoundedCornerShape(12.dp)
-private val SectionHeaderPadding = 14.dp
-private val SectionContentPadding = 14.dp
-private val SectionHeaderTextAlignToPathEditOffset = 14.dp
-
 @Composable
 private fun SettingsSectionHeaderRow(
     title: String,
@@ -111,10 +125,14 @@ private fun SettingsSectionHeaderRow(
     titleTrailingInline: Boolean = false,
     titleTrailingInlineSpacing: Dp = 2.dp,
 ) {
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val sectionHeaderAlignOffset = settingsTokens.sectionHeaderAlignOffset
+    val sectionHeaderTextSize = LocalMainScreenAdaptiveTokens.current.scale.sp(12.sp, min = 11.sp, max = 14.sp)
+    val sectionHeaderLineHeight = LocalMainScreenAdaptiveTokens.current.scale.sp(14.sp, min = 12.sp, max = 16.sp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 1.dp),
+            .padding(vertical = LocalMainScreenAdaptiveTokens.current.scale.dp(1.dp, min = 1.dp, max = 2.dp)),
         horizontalArrangement = if (titleTrailingInline) Arrangement.Start else Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -122,23 +140,23 @@ private fun SettingsSectionHeaderRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                fontSize = 12.sp,
-                lineHeight = 14.sp,
+                fontSize = sectionHeaderTextSize,
+                lineHeight = sectionHeaderLineHeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.offset(x = SectionHeaderTextAlignToPathEditOffset),
+                modifier = Modifier.offset(x = sectionHeaderAlignOffset),
             )
         } else {
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                fontSize = 12.sp,
-                lineHeight = 14.sp,
+                fontSize = sectionHeaderTextSize,
+                lineHeight = sectionHeaderLineHeight,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .weight(1f)
-                    .offset(x = SectionHeaderTextAlignToPathEditOffset)
+                    .offset(x = sectionHeaderAlignOffset)
             )
         }
         if (titleTrailingInline) {
@@ -154,9 +172,10 @@ fun SettingsScanUnifiedPanel(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
     Surface(
         modifier = modifier,
-        shape = SectionCardShape,
+        shape = RoundedCornerShape(settingsTokens.sectionCardCorner),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
         border = BorderStroke(
             1.dp,
@@ -169,10 +188,10 @@ fun SettingsScanUnifiedPanel(
             Modifier
                 .fillMaxSize()
                 .padding(
-                    start = SectionHeaderPadding,
-                    end = SectionHeaderPadding,
-                    top = 6.dp,
-                    bottom = 3.dp
+                    start = settingsTokens.sectionHeaderPadding,
+                    end = settingsTokens.sectionHeaderPadding,
+                    top = LocalMainScreenAdaptiveTokens.current.scale.dp(6.dp, min = 5.dp, max = 10.dp),
+                    bottom = LocalMainScreenAdaptiveTokens.current.scale.dp(3.dp, min = 2.dp, max = 6.dp)
                 ),
             content = content
         )
@@ -193,6 +212,8 @@ fun SettingsUnifiedSubsection(
     titleTrailingInlineSpacing: Dp = 2.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val tableScaled = settingsScanTableScaled()
     if (expandContentVertically) {
         Column(modifier.fillMaxWidth().fillMaxHeight()) {
             SettingsSectionHeaderRow(
@@ -207,11 +228,11 @@ fun SettingsUnifiedSubsection(
                     .weight(1f, fill = true)
                     .verticalScroll(rememberScrollState())
                     .padding(
-                        start = SectionHeaderTextAlignToPathEditOffset,
+                            start = settingsTokens.sectionHeaderAlignOffset,
                         top = contentTopPadding,
-                        bottom = 2.dp
+                            bottom = LocalMainScreenAdaptiveTokens.current.scale.dp(2.dp, min = 1.dp, max = 4.dp)
                     ),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(tableScaled.contentBelowHeaderSpacing / 2f),
                 content = content
             )
         }
@@ -227,11 +248,11 @@ fun SettingsUnifiedSubsection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = SectionHeaderTextAlignToPathEditOffset,
+                            start = settingsTokens.sectionHeaderAlignOffset,
                         top = contentTopPadding,
-                        bottom = 2.dp
+                            bottom = LocalMainScreenAdaptiveTokens.current.scale.dp(2.dp, min = 1.dp, max = 4.dp)
                     ),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(tableScaled.contentBelowHeaderSpacing / 2f),
                 content = content
             )
         }
@@ -251,9 +272,11 @@ fun SettingsSectionCard(
     titleTrailingInlineSpacing: Dp = 2.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val tableScaled = settingsScanTableScaled()
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = SectionCardShape,
+        shape = RoundedCornerShape(settingsTokens.sectionCardCorner),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             1.dp,
@@ -266,7 +289,10 @@ fun SettingsSectionCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = SectionHeaderPadding, vertical = 3.dp)
+                    .padding(
+                        horizontal = settingsTokens.sectionHeaderPadding,
+                        vertical = LocalMainScreenAdaptiveTokens.current.scale.dp(3.dp, min = 2.dp, max = 6.dp)
+                    )
             ) {
                 SettingsSectionHeaderRow(
                     title,
@@ -280,11 +306,11 @@ fun SettingsSectionCard(
                         .weight(1f, fill = true)
                         .verticalScroll(rememberScrollState())
                         .padding(
-                            start = SectionHeaderTextAlignToPathEditOffset,
+                            start = settingsTokens.sectionHeaderAlignOffset,
                             top = contentTopPadding,
-                            bottom = 2.dp
+                            bottom = LocalMainScreenAdaptiveTokens.current.scale.dp(2.dp, min = 1.dp, max = 4.dp)
                         ),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalArrangement = Arrangement.spacedBy(tableScaled.contentBelowHeaderSpacing / 2f),
                     content = content
                 )
             }
@@ -292,7 +318,10 @@ fun SettingsSectionCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SectionHeaderPadding, vertical = 3.dp)
+                    .padding(
+                        horizontal = settingsTokens.sectionHeaderPadding,
+                        vertical = LocalMainScreenAdaptiveTokens.current.scale.dp(3.dp, min = 2.dp, max = 6.dp)
+                    )
             ) {
                 SettingsSectionHeaderRow(
                     title,
@@ -304,11 +333,11 @@ fun SettingsSectionCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            start = SectionHeaderTextAlignToPathEditOffset,
+                            start = settingsTokens.sectionHeaderAlignOffset,
                             top = contentTopPadding,
-                            bottom = 2.dp
+                            bottom = LocalMainScreenAdaptiveTokens.current.scale.dp(2.dp, min = 1.dp, max = 4.dp)
                         ),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalArrangement = Arrangement.spacedBy(tableScaled.contentBelowHeaderSpacing / 2f),
                     content = content
                 )
             }
@@ -324,9 +353,11 @@ fun SettingsBoxSpan(
     textTail: @Composable () -> Unit = {},
     block: @Composable () -> Unit
 ) {
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val scale = LocalMainScreenAdaptiveTokens.current.scale
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = SectionCardShape,
+        shape = RoundedCornerShape(settingsTokens.sectionCardCorner),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(
             1.dp,
@@ -342,21 +373,24 @@ fun SettingsBoxSpan(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(SectionCardShape)
+                    .clip(RoundedCornerShape(settingsTokens.sectionCardCorner))
                     .clickable { onExpandClick() }
-                    .padding(horizontal = SectionHeaderPadding, vertical = 10.dp),
+                    .padding(
+                        horizontal = settingsTokens.sectionHeaderPadding,
+                        vertical = scale.dp(10.dp, min = 8.dp, max = 16.dp)
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(scale.dp(12.dp, min = 10.dp, max = 20.dp)),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = text,
                         style = MaterialTheme.typography.titleMedium,
-                        fontSize = 16.sp,
+                        fontSize = scale.sp(16.sp, min = 14.sp, max = 19.sp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     textTail()
@@ -379,8 +413,8 @@ fun SettingsBoxSpan(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(SectionContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(settingsTokens.sectionContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(scale.dp(8.dp, min = 6.dp, max = 12.dp))
                 ) {
                     block()
                 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 
 /** Тон-заливка и обводка как у QuickFilterChip (TopNavigation). */
 @Composable
@@ -54,9 +55,10 @@ fun CountryFilterChips(
     modifier: Modifier = Modifier,
     getCountryStats: ((MatcherCountry) -> Pair<Int, Int>)? = null
 ) {
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(adaptiveScale.dp(12.dp, min = 10.dp, max = 18.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
         MatcherCountry.entries.forEach { country ->
@@ -81,6 +83,7 @@ private fun CountryChip(
     selectedCount: Int? = null,
     totalCount: Int? = null
 ) {
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val (fill, stroke, labelColor) = scanFilterChipStyle(isSelected, isHovered)
@@ -96,27 +99,30 @@ private fun CountryChip(
                     indication = null
                 ) { onClick() }
                 .hoverable(interactionSource = interactionSource),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(adaptiveScale.dp(20.dp, min = 16.dp, max = 28.dp)),
             color = fill,
-            border = BorderStroke(1.dp, stroke),
+            border = BorderStroke(adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp), stroke),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    .padding(
+                        horizontal = adaptiveScale.dp(12.dp, min = 10.dp, max = 18.dp),
+                        vertical = adaptiveScale.dp(8.dp, min = 6.dp, max = 12.dp)
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = country.flag,
-                    fontSize = 20.sp
+                    fontSize = adaptiveScale.sp(20.sp, min = 18.sp, max = 24.sp)
                 )
 
                 if (selectedCount != null && totalCount != null) {
                     Text(
                         text = "$selectedCount/$totalCount",
-                        fontSize = 10.sp,
+                        fontSize = adaptiveScale.sp(10.sp, min = 9.sp, max = 12.sp),
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                         color = labelColor
                     )
@@ -135,9 +141,12 @@ fun CompactCountryFilterChips(
     dense: Boolean = false,
     horizontalSpacing: Dp? = null,
 ) {
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing ?: (if (dense) 8.dp else 10.dp)),
+        horizontalArrangement = Arrangement.spacedBy(
+            horizontalSpacing ?: if (dense) adaptiveScale.dp(8.dp, min = 7.dp, max = 12.dp) else adaptiveScale.dp(10.dp, min = 8.dp, max = 16.dp)
+        ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         MatcherCountry.entries
@@ -170,6 +179,7 @@ private fun CompactCountryChip(
     totalCount: Int? = null,
     dense: Boolean = false,
 ) {
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val (fill, stroke, labelColor) = scanFilterChipStyle(isSelected, isHovered)
@@ -186,28 +196,32 @@ private fun CompactCountryChip(
                     indication = null
                 ) { onClick() }
                 .hoverable(interactionSource = interactionSource),
-            shape = RoundedCornerShape(if (dense) 8.dp else 10.dp),
+            shape = RoundedCornerShape(
+                if (dense) adaptiveScale.dp(8.dp, min = 7.dp, max = 12.dp) else adaptiveScale.dp(10.dp, min = 9.dp, max = 14.dp)
+            ),
             color = fill,
-            border = BorderStroke(1.dp, stroke),
+            border = BorderStroke(adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp), stroke),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
         ) {
             Row(
                 modifier = Modifier.padding(
-                    horizontal = if (dense) 5.dp else 8.dp,
-                    vertical = if (dense) 2.dp else 4.dp
+                    horizontal = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 8.dp) else adaptiveScale.dp(8.dp, min = 7.dp, max = 12.dp),
+                    vertical = if (dense) adaptiveScale.dp(2.dp, min = 2.dp, max = 4.dp) else adaptiveScale.dp(4.dp, min = 3.dp, max = 6.dp)
                 ),
-                horizontalArrangement = Arrangement.spacedBy(if (dense) 3.dp else 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(
+                    if (dense) adaptiveScale.dp(3.dp, min = 2.dp, max = 5.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
+                ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = country.flag,
-                    fontSize = if (dense) 13.sp else 20.sp
+                    fontSize = if (dense) adaptiveScale.sp(13.sp, min = 12.sp, max = 16.sp) else adaptiveScale.sp(20.sp, min = 18.sp, max = 24.sp)
                 )
                 if (selectedCount != null && totalCount != null) {
                     Text(
                         text = "$selectedCount/$totalCount",
-                        fontSize = if (dense) 8.sp else 9.sp,
+                        fontSize = if (dense) adaptiveScale.sp(8.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(9.sp, min = 9.sp, max = 11.sp),
                         fontWeight = FontWeight.Medium,
                         color = labelColor
                     )

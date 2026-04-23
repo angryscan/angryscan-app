@@ -20,6 +20,7 @@ import org.angryscan.app.scan.common.files.types.CertFileType
 import org.angryscan.app.scan.common.files.types.CodeFileType
 import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 import org.angryscan.app.ui.windows.screens.main.settings.items.SettingsSelectAllTextButton
 import org.jetbrains.compose.resources.stringResource
 
@@ -43,17 +44,19 @@ fun SettingsBoxExtensionsSelection(
     val allSelected = scanSettings.extensions.containsAll(fileTypeEntries)
 
     val dense = unifiedBlock
-    val groupLabelWidth = if (dense) 108.dp else SettingsScanTable.groupLabelWidth
-    val groupRowHGap = if (dense) 5.dp else 10.dp
-    val chipCorner = if (dense) 4.dp else 6.dp
-    val chipPadH = if (dense) 1.dp else 2.dp
-    val chipLabelFs = if (dense) 8.sp else 10.sp
-    val groupLabelFs = if (dense) 8.5.sp else 10.sp
-    val flowHGap = if (dense) 7.dp else 9.dp
-    val flowVGap = if (dense) 5.dp else 6.dp
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val groupLabelWidth = if (dense) adaptiveScale.dp(108.dp, min = 102.dp, max = 160.dp) else settingsTokens.groupLabelWidth
+    val groupRowHGap = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 9.dp) else adaptiveScale.dp(10.dp, min = 8.dp, max = 16.dp)
+    val chipCorner = if (dense) adaptiveScale.dp(4.dp, min = 3.dp, max = 7.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
+    val chipPadH = if (dense) adaptiveScale.dp(1.dp, min = 1.dp, max = 2.dp) else adaptiveScale.dp(2.dp, min = 1.dp, max = 4.dp)
+    val chipLabelFs = if (dense) adaptiveScale.sp(8.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(10.sp, min = 10.sp, max = 12.sp)
+    val groupLabelFs = if (dense) adaptiveScale.sp(8.5.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(10.sp, min = 10.sp, max = 12.sp)
+    val flowHGap = if (dense) adaptiveScale.dp(7.dp, min = 6.dp, max = 12.dp) else adaptiveScale.dp(9.dp, min = 8.dp, max = 14.dp)
+    val flowVGap = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 9.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
     // Сейчас общий левый отступ секции даёт 4.dp (внутренний padding карточки).
     // Чтобы визуально получить "в 3 раза больше" слева в первой колонке, добавляем ещё +8.dp.
-    val firstColumnExtraStartPadding = 8.dp
+    val firstColumnExtraStartPadding = adaptiveScale.dp(8.dp, min = 6.dp, max = 14.dp)
 
     val content: @Composable ColumnScope.() -> Unit = {
         Column(modifier = Modifier.wrapContentWidth()) {
@@ -134,17 +137,17 @@ fun SettingsBoxExtensionsSelection(
                 modifier = modifier.then(
                     if (errorHighlight) {
                         Modifier.border(
-                            width = 1.5.dp,
+                            width = adaptiveScale.dp(1.5.dp, min = 1.2.dp, max = 2.2.dp),
                             color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(adaptiveScale.dp(10.dp, min = 8.dp, max = 14.dp))
                         )
                     } else {
                         Modifier
                     }
                 ),
-                contentTopPadding = (SettingsScanTable.contentBelowHeaderSpacing * 3) / 2f,
+                contentTopPadding = (settingsTokens.contentBelowHeaderSpacing * 3) / 2f,
                 titleTrailingInline = true,
-                titleTrailingInlineSpacing = SettingsScanTable.headerInlineActionSpacing,
+                titleTrailingInlineSpacing = settingsTokens.headerInlineActionSpacing,
                 titleTrailing = {
                     SettingsSelectAllTextButton(
                         allSelected = allSelected,
@@ -161,9 +164,9 @@ fun SettingsBoxExtensionsSelection(
             SettingsSectionCard(
                 title = stringResource(Res.string.ScanSettings_FileExtensions),
                 modifier = modifier,
-                contentTopPadding = (SettingsScanTable.contentBelowHeaderSpacing * 3) / 2f,
+                contentTopPadding = (settingsTokens.contentBelowHeaderSpacing * 3) / 2f,
                 titleTrailingInline = true,
-                titleTrailingInlineSpacing = SettingsScanTable.headerInlineActionSpacing,
+                titleTrailingInlineSpacing = settingsTokens.headerInlineActionSpacing,
                 titleTrailing = {
                     SettingsSelectAllTextButton(
                         allSelected = allSelected,

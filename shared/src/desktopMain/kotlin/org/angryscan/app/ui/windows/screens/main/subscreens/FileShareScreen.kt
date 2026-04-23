@@ -35,6 +35,7 @@ import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.ui.components.SelectionTypes
 import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
+import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import java.io.File
@@ -230,15 +231,16 @@ fun FileShareScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 0.dp, vertical = 0.dp)
         ) {
-            val controlHeight = 68.dp
-            val controlShape = RoundedCornerShape(18.dp)
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlHeight = sourceTokens.controlHeight
+            val controlShape = RoundedCornerShape(sourceTokens.controlCorner)
             val scanButtonWidth = when {
-                maxWidth >= 1500.dp -> 240.dp
-                maxWidth < 1200.dp -> 220.dp
-                else -> 232.dp
-            } * 0.75f
-            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
-            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -264,14 +266,17 @@ fun FileShareScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(
+                            horizontal = sourceTokens.inlinePaddingHorizontal,
+                            vertical = sourceTokens.inlinePaddingVertical
+                        ),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
             ) {
                     OutlinedTextField(
                         value = path,
                         onValueChange = { path = it; saveScreenState() },
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = sourceTokens.fieldMinHeight),
                         placeholder = {
                             Text(
                                 text = when (detectSelectionType(path)) {
@@ -284,7 +289,7 @@ fun FileShareScreen(
                         },
                         textStyle = MaterialTheme.typography.bodyMedium,
                         singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
                         isError = selectPathError,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,
@@ -301,8 +306,8 @@ fun FileShareScreen(
                         val currentType = detectSelectionType(path)
                         FilledTonalButton(
                             onClick = { browseMenuExpanded = true },
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.size(48.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
+                            modifier = Modifier.size(sourceTokens.iconButtonSize + 8.dp),
                             contentPadding = PaddingValues(0.dp),
                             colors = sourceActionFilledTonalButtonColors()
                         ) {
@@ -313,15 +318,15 @@ fun FileShareScreen(
                                     SelectionTypes.FileWithPaths -> Icons.Outlined.DocumentScanner
                                 },
                                 contentDescription = null,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(sourceTokens.iconSize)
                             )
                         }
 
                         DropdownMenu(
                             expanded = browseMenuExpanded,
                             onDismissRequest = { browseMenuExpanded = false },
-                            offset = DpOffset((-92).dp, 12.dp),
-                            shape = RoundedCornerShape(16.dp),
+                            offset = DpOffset((-92).dp, sourceTokens.inlinePaddingHorizontal),
+                            shape = RoundedCornerShape(sourceTokens.controlCorner - 2.dp),
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
                             tonalElevation = 8.dp,
                             shadowElevation = 14.dp

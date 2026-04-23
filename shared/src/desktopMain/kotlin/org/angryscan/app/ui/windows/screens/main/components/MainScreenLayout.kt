@@ -21,9 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.angryscan.app.resources.MainScreen_ScanStartButton
 import org.angryscan.app.resources.Res
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -44,12 +47,16 @@ fun MainScreenCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val shape = RoundedCornerShape(24.dp)
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val shape = RoundedCornerShape(adaptiveScale.dp(24.dp, min = 20.dp, max = 32.dp))
     Column(
         modifier = modifier
-            .widthIn(max = 700.dp)
+            .widthIn(max = adaptiveScale.dp(700.dp, min = 700.dp, max = 980.dp))
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 20.dp)
+            .padding(
+                horizontal = adaptiveScale.dp(20.dp, min = 16.dp, max = 28.dp),
+                vertical = adaptiveScale.dp(20.dp, min = 16.dp, max = 28.dp)
+            )
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
@@ -113,12 +120,14 @@ fun sourceActionFilledTonalButtonColors(): ButtonColors {
 /** Обводка в тон primary, как у выбранной вкладки навигации. */
 @Composable
 fun Modifier.scanButtonChipBorder(): Modifier {
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val shape = RoundedCornerShape(adaptiveScale.dp(20.dp, min = 18.dp, max = 26.dp))
     return this
-        .clip(scanButtonChipShape)
+        .clip(shape)
         .border(
-            width = 1.dp,
+            width = adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp),
             color = SourceActionBlue.copy(alpha = 0.75f),
-            shape = scanButtonChipShape
+            shape = shape
         )
 }
 
@@ -128,6 +137,10 @@ fun StartScanButtonContent() {
     Text(
         text = stringResource(Res.string.MainScreen_ScanStartButton),
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(horizontal = 32.dp, vertical = 14.dp)
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
     )
 }

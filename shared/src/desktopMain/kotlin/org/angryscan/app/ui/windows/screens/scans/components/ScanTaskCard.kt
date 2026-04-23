@@ -35,6 +35,7 @@ import org.angryscan.app.scan.common.connectors.*
 import org.angryscan.app.ui.extensions.toHumanReadable
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 import org.angryscan.common.engine.IMatcher
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -82,16 +83,17 @@ fun ScanTaskHeaderRow(
     onStatusFilterChange: ((StatusFilter) -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val scanTokens = LocalMainScreenAdaptiveTokens.current.scanList
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = ScanListRowHorizontalPadding, vertical = 2.dp),
+            .padding(horizontal = scanTokens.rowHorizontalPadding, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnFinishedTime), modifier = Modifier.width(ScanListFinishedColumnWidth), centered = false)
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnDuration), modifier = Modifier.width(ScanListDurationColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnFinishedTime), modifier = Modifier.width(scanTokens.finishedColumnWidth), centered = false)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnDuration), modifier = Modifier.width(scanTokens.durationColumnWidth), centered = true)
         StatusHeaderCell(
-            modifier = Modifier.width(ScanListStatusColumnWidth),
+            modifier = Modifier.width(scanTokens.statusColumnWidth),
             statusFilter = statusFilter,
             statusCounts = statusCounts,
             onStatusFilterChange = onStatusFilterChange
@@ -101,12 +103,12 @@ fun ScanTaskHeaderRow(
             modifier = Modifier.weight(1f).padding(end = 6.dp),
             centered = true
         )
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnObjectSize), modifier = Modifier.width(ScanListObjectSizeColumnWidth), centered = true)
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiFound), modifier = Modifier.width(ScanListPiiFoundColumnWidth), centered = true)
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiSize), modifier = Modifier.width(ScanListPiiSizeColumnWidth), centered = true)
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiScore), modifier = Modifier.width(ScanListPiiScoreColumnWidth), centered = true)
-        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiAttributesFound), modifier = Modifier.width(ScanListAttributesColumnWidth), centered = true)
-        Spacer(modifier = Modifier.width(ScanListChevronColumnWidth))
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnObjectSize), modifier = Modifier.width(scanTokens.objectSizeColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiFound), modifier = Modifier.width(scanTokens.piiFoundColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiSize), modifier = Modifier.width(scanTokens.piiSizeColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiScore), modifier = Modifier.width(scanTokens.piiScoreColumnWidth), centered = true)
+        HeaderCell(stringResource(Res.string.ScansPage_ColumnPiiAttributesFound), modifier = Modifier.width(scanTokens.attributesColumnWidth), centered = true)
+        Spacer(modifier = Modifier.width(scanTokens.chevronColumnWidth))
     }
     HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.22f))
 }
@@ -255,7 +257,9 @@ fun ScanTaskCard(
         0L.toDuration(DurationUnit.SECONDS)
     }
 
-    val rowShape = RoundedCornerShape(12.dp)
+    val scanTokens = LocalMainScreenAdaptiveTokens.current.scanList
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val rowShape = RoundedCornerShape(scanTokens.rowCorner)
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val connector = taskEntity.dbTask.connector
@@ -321,18 +325,18 @@ fun ScanTaskCard(
                 rowShape
             )
             .border(
-                1.dp,
+                adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp),
                 if (isHovered) colorScheme.outlineVariant.copy(alpha = 0.7f) else colorScheme.outlineVariant.copy(alpha = 0.48f),
                 rowShape
             )
             .clickable(onClick = onClick)
             .pointerHoverIcon(PointerIcon.Hand)
-            .padding(horizontal = ScanListRowHorizontalPadding, vertical = 8.dp),
+            .padding(horizontal = scanTokens.rowHorizontalPadding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .width(ScanListFinishedColumnWidth)
+                .width(scanTokens.finishedColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -346,7 +350,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListDurationColumnWidth)
+                .width(scanTokens.durationColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -360,7 +364,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListStatusColumnWidth)
+                .width(scanTokens.statusColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -378,7 +382,7 @@ fun ScanTaskCard(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 6.dp),
+                .padding(end = adaptiveScale.dp(6.dp, min = 4.dp, max = 10.dp)),
             contentAlignment = Alignment.CenterStart
         ) {
             val sourceTooltip = buildString {
@@ -444,7 +448,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListObjectSizeColumnWidth)
+                .width(scanTokens.objectSizeColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -458,7 +462,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListPiiFoundColumnWidth)
+                .width(scanTokens.piiFoundColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -476,7 +480,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListPiiSizeColumnWidth)
+                .width(scanTokens.piiSizeColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -494,7 +498,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListPiiScoreColumnWidth)
+                .width(scanTokens.piiScoreColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -516,7 +520,7 @@ fun ScanTaskCard(
 
         Box(
             modifier = Modifier
-                .width(ScanListAttributesColumnWidth)
+                .width(scanTokens.attributesColumnWidth)
                 .heightIn(min = 22.dp),
             contentAlignment = if (topAttributes.isEmpty()) Alignment.Center else Alignment.CenterStart
         ) {
@@ -584,7 +588,7 @@ fun ScanTaskCard(
                                             RoundedCornerShape(6.dp)
                                         )
                                         .border(
-                                            width = 1.dp,
+                                            width = adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp),
                                             color = if (isExpandHovered) colorScheme.primary.copy(alpha = 0.30f)
                                             else colorScheme.outlineVariant.copy(alpha = 0.32f),
                                             shape = RoundedCornerShape(6.dp)
@@ -645,7 +649,7 @@ fun ScanTaskCard(
             }
         }
         Box(
-            modifier = Modifier.width(ScanListChevronColumnWidth),
+            modifier = Modifier.width(scanTokens.chevronColumnWidth),
             contentAlignment = Alignment.CenterEnd
         ) {
             Row(
@@ -735,14 +739,16 @@ fun ScanTaskAttributesSubRow(
 
     if (sortedAttributes.isEmpty()) return
 
-    val rowShape = RoundedCornerShape(12.dp)
+    val scanTokens = LocalMainScreenAdaptiveTokens.current.scanList
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val rowShape = RoundedCornerShape(scanTokens.rowCorner)
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(rowShape)
             .background(colorScheme.surfaceVariant.copy(alpha = 0.10f), rowShape)
-            .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.22f), rowShape)
-            .padding(horizontal = ScanListRowHorizontalPadding, vertical = 8.dp),
+            .border(adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp), colorScheme.outlineVariant.copy(alpha = 0.22f), rowShape)
+            .padding(horizontal = scanTokens.rowHorizontalPadding, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(

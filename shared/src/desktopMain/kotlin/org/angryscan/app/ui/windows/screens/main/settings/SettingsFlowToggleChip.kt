@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 
 /**
  * Плотные чипы для FlowRow — те же цвета/обводка, что QuickFilterChip в TopNavigation
@@ -36,6 +37,7 @@ internal fun SettingsFlowToggleChip(
     maxLines: Int = 1,
 ) {
     val cs = MaterialTheme.colorScheme
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val shape = RoundedCornerShape(chipCorner)
@@ -67,7 +69,7 @@ internal fun SettingsFlowToggleChip(
             .hoverable(interactionSource = interaction),
         shape = shape,
         color = fill,
-        border = BorderStroke(1.dp, stroke),
+        border = BorderStroke(adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp), stroke),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {

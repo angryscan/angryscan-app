@@ -21,6 +21,7 @@ import org.angryscan.app.scan.functions.CodeDetectFun
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.strings.readableNameForLocale
 import org.angryscan.app.ui.windows.components.MatcherTooltip
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
 import org.angryscan.app.ui.windows.screens.main.settings.items.*
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.matchers.*
@@ -161,22 +162,24 @@ fun SettingsBoxDetectFunctionsGrouped(
     val isAllSelected = countryMatchers.all { m -> detectFunctions.any { it::class == m::class } }
 
     val dense = unifiedBlock
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
     // Slightly wider left column to keep group names on one line.
-    val groupLabelWidth = if (dense) 160.dp else 240.dp
-    val groupRowHGap = if (dense) 5.dp else 10.dp
-    val chipCorner = if (dense) 4.dp else 6.dp
-    val chipPadH = if (dense) 1.dp else 2.dp
-    val chipLabelFs = if (dense) 8.sp else 10.sp
-    val groupLabelFs = if (dense) 8.5.sp else 10.sp
+    val groupLabelWidth = if (dense) adaptiveScale.dp(160.dp, min = 150.dp, max = 260.dp) else adaptiveScale.dp(240.dp, min = 220.dp, max = 320.dp)
+    val groupRowHGap = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 9.dp) else adaptiveScale.dp(10.dp, min = 8.dp, max = 16.dp)
+    val chipCorner = if (dense) adaptiveScale.dp(4.dp, min = 3.dp, max = 7.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
+    val chipPadH = if (dense) adaptiveScale.dp(1.dp, min = 1.dp, max = 2.dp) else adaptiveScale.dp(2.dp, min = 1.dp, max = 4.dp)
+    val chipLabelFs = if (dense) adaptiveScale.sp(8.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(10.sp, min = 10.sp, max = 12.sp)
+    val groupLabelFs = if (dense) adaptiveScale.sp(8.5.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(10.sp, min = 10.sp, max = 12.sp)
     // Keep group labels on a single line (no wrapping).
     val groupMaxLines = 1
-    val flowHGap = if (dense) 7.dp else 9.dp
-    val flowVGap = if (dense) 5.dp else 6.dp
-    val innerSectionGap = if (dense) 1.dp else 3.dp
+    val flowHGap = if (dense) adaptiveScale.dp(7.dp, min = 6.dp, max = 12.dp) else adaptiveScale.dp(9.dp, min = 8.dp, max = 14.dp)
+    val flowVGap = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 9.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
+    val innerSectionGap = if (dense) adaptiveScale.dp(1.dp, min = 1.dp, max = 3.dp) else adaptiveScale.dp(3.dp, min = 2.dp, max = 6.dp)
     // Сейчас общий левый отступ секции даёт 4.dp (внутренний padding карточки).
     // Чтобы визуально получить "в 3 раза больше" слева в первой колонке, добавляем ещё +8.dp.
-    val firstColumnExtraStartPadding = 8.dp
-    val afterFlagsGap = (SettingsScanTable.contentBelowHeaderSpacing * 3) / 2f
+    val firstColumnExtraStartPadding = adaptiveScale.dp(8.dp, min = 6.dp, max = 14.dp)
+    val afterFlagsGap = (settingsTokens.contentBelowHeaderSpacing * 3) / 2f
 
     val content: @Composable ColumnScope.() -> Unit = {
         Column(
@@ -187,7 +190,7 @@ fun SettingsBoxDetectFunctionsGrouped(
                 Text(
                     text = stringResource(Res.string.ScanSettings_DetectFunctions),
                     style = MaterialTheme.typography.labelLarge,
-                    fontSize = if (dense) 11.sp else 13.sp,
+                    fontSize = if (dense) adaptiveScale.sp(11.sp, min = 10.sp, max = 13.sp) else adaptiveScale.sp(13.sp, min = 12.sp, max = 15.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -202,7 +205,7 @@ fun SettingsBoxDetectFunctionsGrouped(
                     onCountrySelected = { selectedCountry = it },
                     modifier = Modifier.weight(1f),
                     dense = dense,
-                    horizontalSpacing = 4.dp,
+                    horizontalSpacing = adaptiveScale.dp(4.dp, min = 3.dp, max = 8.dp),
                     getCountryStats = { country ->
                         val countryAvailable = availableMatchers.filter { MatcherCountryMapping.getCountry(it) == country }
                         val total = countryAvailable.size
@@ -305,9 +308,9 @@ fun SettingsBoxDetectFunctionsGrouped(
                     .then(
                         if (errorHighlight) {
                             Modifier.border(
-                                width = 1.5.dp,
+                                width = adaptiveScale.dp(1.5.dp, min = 1.2.dp, max = 2.2.dp),
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(adaptiveScale.dp(10.dp, min = 8.dp, max = 14.dp))
                             )
                         } else {
                             Modifier
@@ -315,7 +318,7 @@ fun SettingsBoxDetectFunctionsGrouped(
                     ),
                 expandContentVertically = true,
                 titleTrailingInline = true,
-                titleTrailingInlineSpacing = SettingsScanTable.headerInlineActionSpacing,
+                titleTrailingInlineSpacing = settingsTokens.headerInlineActionSpacing,
                 titleTrailing = {
                     SettingsSelectAllTextButton(
                         allSelected = isAllSelected,
@@ -339,7 +342,7 @@ fun SettingsBoxDetectFunctionsGrouped(
                 modifier = modifier.fillMaxWidth().fillMaxHeight(),
                 expandContentVertically = true,
                 titleTrailingInline = true,
-                titleTrailingInlineSpacing = SettingsScanTable.headerInlineActionSpacing,
+                titleTrailingInlineSpacing = settingsTokens.headerInlineActionSpacing,
                 titleTrailing = {
                     SettingsSelectAllTextButton(
                         allSelected = isAllSelected,

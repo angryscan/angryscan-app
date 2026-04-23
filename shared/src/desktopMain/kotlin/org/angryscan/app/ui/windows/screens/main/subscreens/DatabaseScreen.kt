@@ -32,6 +32,7 @@ import org.angryscan.app.scan.common.connectors.*
 import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
+import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -303,15 +304,16 @@ fun DatabaseScreen(
     setSidebarContent { }
     setBottomBarContent {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val controlHeight = 68.dp
-            val controlShape = RoundedCornerShape(18.dp)
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlHeight = sourceTokens.controlHeight
+            val controlShape = RoundedCornerShape(sourceTokens.controlCorner)
             val scanButtonWidth = when {
-                maxWidth >= 1500.dp -> 240.dp
-                maxWidth < 1200.dp -> 220.dp
-                else -> 232.dp
-            } * 0.75f
-            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
-            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
 
             val startSqlScan: () -> Unit = startSqlScan@{
                 val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
@@ -429,9 +431,12 @@ fun DatabaseScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(
+                                horizontal = sourceTokens.inlinePaddingHorizontal,
+                                vertical = sourceTokens.inlinePaddingVertical
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
                     ) {
                         when (sqlScreenState.databaseType) {
                             DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse -> {
@@ -445,11 +450,11 @@ fun DatabaseScreen(
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
-                                    modifier = Modifier.weight(0.4f).heightIn(min = 40.dp),
+                                    modifier = Modifier.weight(0.4f).heightIn(min = sourceTokens.fieldMinHeight),
                                     placeholder = { Text("Host", style = MaterialTheme.typography.bodyMedium) },
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
                                     isError = DatabaseConnectionRequiredField.HOST in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = connectionFieldBorderColor,
@@ -469,11 +474,11 @@ fun DatabaseScreen(
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
-                                    modifier = Modifier.weight(0.2f).heightIn(min = 40.dp),
+                                    modifier = Modifier.weight(0.2f).heightIn(min = sourceTokens.fieldMinHeight),
                                     placeholder = { Text("Port", style = MaterialTheme.typography.bodyMedium) },
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
                                     isError = DatabaseConnectionRequiredField.PORT in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = connectionFieldBorderColor,
@@ -493,11 +498,11 @@ fun DatabaseScreen(
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
-                                    modifier = Modifier.weight(0.4f).heightIn(min = 40.dp),
+                                    modifier = Modifier.weight(0.4f).heightIn(min = sourceTokens.fieldMinHeight),
                                     placeholder = { Text("Database", style = MaterialTheme.typography.bodyMedium) },
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
                                     isError = DatabaseConnectionRequiredField.DATABASE in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = connectionFieldBorderColor,
@@ -519,11 +524,11 @@ fun DatabaseScreen(
                                         markSqlConnectionDirty()
                                         coroutineScope.launch { screenStateSettings.save() }
                                     },
-                                    modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                    modifier = Modifier.weight(1f).heightIn(min = sourceTokens.fieldMinHeight),
                                     placeholder = { Text("Path to .db file", style = MaterialTheme.typography.bodyMedium) },
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     singleLine = true,
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
                                     isError = DatabaseConnectionRequiredField.FILE_PATH in highlightedConnectionFields,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color.Transparent,
@@ -827,16 +832,17 @@ fun DatabaseScreen(
     // SQL connection params should appear under the source radio buttons (same UX as AWS S3).
     setUnderSourceContent {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
             val scanButtonWidth = when {
-                maxWidth >= 1500.dp -> 240.dp
-                maxWidth < 1200.dp -> 220.dp
-                else -> 232.dp
-            } * 0.75f
-            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
             val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
-            val inlineContentHorizontalPadding = 12.dp
-            val inlineControlsGap = 10.dp
+            val inlineContentHorizontalPadding = sourceTokens.inlinePaddingHorizontal
+            val inlineControlsGap = sourceTokens.inlineControlGap
             val compactSize = MaterialTheme.typography.bodySmall.fontSize
             val compactLineHeight = MaterialTheme.typography.bodySmall.lineHeight
             val fieldTextStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -863,10 +869,10 @@ fun DatabaseScreen(
                     isPassword -> PasswordVisualTransformation()
                     else -> visualTransformation
                 }
-                val shape = RoundedCornerShape(10.dp)
+                val shape = RoundedCornerShape(sourceTokens.compactFieldCorner)
                 Surface(
                     modifier = modifier
-                        .height(32.dp)
+                        .height(sourceTokens.compactFieldHeight)
                         .border(
                             width = 1.dp,
                             color = if (isError) {
@@ -883,7 +889,10 @@ fun DatabaseScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(
+                                horizontal = sourceTokens.inlineControlGap,
+                                vertical = sourceTokens.inlinePaddingVertical - 2.dp
+                            ),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (value.isBlank()) {
@@ -902,20 +911,20 @@ fun DatabaseScreen(
                             visualTransformation = effectiveVisualTransformation,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(end = if (isPassword) 24.dp else 0.dp)
+                                .padding(end = if (isPassword) sourceTokens.iconSize + 2.dp else 0.dp)
                         )
                         if (isPassword) {
                             IconButton(
                                 onClick = { passwordVisible = !passwordVisible },
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
-                                    .size(20.dp)
+                                    .size(sourceTokens.iconSize - 2.dp)
                             ) {
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                     contentDescription = if (passwordVisible) "Hide password" else "Show password",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(sourceTokens.iconSize - 8.dp)
                                 )
                             }
                         }
@@ -929,15 +938,15 @@ fun DatabaseScreen(
                 showAddConnection: Boolean
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         enabled = canTest && !sqlConnectionTestInProgress,
                         onClick = { testCurrentSqlConnection() },
-                        modifier = Modifier.height(32.dp),
+                        modifier = Modifier.height(sourceTokens.compactFieldHeight),
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
                         colors = startScanButtonColors()
                     ) {
                         Text(
@@ -953,9 +962,9 @@ fun DatabaseScreen(
                                 pendingConnectionNameError = false
                                 pendingConnectionNameDialog = true
                             },
-                            modifier = Modifier.height(32.dp),
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
                             border = BorderStroke(
                                 width = 1.dp,
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
@@ -984,7 +993,7 @@ fun DatabaseScreen(
                 val cs = MaterialTheme.colorScheme
                 val interaction = remember { MutableInteractionSource() }
                 val hovered by interaction.collectIsHoveredAsState()
-                val shape = RoundedCornerShape(10.dp)
+                val shape = RoundedCornerShape(sourceTokens.compactFieldCorner)
 
                 val fill = when {
                     selected && hovered -> cs.primary.copy(alpha = 0.24f)
@@ -1003,7 +1012,7 @@ fun DatabaseScreen(
 
                 Surface(
                     modifier = Modifier
-                        .height(32.dp)
+                        .height(sourceTokens.compactFieldHeight)
                         .clip(shape)
                         .clickable(
                             interactionSource = interaction,
@@ -1020,14 +1029,14 @@ fun DatabaseScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        .padding(horizontal = sourceTokens.controlGapCompact),
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             painter = painterResource(iconRes),
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(sourceTokens.iconSize - 6.dp),
                             tint = Color.Unspecified
                         )
                         Text(
@@ -1093,9 +1102,9 @@ fun DatabaseScreen(
                         TextButton(
                             onClick = { savedConnectionsExpanded = true },
                             enabled = savedForCurrentType.isNotEmpty(),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.height(32.dp)
+                    contentPadding = PaddingValues(horizontal = sourceTokens.controlGapCompact, vertical = 2.dp),
+                    shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
+                    modifier = Modifier.height(sourceTokens.compactFieldHeight)
                         ) {
                             Text(
                                 text = stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
@@ -1108,7 +1117,7 @@ fun DatabaseScreen(
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(sourceTokens.compactFieldHeight))
                     }
                 }
 

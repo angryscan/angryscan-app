@@ -24,6 +24,7 @@ import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorHTTP
 import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
+import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -145,15 +146,16 @@ fun HTTPScreen(
     setUnderSourceContent { }
     setBottomBarContent {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val controlHeight = 68.dp
-            val controlShape = RoundedCornerShape(18.dp)
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlHeight = sourceTokens.controlHeight
+            val controlShape = RoundedCornerShape(sourceTokens.controlCorner)
             val scanButtonWidth = when {
-                maxWidth >= 1500.dp -> 240.dp
-                maxWidth < 1200.dp -> 220.dp
-                else -> 232.dp
-            } * 0.75f
-            val controlGap = if (maxWidth < 1200.dp) 8.dp else 12.dp
-            val pathMinWidth = if (maxWidth < 1200.dp) 460.dp else 500.dp
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -179,9 +181,12 @@ fun HTTPScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(
+                            horizontal = sourceTokens.inlinePaddingHorizontal,
+                            vertical = sourceTokens.inlinePaddingVertical
+                        ),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
             ) {
                     OutlinedTextField(
                         value = path,
@@ -192,7 +197,7 @@ fun HTTPScreen(
                                 .joinToString(";")
                             saveScreenState()
                         },
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = sourceTokens.fieldMinHeight),
                         placeholder = {
                             Text(
                                 text = stringResource(Res.string.MainScreen_Placeholder_HTTP),
@@ -202,7 +207,7 @@ fun HTTPScreen(
                         },
                         textStyle = MaterialTheme.typography.bodyMedium,
                         singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
                         isError = selectPathError,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,

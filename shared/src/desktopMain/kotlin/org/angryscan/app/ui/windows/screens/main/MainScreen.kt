@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
@@ -148,21 +149,6 @@ fun MainScreen(
             databaseContourContainerBounds = null
         }
     }
-    val centralPanelTopPadding = when {
-        // When scan settings are open we don't show extra under-radio rows (incl. S3 params),
-        // so the panel can start right under the radios for all sources.
-        settingsPanelOpened ->
-            MainScanSettingsPanelTopBelowRadios - MainCentralPanelTopLiftFromHeaderTightening
-        else ->
-            MainCentralPanelTopInset + MainPathBlockToRadioRowSpacing - MainCentralPanelTopLiftFromHeaderTightening
-    }
-    val topActionBlockMaxWidth = MainLatestScansBlockMaxWidth + (MainContentInnerPaddingH * 2)
-    val centralPanelMaxWidth = if (settingsPanelOpened) {
-        topActionBlockMaxWidth
-    } else {
-        MainLatestScansBlockMaxWidth
-    }
-
     fun applyDetectionSettings(
         extensionsTarget: MutableList<IFileType>,
         matchersTarget: MutableList<IMatcher>,
@@ -346,7 +332,40 @@ fun MainScreen(
         TaskReplayHelper.clear()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val adaptiveTokens = rememberMainScreenAdaptiveTokens(maxWidth, maxHeight)
+        val adaptiveScale = adaptiveTokens.scale
+        val verticalScale = adaptiveTokens.verticalScale
+        val mainCentralPanelTopInset = adaptiveScale.dp(MainCentralPanelTopInset, min = 186.dp, max = 272.dp)
+        val mainPathBlockToRadioRowSpacing = adaptiveScale.dp(MainPathBlockToRadioRowSpacing, min = 0.dp, max = 8.dp)
+        val mainCentralPanelTopLift = adaptiveScale.dp(MainCentralPanelTopLiftFromHeaderTightening, min = 16.dp, max = 30.dp)
+        val mainScanSettingsPanelTopBelowRadios = adaptiveScale.dp(MainScanSettingsPanelTopBelowRadios, min = 154.dp, max = 230.dp)
+        val mainLatestScansBlockMaxWidth = adaptiveScale.dp(MainLatestScansBlockMaxWidth, min = 1160.dp, max = 1620.dp)
+        val mainContentOuterPaddingH = adaptiveScale.dp(MainContentOuterPaddingH, min = 20.dp, max = 36.dp)
+        val mainContentInnerPaddingH = adaptiveScale.dp(MainContentInnerPaddingH, min = 16.dp, max = 28.dp)
+        val contourStrokeWidth = adaptiveScale.dp(1.dp, min = 1.dp, max = 1.4.dp)
+        val contourTopCompensation = adaptiveScale.dp(1.dp, min = 1.dp, max = 1.8.dp)
+        val contourBranchDrop = adaptiveScale.dp(2.dp, min = 1.5.dp, max = 3.2.dp)
+        val contourRightOpticalCompensation = adaptiveScale.dp(2.dp, min = 1.dp, max = 3.dp)
+        val contourCornerRadius = adaptiveScale.dp(10.dp, min = 9.dp, max = 14.dp)
+        val radioRowStartPadding = adaptiveScale.dp(12.dp, min = 10.dp, max = 20.dp)
+        val sourceRowGap = adaptiveScale.dp(4.dp, min = 3.dp, max = 8.dp)
+
+        val centralPanelTopPadding = when {
+            settingsPanelOpened ->
+                mainScanSettingsPanelTopBelowRadios - mainCentralPanelTopLift
+            else ->
+                mainCentralPanelTopInset + mainPathBlockToRadioRowSpacing - mainCentralPanelTopLift
+        }
+        val topActionBlockMaxWidth = mainLatestScansBlockMaxWidth + (mainContentInnerPaddingH * 2)
+        val centralPanelMaxWidth = if (settingsPanelOpened) {
+            topActionBlockMaxWidth
+        } else {
+            mainLatestScansBlockMaxWidth
+        }
+
+        CompositionLocalProvider(LocalMainScreenAdaptiveTokens provides adaptiveTokens) {
+        Box(modifier = Modifier.fillMaxSize()) {
         // Tap outside interactive controls clears path field / any focused editor (children are above this layer).
         Box(
             Modifier
@@ -360,15 +379,18 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = MainContentOuterPaddingH)
+                .padding(horizontal = mainContentOuterPaddingH)
         ) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 18.dp)
+                    .padding(top = adaptiveScale.dp(18.dp, min = 16.dp, max = 28.dp))
                     .widthIn(max = topActionBlockMaxWidth)
                     .fillMaxWidth()
-                    .padding(horizontal = MainContentInnerPaddingH, vertical = 12.dp)
+                    .padding(
+                        horizontal = mainContentInnerPaddingH,
+                        vertical = adaptiveScale.dp(12.dp, min = 10.dp, max = 18.dp)
+                    )
             ) {
                 Box(
                     modifier = Modifier
@@ -408,19 +430,19 @@ fun MainScreen(
                                     right = underRootBounds.right - containerBounds.left,
                                     bottom = underRootBounds.bottom - containerBounds.top
                                 )
-                                val strokeWidth = 1.dp.toPx()
+                                val strokeWidth = contourStrokeWidth.toPx()
                                 val half = strokeWidth / 2f
-                                val radioTopY = radioBounds.top + 1.dp.toPx() + half
+                                val radioTopY = radioBounds.top + contourTopCompensation.toPx() + half
                                 val minBranchY = radioBounds.bottom - half
                                 val maxBranchY = (underBounds.top - half).coerceAtLeast(minBranchY)
-                                val branchY = (radioBounds.bottom + 2.dp.toPx()).coerceIn(minBranchY, maxBranchY)
+                                val branchY = (radioBounds.bottom + contourBranchDrop.toPx()).coerceIn(minBranchY, maxBranchY)
                                 val bridgeInset = 0.dp.toPx()
                                 val radioCenterX = (radioBounds.left + radioBounds.right) / 2f
                                 val branchHalfWidth = (radioBounds.width / 2f) + bridgeInset
                                 val branchLeft = radioCenterX - branchHalfWidth
-                                val rightOpticalCompensation = 2.dp.toPx()
+                                val rightOpticalCompensation = contourRightOpticalCompensation.toPx()
                                 val branchRight = radioCenterX + branchHalfWidth + rightOpticalCompensation
-                                val cornerRadius = 10.dp.toPx()
+                                val cornerRadius = contourCornerRadius.toPx()
                                 val path = Path().apply {
                                     moveTo(branchLeft + half, radioTopY)
                                     lineTo(branchRight - half, radioTopY)
@@ -448,12 +470,12 @@ fun MainScreen(
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.spacedBy(adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp))
                     ) {
                         bottomBarContent()
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(MainPathBlockToRadioRowSpacing),
+                            verticalArrangement = Arrangement.spacedBy(mainPathBlockToRadioRowSpacing),
                             horizontalAlignment = Alignment.Start,
                         ) {
                             SourceRadioRow(
@@ -478,9 +500,10 @@ fun MainScreen(
                                 highlightColor = databaseContourColor,
                                 onS3ItemBoundsChanged = { s3RadioBounds = it },
                                 onDatabaseItemBoundsChanged = { databaseRadioBounds = it },
+                                sourceGap = sourceRowGap,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 12.dp)
+                                    .padding(start = radioRowStartPadding)
                             )
                         }
                         if (!settingsPanelOpened) {
@@ -495,7 +518,12 @@ fun MainScreen(
                                                 s3UnderBounds = coordinates.boundsInRoot()
                                             }
                                         }
-                                        .padding(start = 1.dp, end = 1.dp, top = 1.dp, bottom = 3.dp)
+                                        .padding(
+                                            start = adaptiveScale.dp(1.dp, min = 1.dp, max = 2.dp),
+                                            end = adaptiveScale.dp(1.dp, min = 1.dp, max = 2.dp),
+                                            top = adaptiveScale.dp(1.dp, min = 1.dp, max = 2.dp),
+                                            bottom = adaptiveScale.dp(3.dp, min = 2.dp, max = 5.dp)
+                                        )
                                 } else {
                                     Modifier.fillMaxWidth()
                                 }
@@ -513,10 +541,10 @@ fun MainScreen(
                 Modifier
                     .align(Alignment.TopCenter)
                     .padding(
-                        start = MainContentOuterPaddingH,
-                        end = MainContentOuterPaddingH,
+                        start = mainContentOuterPaddingH,
+                        end = mainContentOuterPaddingH,
                         top = centralPanelTopPadding,
-                        bottom = 8.dp
+                        bottom = adaptiveScale.dp(8.dp, min = 6.dp, max = 14.dp)
                     )
                     .widthIn(max = centralPanelMaxWidth)
                     .fillMaxWidth()
@@ -525,23 +553,23 @@ fun MainScreen(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
-                        start = MainContentOuterPaddingH,
-                        end = MainContentOuterPaddingH,
-                        bottom = 12.dp
+                        start = mainContentOuterPaddingH,
+                        end = mainContentOuterPaddingH,
+                        bottom = verticalScale.dp(12.dp, min = 10.dp, max = 18.dp)
                     )
                     .widthIn(max = centralPanelMaxWidth)
                     .fillMaxWidth()
                     .border(
-                        width = 1.dp,
+                        width = contourStrokeWidth,
                         color = colorScheme.outlineVariant.copy(alpha = 0.62f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(adaptiveScale.dp(16.dp, min = 14.dp, max = 24.dp))
                     )
                     .wrapContentHeight()
             }).clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { focusManager.clearFocus() },
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(adaptiveScale.dp(16.dp, min = 14.dp, max = 24.dp)),
             color = if (settingsPanelOpened) Color.Transparent else colorScheme.surfaceVariant.copy(alpha = 0.28f),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp
@@ -551,11 +579,17 @@ fun MainScreen(
                 modifier = if (settingsPanelOpened) {
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = MainContentInnerPaddingH, vertical = 8.dp)
+                        .padding(
+                            horizontal = mainContentInnerPaddingH,
+                            vertical = adaptiveScale.dp(8.dp, min = 6.dp, max = 14.dp)
+                        )
                 } else {
                     Modifier
                         .wrapContentHeight()
-                        .padding(horizontal = MainContentInnerPaddingH, vertical = 8.dp)
+                        .padding(
+                            horizontal = mainContentInnerPaddingH,
+                            vertical = verticalScale.dp(8.dp, min = 6.dp, max = 12.dp)
+                        )
                 }
             ) {
                 if (settingsPanelOpened) {
@@ -576,10 +610,9 @@ fun MainScreen(
         }
 
         // Source selection moved under the path block (radio row).
-    }
 
-    // Keep subscreen-specific state and bottom bar logic active.
-    Box(modifier = Modifier.size(0.dp)) {
+        // Keep subscreen-specific state and bottom bar logic active.
+        Box(modifier = Modifier.size(0.dp)) {
         val initialConnector = remember(screenStateSettings.mainScreenSource) {
             storageValueToConnector(screenStateSettings.mainScreenSource)
         }
@@ -695,7 +728,10 @@ fun MainScreen(
                 )
             }
         }
+        }
     }
+}
+}
 }
 
 @Composable
@@ -706,6 +742,7 @@ private fun SourceRadioRow(
     highlightColor: Color,
     onS3ItemBoundsChanged: (androidx.compose.ui.geometry.Rect?) -> Unit = {},
     onDatabaseItemBoundsChanged: (androidx.compose.ui.geometry.Rect?) -> Unit = {},
+    sourceGap: Dp = 4.dp,
     modifier: Modifier = Modifier,
     onSelectedLabelClick: () -> Unit,
     onSourceSwitch: (String) -> Unit,
@@ -722,7 +759,7 @@ private fun SourceRadioRow(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(sourceGap),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SourceRadioItem(
@@ -903,6 +940,8 @@ private fun RecentScansPreview(
     onTaskClick: (Int) -> Unit,
     onViewAllClick: () -> Unit,
 ) {
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val verticalScale = LocalMainScreenAdaptiveTokens.current.verticalScale
     val allTasks by scanService.tasks.tasks.collectAsState()
     var statusFilter by remember { mutableStateOf(StatusFilter.ALL) }
     val coroutineScope = rememberCoroutineScope()
@@ -933,7 +972,7 @@ private fun RecentScansPreview(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 0.dp, vertical = 0.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(verticalScale.dp(8.dp, min = 6.dp, max = 12.dp))
     ) {
         Text(
             text = stringResource(Res.string.MainScreen_RecentScans_Title),
@@ -966,12 +1005,12 @@ private fun RecentScansPreview(
                 ),
                 onStatusFilterChange = { statusFilter = it }
             )
-            val recentScansListHeight = 280.dp
+            val recentScansListHeight = verticalScale.dp(280.dp, min = 260.dp, max = 360.dp)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = recentScansListHeight),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(verticalScale.dp(6.dp, min = 5.dp, max = 9.dp))
             ) {
                 items(filteredTasks, key = { it.id.value ?: it.hashCode() }) { task ->
                     ScanTaskCard(
@@ -1001,7 +1040,10 @@ private fun RecentScansPreview(
             }
             TextButton(
                 onClick = onViewAllClick,
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                contentPadding = PaddingValues(
+                    horizontal = adaptiveScale.dp(10.dp, min = 8.dp, max = 16.dp),
+                    vertical = verticalScale.dp(4.dp, min = 3.dp, max = 6.dp)
+                )
             ) {
                 Text(
                     text = stringResource(Res.string.MainScreen_RecentScans_ViewFullHistory),
