@@ -9,9 +9,10 @@ import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
 import org.angryscan.app.scan.common.files.types.*
-import org.angryscan.app.scan.engine.fallback
-import org.angryscan.app.scan.engine.getEngine
-import org.angryscan.app.scan.engine.inappropriateMatchers
+import org.angryscan.app.scan.engine.EngineChainCache
+import org.angryscan.app.scan.engine.EngineChainKey
+import org.angryscan.app.scan.engine.buildEngineChain
+import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 private val logger = KotlinLogging.logger {}
@@ -42,13 +44,17 @@ class ScanThread : KoinComponent {
 
     private var retryCount = 0
 
+    private val engineCache = EngineChainCache()
+
+    private val taskMetadataCache = mutableMapOf<Int, TaskMetadata>()
+
     suspend fun stop() {
         logger.debug { "Stop requested for scan thread [$scanThreadScope]." }
         stopRequested.set(true)
 
         scanThreadScope.launch {
             while (_started.get())
-                delay(1000)
+                delay(1000.milliseconds)
             logger.debug { "Scan thread [$scanThreadScope] stopped by request." }
         }.join()
     }
@@ -59,180 +65,192 @@ class ScanThread : KoinComponent {
         _started.set(true)
         scanThreadScope.launch {
             val scanSettings = inject<ScanSettings>()
-            while (_started.get() && !stopRequested.get()) {
-                yield()
-                val tasksToScan = tasks.tasks.value.filter { it.state.value == TaskState.SCANNING }
-                if (tasksToScan.isEmpty()) {
-                    retryCount++
-                    if (retryCount > 3) {
-                        _started.set(false)
-                        retryCount = 0
-                        logger.debug { "Nothing to scan. Scan thread [$scanThreadScope] stopped." }
-                    }
-                    delay(1000)
-                    continue
-                }
-
-                retryCount = 0
-
-                val taskEntity = tasks.tasks.value.filter { it.state.value == TaskState.SCANNING }.random()
-
-                val dbFile = database.transaction {
-                    val resultRow = TaskFiles.selectAll()
-                        .where {
-                            TaskFiles.task.eq(taskEntity.dbTask.id) and
-                                    TaskFiles.state.eq(TaskState.SEARCHING)
+            try {
+                while (_started.get() && !stopRequested.get()) {
+                    yield()
+                    val tasksToScan = tasks.tasks.value.filter { it.state.value == TaskState.SCANNING }
+                    if (tasksToScan.isEmpty()) {
+                        retryCount++
+                        if (retryCount > 3) {
+                            retryCount = 0
+                            logger.debug { "Nothing to scan. Scan thread [$scanThreadScope] stopped." }
+                            break
                         }
-                        .limit(1)
-                        .firstOrNull()
-                    if (resultRow != null) {
-                        TaskFiles.update(
-                            where = {
-                                TaskFiles.id.eq(resultRow[TaskFiles.id])
-                            }
-                        ) {
-                            it[state] = TaskState.SCANNING
+                        engineCache.evictStale()
+                        delay(1000.milliseconds)
+                        continue
+                    }
+
+                    retryCount = 0
+
+                    val taskEntity = tasksToScan.random()
+                    val taskId = taskEntity.dbTask.id.value
+
+                    val cachedMeta = taskMetadataCache[taskId]
+
+                    val (dbFile, freshMeta) = claimFileAndFetchMetadata(taskEntity, cachedMeta)
+
+                    if (freshMeta != null) {
+                        taskMetadataCache[taskId] = freshMeta
+                    }
+
+                    if (dbFile == null) {
+                        scanningFileId.set(-1)
+                        retryCount++
+                        if (retryCount > 3) {
+                            retryCount = 0
+                            break
                         }
+                        delay(1000.milliseconds)
+                        continue
                     }
 
-                    resultRow
-                }
+                    val meta = taskMetadataCache[taskId]!!
+                    val fileId = dbFile[TaskFiles.id].value
+                    val filePath = dbFile[TaskFiles.path]
+                    val fileObject = taskEntity.dbTask.connector.getFile(filePath)
 
-                if (dbFile == null) {
-                    scanningFileId.set(-1)
+                    val fileTypes = IFileType
+                        .getFileType(fileObject)
+                        .filter { ft -> ft in meta.extensions }
 
-                    retryCount++
-                    if (retryCount > 3) {
-                        _started.set(false)
-                        retryCount = 0
+                    val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
+
+                    val primaryEngineClass = scanSettings.value.engine.value
+                    val key = EngineChainKey.of(primaryEngineClass, meta.matchers.keys.toList(), requireKeywords)
+                    val engines = engineCache.getOrCreate(key) {
+                        buildEngineChain(primaryEngineClass, meta.matchers.keys.toList(), requireKeywords)
                     }
-                    delay(1000)
-                    continue
+
+                    scanningFileId.set(fileId)
+
+                    val timer = measureTimeMillis {
+                        scanFile(fileObject, fileId, fileTypes, engines, meta, taskEntity)
+                    }
+                    logger.debug { "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms" }
+
+                    taskEntity.checkProgress()
+                    evictStaleTasks()
+                    yield()
                 }
+            } finally {
+                engineCache.closeAll()
+                taskMetadataCache.clear()
+                _started.set(false)
+                stopRequested.set(false)
+            }
+        }
+    }
 
-                val fastScan = database.transaction { taskEntity.dbTask.fastScan }
+    @OptIn(ExperimentalTime::class)
+    private suspend fun claimFileAndFetchMetadata(
+        taskEntity: TaskEntityViewModel,
+        cachedMeta: TaskMetadata?
+    ): Pair<org.jetbrains.exposed.sql.ResultRow?, TaskMetadata?> {
+        return database.transaction {
+            val resultRow = TaskFiles.selectAll()
+                .where {
+                    TaskFiles.task.eq(taskEntity.dbTask.id) and
+                            TaskFiles.state.eq(TaskState.SEARCHING)
+                }
+                .limit(1)
+                .firstOrNull()
 
-                val fileId = dbFile[TaskFiles.id].value
-                val filePath = dbFile[TaskFiles.path]
-                val fileObject = taskEntity.dbTask.connector.getFile(filePath)
+            if (resultRow != null) {
+                TaskFiles.update(
+                    where = { TaskFiles.id.eq(resultRow[TaskFiles.id]) }
+                ) {
+                    it[state] = TaskState.SCANNING
+                }
+                taskEntity.dbTask.lastFileDate =
+                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+            }
 
-                val matchers = database.transaction {
-                    taskEntity.dbTask.lastFileDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-
-                    TaskMatchers
+            val meta = if (cachedMeta == null) {
+                TaskMetadata(
+                    fastScan = taskEntity.dbTask.fastScan,
+                    matchers = TaskMatchers
                         .select(TaskMatchers.matcher, TaskMatchers.id)
                         .where { TaskMatchers.task.eq(taskEntity.dbTask.id) }
-                        .associate { it[TaskMatchers.matcher] to it[TaskMatchers.id].value }
-                }
-                val extensions = database.transaction {
-                    TaskFileExtensions
+                        .associate { it[TaskMatchers.matcher] to it[TaskMatchers.id].value },
+                    extensions = TaskFileExtensions
                         .select(TaskFileExtensions.extension)
                         .where { TaskFileExtensions.task.eq(taskEntity.dbTask.id) }
                         .map { it[TaskFileExtensions.extension] }
-                }
+                )
+            } else null
 
-                // Determine file types early to decide on requireKeywords
-                val fileTypes = IFileType
-                    .getFileType(fileObject)
-                    .filter { ft ->
-                        ft in extensions
-                    }
-
-                // Check if file requires requireKeywords = false
-                val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
-
-                val engines: MutableList<IScanEngine> = mutableListOf()
-                scanSettings.value.engine.value
-                    .getEngine(matchers.map { it.key }, requireKeywords = requireKeywords)
-                    .let {
-                        if (it.matchers.isNotEmpty())
-                            engines.add(it)
-                    }
-                val iMatchers = if (engines.isNotEmpty())
-                    engines[0].inappropriateMatchers(matchers.map { it.key }).toMutableList()
-                else
-                    matchers.map { it.key }.toMutableList()
-
-                if (iMatchers.isNotEmpty()) {
-                    var fbe = scanSettings.value.engine.value.fallback()
-                    do {
-                        val e = fbe
-                            .getEngine(iMatchers, requireKeywords = requireKeywords)
-                        if (e.matchers.isNotEmpty()) {
-                            engines.add(e)
-                            iMatchers.removeAll(e.matchers)
-                        }
-                        fbe = e.fallback()
-                    } while (iMatchers.isNotEmpty() || fbe::class == scanSettings.value.engine.value)
-                }
-
-
-                scanningFileId.set(fileId)
-
-                val timer = measureTimeMillis {
-                    val scanResults = fileTypes.map { ft ->
-                        ft.scanFile(
-                            file = fileObject,
-                            context = currentCoroutineContext(),
-                            engines = engines,
-                            fastScan = fastScan,
-                            selectedExtensions = extensions
-                        )
-                    }
-
-                    engines.forEach { eng ->
-                        eng.close()
-                    }
-
-                    val scanRes = scanResults.firstOrNull()
-                    if (scanRes != null) {
-                        scanResults.drop(1).forEach {
-                            scanRes.plus(it.getDocumentFields())
-                        }
-                    }
-
-
-                    if (scanRes != null && !scanRes.skipped()) {
-                        database.transaction {
-                            scanRes.getDocumentFields().forEach { field ->
-                                TaskFileScanResults.insert {
-                                    it[file] = fileId
-                                    it[matcher] = matchers[field.key] ?: 0
-                                    it[count] = field.value
-                                }
-                                taskEntity.addFoundAttribute(field.key, field.value)
-                            }
-                            if (!scanRes.isEmpty()) {
-                                taskEntity.incrementFoundFiles()
-                            }
-                            TaskFiles.update(
-                                where = {
-                                    TaskFiles.id.eq(fileId)
-                                }
-                            ) {
-                                it[state] = TaskState.COMPLETED
-                            }
-                        }
-                    } else {
-                        database.transaction {
-                            TaskFiles.update(
-                                where = {
-                                    TaskFiles.id.eq(fileId)
-                                }
-                            ) {
-                                it[state] = TaskState.FAILED
-                            }
-                        }
-                    }
-                }
-                logger.debug { "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms" }
-
-                taskEntity.checkProgress()
-                yield()
-            }
-
-            _started.set(false)
-            stopRequested.set(false)
+            resultRow to meta
         }
     }
+
+    private suspend fun scanFile(
+        fileObject: java.io.File,
+        fileId: Int,
+        fileTypes: List<IFileType>,
+        engines: List<IScanEngine>,
+        meta: TaskMetadata,
+        taskEntity: TaskEntityViewModel
+    ) {
+        val scanResults = fileTypes.map { ft ->
+            ft.scanFile(
+                file = fileObject,
+                context = currentCoroutineContext(),
+                engines = engines,
+                fastScan = meta.fastScan,
+                selectedExtensions = meta.extensions
+            )
+        }
+
+        val scanRes = scanResults.firstOrNull()
+        if (scanRes != null) {
+            scanResults.drop(1).forEach {
+                scanRes.plus(it.getDocumentFields())
+            }
+        }
+
+        if (scanRes != null && !scanRes.skipped()) {
+            database.transaction {
+                scanRes.getDocumentFields().forEach { field ->
+                    TaskFileScanResults.insert {
+                        it[file] = fileId
+                        it[matcher] = meta.matchers[field.key] ?: 0
+                        it[count] = field.value
+                    }
+                    taskEntity.addFoundAttribute(field.key, field.value)
+                }
+                if (!scanRes.isEmpty()) {
+                    taskEntity.incrementFoundFiles()
+                }
+                TaskFiles.update(
+                    where = { TaskFiles.id.eq(fileId) }
+                ) {
+                    it[state] = TaskState.COMPLETED
+                }
+            }
+        } else {
+            database.transaction {
+                TaskFiles.update(
+                    where = { TaskFiles.id.eq(fileId) }
+                ) {
+                    it[state] = TaskState.FAILED
+                }
+            }
+        }
+    }
+
+    /** Remove cached metadata for tasks no longer in SCANNING state. */
+    private fun evictStaleTasks() {
+        val activeTaskIds = tasks.tasks.value
+            .filter { it.state.value == TaskState.SCANNING }
+            .map { it.dbTask.id.value }
+            .toSet()
+        taskMetadataCache.keys.removeAll { it !in activeTaskIds }
+    }
 }
+
+private data class TaskMetadata(
+    val fastScan: Boolean,
+    val matchers: Map<IMatcher, Int>,
+    val extensions: List<IFileType>
+)
