@@ -846,7 +846,8 @@ fun DatabaseScreen(
                 else -> sourceTokens.scanButtonWidthRegular
             }
             val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
-            val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
+            val availableWidth = maxWidth
+            val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth + sourceTokens.controlGapRegular
             val inlineContentHorizontalPadding = sourceTokens.inlinePaddingHorizontal
             val inlineControlsGap = sourceTokens.inlineControlGap
             val compactSize = MaterialTheme.typography.bodySmall.fontSize
@@ -994,7 +995,8 @@ fun DatabaseScreen(
                 dbType: DatabaseType,
                 iconRes: org.jetbrains.compose.resources.DrawableResource,
                 selected: Boolean,
-                onClick: () -> Unit
+                onClick: () -> Unit,
+                modifier: Modifier = Modifier
             ) {
                 val cs = MaterialTheme.colorScheme
                 val interaction = remember { MutableInteractionSource() }
@@ -1017,7 +1019,7 @@ fun DatabaseScreen(
                 }
 
                 Surface(
-                    modifier = Modifier
+                    modifier = modifier
                         .height(sourceTokens.compactFieldHeight)
                         .clip(shape)
                         .clickable(
@@ -1034,9 +1036,12 @@ fun DatabaseScreen(
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxHeight()
-                        .padding(horizontal = sourceTokens.controlGapCompact),
-                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
+                            .fillMaxSize()
+                            .padding(horizontal = sourceTokens.controlGapCompact),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            sourceTokens.controlGapCompact,
+                            Alignment.CenterHorizontally
+                        ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -1048,7 +1053,9 @@ fun DatabaseScreen(
                         Text(
                             text = dbType.typePickerLabel(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = labelColor
+                            color = labelColor,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -1061,21 +1068,30 @@ fun DatabaseScreen(
                     .padding(vertical = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // DB type chips (minimal)
+                fun chipWeight(dbType: DatabaseType): Float {
+                    val labelLen = dbType.typePickerLabel().length.toFloat()
+                    // Icon + paddings baseline + proportional text length.
+                    return (6f + labelLen).coerceAtLeast(8f)
+                }
+
+                val chipTypes = DatabaseType.entries
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = inlineContentHorizontalPadding),
-                    horizontalArrangement = Arrangement.spacedBy(inlineControlsGap),
+                    horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DatabaseType.entries.forEach { dbType ->
+                    chipTypes.forEach { dbType ->
                         val selected = sqlScreenState.databaseType == dbType
                         val iconRes = dbType.drawableResource()
                         DatabaseTypeChip(
                             dbType = dbType,
                             iconRes = iconRes,
                             selected = selected,
+                            modifier = Modifier
+                                // Distribute width by label length; avoid hard mins that clip tail chips.
+                                .weight(chipWeight(dbType)),
                             onClick = {
                                 val defaultPort = when (dbType) {
                                     DatabaseType.PostgreSQL -> "5432"
@@ -1096,28 +1112,6 @@ fun DatabaseScreen(
                                 coroutineScope.launch { screenStateSettings.save() }
                             }
                         )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (sqlScreenState.databaseType != DatabaseType.SQLite) {
-                        TextButton(
-                            onClick = { savedConnectionsExpanded = true },
-                            enabled = savedForCurrentType.isNotEmpty(),
-                    contentPadding = PaddingValues(horizontal = sourceTokens.controlGapCompact, vertical = 2.dp),
-                    shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
-                    modifier = Modifier.height(sourceTokens.compactFieldHeight)
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (savedForCurrentType.isNotEmpty()) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
-                                }
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.height(sourceTokens.compactFieldHeight))
                     }
                 }
 
@@ -1192,25 +1186,50 @@ fun DatabaseScreen(
                     }
                 }
 
-                Box(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(18.dp)
+                        .height(sourceTokens.compactFieldHeight)
                         .padding(horizontal = inlineContentHorizontalPadding),
-                    contentAlignment = Alignment.CenterStart
+                    horizontalArrangement = Arrangement.spacedBy(inlineControlsGap),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    sqlConnectionTestMessage?.let { message ->
-                        val color = if (sqlConnectionTestSuccessful)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.error
-                        Text(
-                            text = message,
-                            color = color,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        sqlConnectionTestMessage?.let { message ->
+                            val color = if (sqlConnectionTestSuccessful)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.error
+                            Text(
+                                text = message,
+                                color = color,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    if (sqlScreenState.databaseType != DatabaseType.SQLite) {
+                        TextButton(
+                            onClick = { savedConnectionsExpanded = true },
+                            enabled = savedForCurrentType.isNotEmpty(),
+                            contentPadding = PaddingValues(horizontal = sourceTokens.controlGapCompact, vertical = 2.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight)
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.MainScreen_SavedConnections, savedForCurrentType.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (savedForCurrentType.isNotEmpty()) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                                }
+                            )
+                        }
                     }
                 }
             }
