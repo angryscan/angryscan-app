@@ -61,6 +61,8 @@ sql-sqlite = { module = "io.github.willena:sqlite-jdbc", version = "3.49.1.0" }
 sql-postgresql = { module = "org.postgresql:postgresql", version = "42.7.5" }
 sql-mysql = { module = "com.mysql:mysql-connector-j", version = "9.1.0" }
 sql-clickhouse = { module = "com.clickhouse:clickhouse-jdbc", version = "0.9.8" }
+sql-redshift = { module = "com.amazon.redshift:redshift-jdbc42", version = "2.2.5" }
+sql-mssql = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "12.10.0.jre11" }
 sql-flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }

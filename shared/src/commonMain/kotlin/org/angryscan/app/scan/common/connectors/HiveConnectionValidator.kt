@@ -32,7 +32,7 @@ internal object HiveConnectionValidator {
         } catch (e: Exception) {
             DatabaseConnectionError(
                 field = DatabaseConnectionErrorField.HOST,
-                message = e.message ?: "Connection failed"
+                message = sanitizedConnectionErrorMessage(DatabaseConnectionErrorField.HOST)
             )
         }
     }
@@ -55,6 +55,9 @@ internal object HiveConnectionValidator {
             else ->
                 DatabaseConnectionErrorField.HOST
         }
-        return DatabaseConnectionError(field = field, message = e.message ?: "Connection failed")
+        return DatabaseConnectionError(
+            field = field,
+            message = sanitizedConnectionErrorMessage(field)
+        )
     }
 }

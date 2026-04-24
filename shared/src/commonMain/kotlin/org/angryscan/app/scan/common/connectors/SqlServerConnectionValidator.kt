@@ -2,15 +2,12 @@ package org.angryscan.app.scan.common.connectors
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.sql.DriverManager
 import java.sql.SQLException
 
 /**
- * Validates CockroachDB connection parameters before creating a scan task.
- * CockroachDB uses the PostgreSQL wire protocol, so the PostgreSQL JDBC driver is reused.
- * Returns [DatabaseConnectionError] with field hint on failure, null on success.
+ * Validates Microsoft SQL Server connection parameters before creating a scan task.
  */
-internal object CockroachDBConnectionValidator {
+internal object SqlServerConnectionValidator {
 
     suspend fun validate(
         host: String,
@@ -19,9 +16,8 @@ internal object CockroachDBConnectionValidator {
         user: String,
         password: String
     ): DatabaseConnectionError? = withContext(Dispatchers.IO) {
-        val jdbcUrl = "jdbc:postgresql://$host:$port/$database"
         try {
-            DriverManager.getConnection(jdbcUrl, user, password).use { conn ->
+            SqlServerConnectionSupport.openConnection(host, port, database, user, password).use { conn ->
                 conn.createStatement().use { stmt ->
                     stmt.executeQuery("SELECT 1").use { it.next() }
                 }
@@ -40,20 +36,19 @@ internal object CockroachDBConnectionValidator {
     internal fun parseConnectionError(e: SQLException): DatabaseConnectionError {
         val msg = (e.message ?: "").lowercase()
         val field = when {
-            msg.contains("password authentication failed") ||
-            msg.contains("authentication failed") ||
-            msg.contains("no password was provided") ||
-            msg.contains("password authentication failed for user") ->
+            msg.contains("login failed") ||
+                msg.contains("authentication failed") ||
+                (msg.contains("password") && msg.contains("failed")) ->
                 DatabaseConnectionErrorField.USER_PASSWORD
-            msg.contains("connection refused") ||
-            msg.contains("could not connect") ||
-            msg.contains("connection timed out") ||
-            msg.contains("could not translate host") ->
-                DatabaseConnectionErrorField.HOST
-            msg.contains("database") && msg.contains("does not exist") ->
+            msg.contains("cannot open database") ||
+                msg.contains("unable to open") ->
                 DatabaseConnectionErrorField.DATABASE
-            msg.contains("role") && msg.contains("does not exist") ->
-                DatabaseConnectionErrorField.USER
+            msg.contains("connection refused") ||
+                msg.contains("connection timed out") ||
+                msg.contains("timeout") ||
+                msg.contains("unknown host") ||
+                msg.contains("could not connect") ->
+                DatabaseConnectionErrorField.HOST
             else ->
                 DatabaseConnectionErrorField.HOST
         }
