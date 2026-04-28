@@ -1,6 +1,7 @@
 package org.angryscan.app.ui.windows.screens.main.subscreens
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -17,6 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -30,6 +34,7 @@ import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.connectors.*
 import org.angryscan.app.ui.hasSelectedMatchersForScan
+import org.angryscan.app.ui.pointerScrollToHorizontalScrollPx
 import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
@@ -1064,7 +1069,8 @@ fun DatabaseScreen(
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxHeight()
+                            .wrapContentWidth()
                             .padding(horizontal = sourceTokens.controlGapCompact),
                         horizontalArrangement = Arrangement.spacedBy(
                             sourceTokens.controlGapCompact,
@@ -1096,54 +1102,102 @@ fun DatabaseScreen(
                     .padding(vertical = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                fun chipWeight(dbType: DatabaseType): Float {
-                    val labelLen = dbType.typePickerLabel().length.toFloat()
-                    // Icon + paddings baseline + proportional text length.
-                    return (6f + labelLen).coerceAtLeast(8f)
-                }
+                val chipScrollState = rememberScrollState()
+                val density = LocalDensity.current
+                val chipScrollStepPx = remember(density) { with(density) { 140.dp.toPx() } }
 
                 val chipTypes = DatabaseType.entries
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = inlineContentHorizontalPadding),
-                    horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    chipTypes.forEach { dbType ->
-                        val selected = sqlScreenState.databaseType == dbType
-                        val iconRes = dbType.drawableResource()
-                        DatabaseTypeChip(
-                            dbType = dbType,
-                            iconRes = iconRes,
-                            selected = selected,
-                            modifier = Modifier
-                                // Distribute width by label length; avoid hard mins that clip tail chips.
-                                .weight(chipWeight(dbType)),
-                            onClick = {
-                                val defaultPort = when (dbType) {
-                                    DatabaseType.PostgreSQL -> "5432"
-                                    DatabaseType.MySQL -> "3306"
-                                    DatabaseType.GreenPlum -> "5432"
-                                    DatabaseType.Hive -> "10000"
-                                    DatabaseType.CockroachDB -> "26257"
-                                    DatabaseType.ClickHouse -> "8123"
-                                    DatabaseType.Redshift -> "5439"
-                                    DatabaseType.SqlServer -> "1433"
-                                    DatabaseType.MongoDB -> "27017"
-                                    DatabaseType.SQLite -> sqlScreenState.port
-                                }
-                                val updated = sqlScreenState.copy(
-                                    databaseType = dbType,
-                                    port = defaultPort,
-                                    authDatabase = if (dbType != DatabaseType.MongoDB) "" else sqlScreenState.authDatabase
-                                )
-                                sqlScreenState = updated
-                                highlightedConnectionFields =
-                                    updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
-                                markSqlConnectionDirty()
-                                coroutineScope.launch { screenStateSettings.save() }
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                chipScrollState.animateScrollBy(-chipScrollStepPx)
                             }
+                        },
+                        enabled = chipScrollState.canScrollBackward,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChevronLeft,
+                            contentDescription = "Scroll database types left"
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(chipScrollState)
+                            .pointerInput(chipScrollState) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Main)
+                                        event.changes.forEach { change ->
+                                            val horizontalPx = pointerScrollToHorizontalScrollPx(change.scrollDelta)
+                                            if (horizontalPx != 0f) {
+                                                coroutineScope.launch {
+                                                    chipScrollState.animateScrollBy(horizontalPx)
+                                                }
+                                                change.consume()
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        chipTypes.forEach { dbType ->
+                            val selected = sqlScreenState.databaseType == dbType
+                            val iconRes = dbType.drawableResource()
+                            DatabaseTypeChip(
+                                dbType = dbType,
+                                iconRes = iconRes,
+                                selected = selected,
+                                modifier = Modifier,
+                                onClick = {
+                                    val defaultPort = when (dbType) {
+                                        DatabaseType.PostgreSQL -> "5432"
+                                        DatabaseType.MySQL -> "3306"
+                                        DatabaseType.GreenPlum -> "5432"
+                                        DatabaseType.Hive -> "10000"
+                                        DatabaseType.CockroachDB -> "26257"
+                                        DatabaseType.ClickHouse -> "8123"
+                                        DatabaseType.Redshift -> "5439"
+                                        DatabaseType.SqlServer -> "1433"
+                                        DatabaseType.MongoDB -> "27017"
+                                        DatabaseType.SQLite -> sqlScreenState.port
+                                    }
+                                    val updated = sqlScreenState.copy(
+                                        databaseType = dbType,
+                                        port = defaultPort,
+                                        authDatabase = if (dbType != DatabaseType.MongoDB) "" else sqlScreenState.authDatabase
+                                    )
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
+                                    markSqlConnectionDirty()
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                }
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                chipScrollState.animateScrollBy(chipScrollStepPx)
+                            }
+                        },
+                        enabled = chipScrollState.canScrollForward,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChevronRight,
+                            contentDescription = "Scroll database types right"
                         )
                     }
                 }
