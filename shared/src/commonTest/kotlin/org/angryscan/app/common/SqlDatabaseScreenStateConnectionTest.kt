@@ -379,4 +379,48 @@ internal class SqlDatabaseScreenStateConnectionTest {
 
         assertEquals(1433, state.connectionPort())
     }
+
+    @Test
+    fun `MongoDB allows empty user and password`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.MongoDB,
+            host = "localhost",
+            port = "27017",
+            database = "app",
+            user = "",
+            password = ""
+        )
+
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(27017, state.connectionPort())
+    }
+
+    @Test
+    fun `MongoDB requires password when user is set`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.MongoDB,
+            host = "localhost",
+            port = "27017",
+            database = "app",
+            user = "u",
+            password = ""
+        )
+
+        assertEquals(setOf(DatabaseConnectionRequiredField.PASSWORD), state.missingRequiredConnectionFields())
+    }
+
+    @Test
+    fun `MongoDB default port is 27017`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.MongoDB,
+            host = "localhost",
+            port = "invalid",
+            database = "app",
+            user = "",
+            password = ""
+        )
+
+        assertEquals(27017, state.connectionPort())
+    }
 }

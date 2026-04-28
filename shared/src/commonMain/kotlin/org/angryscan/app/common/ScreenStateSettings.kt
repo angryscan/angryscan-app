@@ -87,6 +87,8 @@ class ScreenStateSettings : KoinComponent {
         var host: String = "",
         var port: String = "5432",
         var database: String = "",
+        /** MongoDB: SCRAM authentication database (e.g. admin). */
+        var authDatabase: String = "",
         var user: String = "",
         var password: String = "",
         var filePath: String = "",
@@ -109,6 +111,7 @@ class ScreenStateSettings : KoinComponent {
         var port: String = "5432",
         var database: String = "",
         var schema: String = "",
+        var authDatabase: String = "",
         var user: String = "",
         var password: String = "",
     )

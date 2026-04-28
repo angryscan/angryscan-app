@@ -9,5 +9,6 @@ data class SavedSqlConnection(
     val database: String,
     val schema: String,
     val user: String,
+    val authDatabase: String = "",
 )
 

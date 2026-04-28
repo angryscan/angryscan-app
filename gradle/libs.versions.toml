@@ -98,6 +98,7 @@ jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
 testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql", version.ref = "testcontainers" }
+mongo-driver-sync = { module = "org.mongodb:mongodb-driver-sync", version = "5.2.1" }
 
 #Angryscan libraries
 angryscan-core = { module = "org.angryscan:core", version.ref = "core" }

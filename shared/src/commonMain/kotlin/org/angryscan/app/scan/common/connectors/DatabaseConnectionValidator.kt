@@ -16,7 +16,8 @@ object DatabaseConnectionValidator {
         database: String = "",
         user: String = "",
         password: String = "",
-        filePath: String = ""
+        filePath: String = "",
+        authDatabase: String = ""
     ): DatabaseConnectionError? = withContext(Dispatchers.IO) {
         when (databaseType) {
             DatabaseType.PostgreSQL ->
@@ -35,6 +36,8 @@ object DatabaseConnectionValidator {
                 RedshiftConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.SqlServer ->
                 SqlServerConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.MongoDB ->
+                MongoConnectionValidator.validate(host, port, database, user, password, authDatabase)
             DatabaseType.SQLite ->
                 SqliteConnectionValidator.validate(filePath)
         }

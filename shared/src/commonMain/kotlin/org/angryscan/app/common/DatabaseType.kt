@@ -3,7 +3,7 @@ package org.angryscan.app.common
 import kotlinx.serialization.Serializable
 
 /**
- * Supported SQL database types for scanning.
+ * Supported database types for scanning (relational and MongoDB).
  */
 @Serializable
 enum class DatabaseType {
@@ -15,12 +15,14 @@ enum class DatabaseType {
     CockroachDB,
     ClickHouse,
     Redshift,
-    SqlServer
+    SqlServer,
+    MongoDB
 }
 
 /** Short label for type picker (sidebar, chips). */
 fun DatabaseType.typePickerLabel(): String = when (this) {
     DatabaseType.Redshift -> "Amazon Redshift"
     DatabaseType.SqlServer -> "Microsoft SQL Server"
+    DatabaseType.MongoDB -> "MongoDB"
     else -> name
 }

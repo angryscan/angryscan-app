@@ -102,6 +102,7 @@ fun DatabaseScreen(
                 port = conn.port,
                 database = conn.database,
                 schema = conn.schema,
+                authDatabase = conn.authDatabase,
                 user = conn.user,
                 password = password
             )
@@ -121,6 +122,9 @@ fun DatabaseScreen(
         append("${conn.host}:${conn.port}")
         if (conn.database.isNotBlank()) append(" · ${conn.database}")
         if (conn.schema.isNotBlank()) append(" · ${conn.schema}")
+        if (conn.databaseType == DatabaseType.MongoDB && conn.authDatabase.isNotBlank()) {
+            append(" · auth: ${conn.authDatabase}")
+        }
         if (conn.user.isNotBlank()) append(" · ${conn.user}")
     }
 
@@ -141,7 +145,15 @@ fun DatabaseScreen(
 
     fun savedConnectionTertiary(conn: SavedSqlConnection): String {
         val parts = buildList {
-            if (conn.schema.isNotBlank()) add("schema: ${conn.schema}")
+            if (conn.schema.isNotBlank()) {
+                add(
+                    if (conn.databaseType == DatabaseType.MongoDB) "extra DBs: ${conn.schema}"
+                    else "schema: ${conn.schema}"
+                )
+            }
+            if (conn.databaseType == DatabaseType.MongoDB && conn.authDatabase.isNotBlank()) {
+                add("auth DB: ${conn.authDatabase}")
+            }
             if (conn.user.isNotBlank()) add("user: ${conn.user}")
         }
         return parts.joinToString(" · ")
@@ -174,7 +186,8 @@ fun DatabaseScreen(
                     database = sqlScreenState.database,
                     schema = sqlScreenState.schema,
                     user = sqlScreenState.user,
-                    password = sqlScreenState.password
+                    password = sqlScreenState.password,
+                    authDatabase = sqlScreenState.authDatabase
                 )
                 selectedSavedConnectionKey = key
             }
@@ -189,7 +202,7 @@ fun DatabaseScreen(
         if (sqlScreenState.host.isBlank() ||
             sqlScreenState.port.isBlank() ||
             sqlScreenState.database.isBlank() ||
-            sqlScreenState.user.isBlank()
+            (sqlScreenState.databaseType != DatabaseType.MongoDB && sqlScreenState.user.isBlank())
         ) {
             return
         }
@@ -199,7 +212,8 @@ fun DatabaseScreen(
             host = sqlScreenState.host,
             port = sqlScreenState.port,
             schema = sqlScreenState.schema,
-            user = sqlScreenState.user
+            user = sqlScreenState.user,
+            authDatabase = sqlScreenState.authDatabase
         )
         val restored = scanService.withHistoryBatchesPaused {
             savedConnectionsRepository.getPassword(key)
@@ -212,6 +226,10 @@ fun DatabaseScreen(
                             (
                                 sqlScreenState.schema.isBlank() ||
                                     conn.schema.trim().equals(sqlScreenState.schema.trim(), ignoreCase = true)
+                                ) &&
+                            (
+                                sqlScreenState.authDatabase.isBlank() ||
+                                    conn.authDatabase.trim().equals(sqlScreenState.authDatabase.trim(), ignoreCase = true)
                                 )
                     }
                     ?.let { matched -> savedConnectionsRepository.getPassword(matched.connectionKey) }
@@ -265,7 +283,8 @@ fun DatabaseScreen(
                 database = sqlScreenState.database,
                 user = sqlScreenState.user,
                 password = sqlScreenState.password,
-                filePath = sqlScreenState.filePath
+                filePath = sqlScreenState.filePath,
+                authDatabase = sqlScreenState.authDatabase
             )
             sqlConnectionTestInProgress = false
             if (validationError == null) {
@@ -329,7 +348,8 @@ fun DatabaseScreen(
                         database = sqlScreenState.database,
                         user = sqlScreenState.user,
                         password = sqlScreenState.password,
-                        filePath = sqlScreenState.filePath
+                        filePath = sqlScreenState.filePath,
+                        authDatabase = sqlScreenState.authDatabase
                     )
                     if (connectionError != null) {
                         onSqlConnectionError()
@@ -393,18 +413,26 @@ fun DatabaseScreen(
                             user = sqlScreenState.user,
                             password = sqlScreenState.password
                         )
+                        DatabaseType.MongoDB -> ConnectorMongoDB(
+                            host = sqlScreenState.host,
+                            port = sqlScreenState.connectionPort(),
+                            database = sqlScreenState.database,
+                            user = sqlScreenState.user,
+                            password = sqlScreenState.password,
+                            authDatabase = sqlScreenState.authDatabase.trim()
+                        )
                         DatabaseType.SQLite -> ConnectorSqlite(
                             filePath = sqlScreenState.filePath
                         )
                     }
                     val taskName = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer ->
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB ->
                             "${sqlScreenState.host}:${sqlScreenState.connectionPort()}/${sqlScreenState.database}" +
                                 if (sqlScreenState.schema.isNotEmpty()) " schema: ${sqlScreenState.schema}" else ""
                         DatabaseType.SQLite -> sqlScreenState.filePath
                     }
                     val path = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> sqlScreenState.schema
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB -> sqlScreenState.schema
                         DatabaseType.SQLite -> ""
                     }
                     val task = scanService.createTask(
@@ -445,7 +473,7 @@ fun DatabaseScreen(
                         horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
                     ) {
                         when (sqlScreenState.databaseType) {
-                            DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> {
+                            DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB -> {
                                 OutlinedTextField(
                                     value = sqlScreenState.host,
                                     onValueChange = {
@@ -1102,9 +1130,14 @@ fun DatabaseScreen(
                                     DatabaseType.ClickHouse -> "8123"
                                     DatabaseType.Redshift -> "5439"
                                     DatabaseType.SqlServer -> "1433"
+                                    DatabaseType.MongoDB -> "27017"
                                     DatabaseType.SQLite -> sqlScreenState.port
                                 }
-                                val updated = sqlScreenState.copy(databaseType = dbType, port = defaultPort)
+                                val updated = sqlScreenState.copy(
+                                    databaseType = dbType,
+                                    port = defaultPort,
+                                    authDatabase = if (dbType != DatabaseType.MongoDB) "" else sqlScreenState.authDatabase
+                                )
                                 sqlScreenState = updated
                                 highlightedConnectionFields =
                                     updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
@@ -1126,6 +1159,74 @@ fun DatabaseScreen(
                             ConnectionActionButtons(
                                 canTest = canTest,
                                 showAddConnection = false
+                            )
+                        }
+                    }
+                    DatabaseType.MongoDB -> {
+                        Row(
+                            modifier = Modifier.padding(horizontal = inlineContentHorizontalPadding),
+                            horizontalArrangement = Arrangement.spacedBy(inlineControlsGap),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CompactField(
+                                value = sqlScreenState.schema,
+                                onValueChange = {
+                                    val updated = sqlScreenState.copy(schema = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
+                                    markSqlConnectionDirty()
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                placeholder = "Extra DBs (;)",
+                                modifier = Modifier.weight(0.17f)
+                            )
+                            CompactField(
+                                value = sqlScreenState.authDatabase,
+                                onValueChange = {
+                                    val updated = sqlScreenState.copy(authDatabase = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
+                                    markSqlConnectionDirty()
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                placeholder = "Auth DB (e.g. admin)",
+                                modifier = Modifier.weight(0.16f)
+                            )
+                            CompactField(
+                                value = sqlScreenState.user,
+                                onValueChange = {
+                                    val updated = sqlScreenState.copy(user = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
+                                    markSqlConnectionDirty()
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                placeholder = "User",
+                                modifier = Modifier.weight(0.17f),
+                                isError = DatabaseConnectionRequiredField.USER in highlightedConnectionFields
+                            )
+                            CompactField(
+                                value = sqlScreenState.password,
+                                onValueChange = {
+                                    val updated = sqlScreenState.copy(password = it)
+                                    sqlScreenState = updated
+                                    highlightedConnectionFields =
+                                        updated.updatedHighlightedConnectionFields(highlightedConnectionFields)
+                                    markSqlConnectionDirty()
+                                    coroutineScope.launch { screenStateSettings.save() }
+                                },
+                                placeholder = "Password",
+                                modifier = Modifier.weight(0.2f),
+                                isError = DatabaseConnectionRequiredField.PASSWORD in highlightedConnectionFields,
+                                isPassword = true
+                            )
+                            val canTest = sqlScreenState.hasRequiredConnectionSettings()
+                            ConnectionActionButtons(
+                                canTest = canTest,
+                                showAddConnection = true
                             )
                         }
                     }

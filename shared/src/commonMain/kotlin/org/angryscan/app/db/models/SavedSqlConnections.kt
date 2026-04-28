@@ -12,5 +12,7 @@ object SavedSqlConnections : Table("saved_sql_connections") {
     val database = text("database")
     val schema = text("schema")
     val user = text("user")
+    /** MongoDB SCRAM auth database (optional); empty for other DB types. */
+    val authDatabase = text("auth_database").default("")
 }
 

@@ -1,0 +1,14 @@
+<!--
+MongoDB-style leaf mark (simplified). Brand green approximate.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <path
+    d="M12 2c-1.2 3.2-3.8 5.5-3.8 9.4 0 2.1.8 3.9 2 5.1.5.5 1 .9 1.6 1.2l.2-12.4c0-.2-.1-.3-.2-.3h-.2v14.5c.4.2.8.3 1.2.4 0-2.6 0-5.1.1-7.6.1-2.1.4-4.1 1.1-5.9C13.5 3.8 12.8 2.9 12 2z"
+    fill="#13AA52"
+  />
+  <path
+    d="M12 22v-8.2c-.5-.1-1-.3-1.4-.6 1.1 3.5 1.4 6.8 1.4 8.8z"
+    fill="#B8C5C2"
+    opacity="0.9"
+  />
+</svg>
