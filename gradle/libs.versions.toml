@@ -20,7 +20,7 @@ knotify = "0.4.3"
 testcontainers = "2.0.3"
 #Angryscan libraries
 gitleaks = "0.1.1"
-core = "1.4.8"
+core = "1.5.0"
 
 [libraries]
 #Hyperscan
