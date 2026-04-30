@@ -37,7 +37,10 @@ kotlin {
                 implementation(libs.sql.clickhouse)
                 implementation(libs.sql.redshift)
                 implementation(libs.sql.mssql)
-                implementation("org.apache.hive:hive-jdbc:4.2.0")
+                // Uber-jar: thin hive-jdbc omits RPC/Thrift. Woodstox on classpath fixes
+                // META-INF/services XMLOutputFactory entries that reference com.ctc.wstx.*.
+                implementation("org.apache.hive:hive-jdbc:4.2.0:standalone@jar")
+                implementation("com.fasterxml.woodstox:woodstox-core:6.6.2")
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)
