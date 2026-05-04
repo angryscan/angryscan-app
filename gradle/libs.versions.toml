@@ -17,6 +17,7 @@ hyperscan-windows = "5.4.0-2.0.0"
 clikt = "5.0.3"
 mordant = "3.0.2"
 knotify = "0.4.3"
+testcontainers = "2.0.3"
 #Angryscan libraries
 gitleaks = "0.1.1"
 core = "1.5.0"
@@ -40,6 +41,7 @@ logging-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.r
 composenativetray = { module = "io.github.kdroidfilter:composenativetray", version = "1.1.0" }
 knotify = { module = "io.github.kdroidfilter:knotify", version.ref = "knotify" }
 
+#Files
 files-junrar = { module = "com.github.junrar:junrar", version = "7.5.5" }
 files-fastexcel-reader = { module = "org.dhatim:fastexcel-reader", version.ref = "fastexcel" }
 files-fastexcel = { module = "org.dhatim:fastexcel", version.ref = "fastexcel" }
@@ -54,8 +56,13 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.7.1" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.1" }
 
+#SQL
 sql-sqlite = { module = "io.github.willena:sqlite-jdbc", version = "3.49.1.0" }
 sql-postgresql = { module = "org.postgresql:postgresql", version = "42.7.5" }
+sql-mysql = { module = "com.mysql:mysql-connector-j", version = "9.1.0" }
+sql-clickhouse = { module = "com.clickhouse:clickhouse-jdbc", version = "0.9.8" }
+sql-redshift = { module = "com.amazon.redshift:redshift-jdbc42", version = "2.2.5" }
+sql-mssql = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "12.10.0.jre11" }
 sql-flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
@@ -86,6 +93,11 @@ clikt-markdown = { module = "com.github.ajalt.clikt:clikt-markdown", version.ref
 mordant-coroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", version.ref = "mordant" }
 mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.2" }
+
+#Testcontainers
+testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql", version.ref = "testcontainers" }
 
 #Angryscan libraries
 angryscan-core = { module = "org.angryscan:core", version.ref = "core" }

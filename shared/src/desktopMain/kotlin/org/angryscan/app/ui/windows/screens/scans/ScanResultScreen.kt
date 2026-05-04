@@ -2,11 +2,12 @@ package org.angryscan.app.ui.windows.screens.scans
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -16,8 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.vinceglb.filekit.PlatformFile
@@ -25,32 +26,33 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
 import org.angryscan.app.common.AppFiles
-import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFilesViewModel
+import org.angryscan.app.scan.TaskReplayHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
 import org.angryscan.app.scan.common.createDialogSettings
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.ui.dialogs.DesktopAlertDialog
 import org.angryscan.app.ui.extensions.color
-import org.angryscan.app.ui.extensions.fileDateFormat
 import org.angryscan.app.ui.extensions.icon
 import org.angryscan.app.ui.strings.composableName
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
 import org.angryscan.app.ui.windows.components.MatcherTooltip
 import org.angryscan.app.ui.windows.screens.scans.components.*
 import org.angryscan.common.engine.IMatcher
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import java.awt.datatransfer.StringSelection
 import kotlin.time.Clock
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
@@ -60,15 +62,16 @@ import kotlin.time.toDuration
 @Composable
 fun ScanResultScreen(
     taskId: Int,
-    onCloseClick: () -> Unit
+    onBackToHistoryClick: () -> Unit,
+    onBackToMainClick: () -> Unit,
+    onShowScan: (Int) -> Unit
 ) {
     val scanService = koinInject<ScanService>()
-    val appSettings = koinInject<AppSettings>()
     val scanSettings = koinInject<ScanSettings>()
     val task = scanService.tasks.tasks.value.firstOrNull { it.id.value == taskId }
 
     if (task == null) {
-        onCloseClick()
+        onBackToHistoryClick()
         return
     }
 
@@ -76,8 +79,6 @@ fun ScanResultScreen(
     val taskFiles by taskFilesViewModel.taskFiles.collectAsState()
 
     val scoreSum = taskFiles.sumOf { it.score }
-
-    val clipboard = LocalClipboard.current
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -168,10 +169,22 @@ fun ScanResultScreen(
         animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
     )
 
+    val fileDateFormat = LocalDateTime.Format {
+        year()
+        char('-')
+        monthNumber()
+        char('-')
+        day()
+        char('_')
+        hour()
+        char('-')
+        minute()
+        char('-')
+        second()
+    }
+
     val dialogSettings = createDialogSettings()
 
-    var reportExtension by remember { appSettings.reportSaveExtension }
-    var reportExtensionChooserExpanded by remember { mutableStateOf(false) }
     var errorDialogVisible by remember { mutableStateOf(false) }
 
     val saveLauncher = rememberFileSaverLauncher(
@@ -207,19 +220,89 @@ fun ScanResultScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    @Composable
+    fun ResultNavigationActions(
+        onBackToHistory: () -> Unit,
+        onBackToMain: () -> Unit
+    ) {
+        val cs = MaterialTheme.colorScheme
+        @Composable
+        fun BreadcrumbLink(
+            text: String,
+            onClick: () -> Unit,
+            highlighted: Boolean = false
+        ) {
+            val interaction = remember { MutableInteractionSource() }
+            val hovered by interaction.collectIsHoveredAsState()
+            val backgroundColor = when {
+                hovered -> cs.surfaceVariant.copy(alpha = 0.44f)
+                highlighted -> cs.primaryContainer.copy(alpha = 0.36f)
+                else -> Color.Transparent
+            }
+            val textColor = if (highlighted) cs.onPrimaryContainer else cs.onSurfaceVariant
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                color = textColor,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(backgroundColor)
+                    .hoverable(interaction)
+                    .clickable(
+                        interactionSource = interaction,
+                        indication = null,
+                        onClick = onClick
+                    )
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BreadcrumbLink(
+                text = stringResource(Res.string.SideMenu_MainPage),
+                onClick = onBackToMain
+            )
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = cs.outline.copy(alpha = 0.7f),
+                modifier = Modifier.size(14.dp)
+            )
+            BreadcrumbLink(
+                text = stringResource(Res.string.ScanResult_Breadcrumb_History),
+                onClick = onBackToHistory,
+                highlighted = false
+            )
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = cs.outline.copy(alpha = 0.7f),
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = stringResource(Res.string.ScanResult_Breadcrumb_Current),
+                style = MaterialTheme.typography.labelLarge,
+                color = cs.onPrimaryContainer,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(cs.primaryContainer.copy(alpha = 0.42f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 12.dp)
             .clip(shape = shapes)
-            .border(
-                shape = shapes,
-                color = state.color(),
-                width = 1.dp
-            )
             .padding(
                 start = 15.dp,
-                top = 15.dp,
+                top = 18.dp,
                 end = 15.dp
             ),
         snackbarHost = {
@@ -241,14 +324,10 @@ fun ScanResultScreen(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.weight(0.8f)
                     ) {
-                        IconButton(
-                            onClick = onCloseClick
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ArrowBackIosNew,
-                                contentDescription = null
-                            )
-                        }
+                        ResultNavigationActions(
+                            onBackToHistory = onBackToHistoryClick,
+                            onBackToMain = onBackToMainClick
+                        )
 
                         when (task.dbTask.connector) {
                             is ConnectorS3 -> {
@@ -261,29 +340,6 @@ fun ScanResultScreen(
                             }
                         }
 
-                        Text(
-                            text = name ?: path,
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
-                            fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                            letterSpacing = 0.1.sp
-                        )
-
-                        if (name == null) {
-                            Icon(
-                                imageVector = Icons.Outlined.CopyAll,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .clickable {
-                                        coroutineScope.launch {
-                                            clipboard.setClipEntry(clipEntry = ClipEntry(StringSelection(path)))
-                                            snackbarHostState.showSnackbar(getString(Res.string.ScanResultScreen_ClipboardCopiedMessage))
-                                        }
-                                    }
-                            )
-                        }
-
                         if (fastScan) {
                             Icon(
                                 imageVector = Icons.Outlined.RocketLaunch,
@@ -294,11 +350,13 @@ fun ScanResultScreen(
                             )
                         }
 
-                        Icon(
-                            imageVector = state.icon(),
-                            contentDescription = null,
-                            tint = state.color()
-                        )
+                        if (state != TaskState.COMPLETED) {
+                            Icon(
+                                imageVector = state.icon(),
+                                contentDescription = null,
+                                tint = state.color()
+                            )
+                        }
                     }
 
                     Row(
@@ -308,100 +366,137 @@ fun ScanResultScreen(
                         AnimatedVisibility(
                             visible = state == TaskState.COMPLETED,
                         ) {
-                            Row {
-
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(height = 40.dp, width = 90.dp)
-                                        .clip(
-                                            MaterialTheme.shapes.medium.copy(
-                                                bottomEnd = CornerSize(0.dp),
-                                                topEnd = CornerSize(0.dp)
-                                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                DescriptionTooltip(
+                                    description = stringResource(Res.string.ScanResult_RescanAsIs),
+                                    delay = 280
+                                ) {
+                                    FilledTonalIconButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val newTask = scanService.startNewScanFromTask(task)
+                                                newTask.id.value?.let { onShowScan(it) }
+                                            }
+                                        },
+                                        enabled = !busy,
+                                        shape = RoundedCornerShape(9.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.RestartAlt,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
                                         )
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                                        .clickable {
+                                    }
+                                }
+                                DescriptionTooltip(
+                                    description = stringResource(Res.string.ScanResult_EditAndRun),
+                                    delay = 280
+                                ) {
+                                    FilledTonalIconButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val replaySettings = scanService.snapshotTaskReplaySettings(task)
+                                                TaskReplayHelper.set(replaySettings)
+                                                onBackToMainClick()
+                                            }
+                                        },
+                                        enabled = !busy,
+                                        shape = RoundedCornerShape(9.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Edit,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                @Composable
+                                fun ExportButton(
+                                    label: String,
+                                    extension: ResultWriter.FileExtensions
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
                                             saveLauncher.launch(
                                                 suggestedName = "ADS_${fileDateFormat.format(finishedAt!!)}",
-                                                extension = reportExtension.extension,
+                                                extension = extension.extension,
                                                 directory = PlatformFile(AppFiles.UserDirPath)
                                             )
                                         },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Row {
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
+                                        ),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f)
+                                        )
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Outlined.Download,
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+                                        Spacer(Modifier.width(6.dp))
                                         Text(
-                                            text = reportExtension.name,
-                                            modifier = Modifier
-                                                .padding(start = 5.dp)
+                                            text = label,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(
-                                            MaterialTheme.shapes.medium.copy(
-                                                bottomStart = CornerSize(0.dp),
-                                                topStart = CornerSize(0.dp)
-                                            )
-                                        )
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                                        .clickable {
-                                            reportExtensionChooserExpanded = true
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.ArrowDropDown,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = reportExtensionChooserExpanded,
-                                    onDismissRequest = {
-                                        reportExtensionChooserExpanded = false
-                                    }
-                                ) {
-                                    ResultWriter.FileExtensions.entries.forEach {
-                                        DropdownMenuItem(
-                                            onClick = {
-                                                reportExtension = it
-                                                reportExtensionChooserExpanded = false
-                                                appSettings.save()
-                                            },
-                                            text = { Text(text = it.name) }
-                                        )
-                                    }
-                                }
+
+                                ExportButton("CSV", ResultWriter.FileExtensions.CSV)
+                                ExportButton("XML", ResultWriter.FileExtensions.XML)
+                                ExportButton("XLSX", ResultWriter.FileExtensions.XLSX)
                             }
                         }
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                                .clickable {
-                                    coroutineScope.launch {
-                                        scanService.deleteTask(task)
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
+                        FilledTonalIconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    scanService.deleteTask(task)
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
-                                contentDescription = null
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
+                Text(
+                    text = name ?: path,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
+                    fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
+                    letterSpacing = 0.1.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, top = 6.dp)
+                )
             }
 
             if (state != TaskState.COMPLETED) {
@@ -510,34 +605,84 @@ fun ScanResultScreen(
 
             }
 
+            val statusText = when (state) {
+                TaskState.SCANNING, TaskState.SEARCHING -> stringResource(Res.string.TaskStateChipFilter_Active)
+                TaskState.STOPPED, TaskState.PENDING -> stringResource(Res.string.TaskStateChipFilter_Paused)
+                TaskState.FAILED -> stringResource(Res.string.TaskStateChipFilter_Error)
+                TaskState.COMPLETED -> stringResource(Res.string.TaskStateChipFilter_Completed)
+                TaskState.LOADING -> stringResource(Res.string.ScansPage_Loading)
+            }
+            val finishedTimeText = finishedAt?.let {
+                val dd = it.day.toString().padStart(2, '0')
+                val mm = (it.month.ordinal + 1).toString().padStart(2, '0')
+                val hh = it.hour.toString().padStart(2, '0')
+                val min = it.minute.toString().padStart(2, '0')
+                "$dd.$mm $hh:$min"
+            } ?: "-"
+
+            @Composable
+            fun MiniStat(
+                label: String,
+                value: String,
+                tooltipDescription: String? = null
+            ) {
+                val cs = MaterialTheme.colorScheme
+                val content: @Composable () -> Unit = {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = cs.surfaceVariant.copy(alpha = 0.72f),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = cs.outlineVariant.copy(alpha = 0.55f)
+                        ),
+                        tonalElevation = 0.dp
+                    ) {
+                        Text(
+                            text = "$label: $value",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+                if (tooltipDescription != null) {
+                    DescriptionTooltip(description = tooltipDescription, delay = 300) {
+                        content()
+                    }
+                } else {
+                    content()
+                }
+            }
 
             Row(
                 modifier = Modifier
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp, vertical = 2.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ScanTimeStatItem(
-                    startedAt = startedAt,
-                    finishedAt = finishedAt,
-                    pausedAt = pausedAt,
-                    state = state
+                MiniStat(stringResource(Res.string.ScanResult_Summary_Finished), finishedTimeText)
+                MiniStat(stringResource(Res.string.ScansPage_ColumnDuration), scanTime)
+                MiniStat(stringResource(Res.string.ScansPage_ColumnStatus), statusText)
+                MiniStat(stringResource(Res.string.Result_ColumnSize), folderSize)
+                MiniStat(
+                    stringResource(Res.string.ScansPage_ColumnPiiFound),
+                    foundFiles.toString(),
+                    tooltipDescription = stringResource(Res.string.ScansPage_TooltipFound, foundFiles)
                 )
-
-                VerticalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.primary
+                MiniStat(
+                    stringResource(Res.string.ScansPage_ColumnPiiSize),
+                    foundFilesSize.toString(),
+                    tooltipDescription = "${stringResource(Res.string.ScansPage_ColumnPiiSize)}: $foundFilesSize"
                 )
-
-                ScanStat(
-                    totalFiles = totalFiles,
-                    selectedFiles = selectedFiles,
-                    foundFiles = foundFiles,
-                    folderSize = folderSize,
-                    selectedFilesSize = selectedFilesSize,
-                    foundFilesSize = foundFilesSize,
-                    scanTime = scanTime,
-                    scoreSum = scoreSum
+                MiniStat(
+                    stringResource(Res.string.ScansPage_ColumnScore),
+                    scoreSum.toString(),
+                    tooltipDescription = "${stringResource(Res.string.ScansPage_ColumnPiiScore)}: $scoreSum"
                 )
+                MiniStat(stringResource(Res.string.Task_SelectedFiles), "$selectedFiles/$totalFiles")
             }
 
             if (foundAttributes.isNotEmpty()) {
@@ -587,12 +732,22 @@ fun ScanResultScreen(
                 }
             }
 
-            ResultTable(
-                taskFilesViewModel = taskFilesViewModel,
-                task = task,
-                selectedAttributes = selectedAttributes,
-                scanSettings = scanSettings
-            )
+            when (task.dbTask.connector) {
+                is IDatabaseConnector -> SqlResultTable(
+                    taskFilesViewModel = taskFilesViewModel,
+                    task = task,
+                    selectedAttributes = selectedAttributes,
+                    scanSettings = scanSettings,
+                    modifier = Modifier.weight(1f)
+                )
+                else -> ResultTable(
+                    taskFilesViewModel = taskFilesViewModel,
+                    task = task,
+                    selectedAttributes = selectedAttributes,
+                    scanSettings = scanSettings,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }

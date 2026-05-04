@@ -51,8 +51,8 @@ fun RadioButtonNavigation(
     
     Row(
         modifier = modifier
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.Start,
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         routes.forEach { route ->

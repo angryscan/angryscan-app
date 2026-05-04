@@ -36,7 +36,7 @@ fun DescriptionDialog(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Image(
-                    painter = painterResource(Res.drawable.icon),
+                    painter = painterResource(Res.drawable.`favicon_light`),
                     contentDescription = null,
                     modifier = Modifier.size(64.dp)
                 )

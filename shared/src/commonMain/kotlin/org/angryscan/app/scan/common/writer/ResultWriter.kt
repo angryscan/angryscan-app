@@ -61,40 +61,43 @@ object ResultWriter {
         withContext(Dispatchers.IO) {
             FileOutputStream(reportFile, true).bufferedWriter(charset = Charset.forName(reportEncoding))
         }.use { writer ->
-            val columns = listOf(
-                getString(Res.string.Result_ColumnFile),
-                getString(Res.string.Result_ColumnAttributes),
-                getString(Res.string.Result_ColumnScore),
-                getString(Res.string.Result_ColumnCount),
-                getString(Res.string.Result_ColumnSize)
-            )
+            val hasColumn = result.any { it.columnName != null }
+            val columns = buildList {
+                add(getString(Res.string.Result_ColumnFile))
+                if (hasColumn) add(getString(Res.string.Result_ColumnColumn))
+                add(getString(Res.string.Result_ColumnAttributes))
+                add(getString(Res.string.Result_ColumnScore))
+                add(getString(Res.string.Result_ColumnCount))
+                add(getString(Res.string.Result_ColumnSize))
+            }
             writer.append(
                 columns.joinToString(";") + "\r\n"
             )
 
             result.forEach { fileRow ->
-                writer.append(
-                    listOf(
-                        fileRow.path,
-                        fileRow.foundAttributes.keys.map { attr -> attr.readableName() }
-                            .joinToString(", "),
-                        fileRow.score.toString(),
-                        fileRow.count.toString(),
-                        fileRow.size.toString()
-                    ).joinToString(";") + "\r\n"
-                )
+                val rowValues = buildList {
+                    add(fileRow.path)
+                    if (hasColumn) add(fileRow.columnName.orEmpty())
+                    add(fileRow.foundAttributes.keys.map { attr -> attr.readableName() }.joinToString(", "))
+                    add(fileRow.score.toString())
+                    add(fileRow.count.toString())
+                    add(fileRow.size.toString())
+                }
+                writer.append(rowValues.joinToString(";") + "\r\n")
             }
         }
     }
 
     private suspend fun writeXLSX(reportFile: File, result: List<TaskFileResult>) {
-        val columns = listOf(
-            getString(Res.string.Result_ColumnFile),
-            getString(Res.string.Result_ColumnAttributes),
-            getString(Res.string.Result_ColumnScore),
-            getString(Res.string.Result_ColumnCount),
-            getString(Res.string.Result_ColumnSize)
-        )
+        val hasColumn = result.any { it.columnName != null }
+        val columns = buildList {
+            add(getString(Res.string.Result_ColumnFile))
+            if (hasColumn) add(getString(Res.string.Result_ColumnColumn))
+            add(getString(Res.string.Result_ColumnAttributes))
+            add(getString(Res.string.Result_ColumnScore))
+            add(getString(Res.string.Result_ColumnCount))
+            add(getString(Res.string.Result_ColumnSize))
+        }
         withContext(Dispatchers.IO) {
             FileOutputStream(reportFile)
         }.use { outputStream ->
@@ -109,15 +112,17 @@ object ResultWriter {
                 }
 
                 result.forEachIndexed { index, fileRow ->
-                    sheet.value(index + 1, 0, fileRow.path)
+                    var col = 0
+                    sheet.value(index + 1, col++, fileRow.path)
+                    if (hasColumn) sheet.value(index + 1, col++, fileRow.columnName.orEmpty())
                     sheet.value(
                         index + 1,
-                        1,
+                        col++,
                         fileRow.foundAttributes.keys.map { attr -> attr.readableName() }
                             .joinToString(", "))
-                    sheet.value(index + 1, 2, fileRow.score.toString())
-                    sheet.value(index + 1, 3, fileRow.count.toString())
-                    sheet.value(index + 1, 4, fileRow.size.toString())
+                    sheet.value(index + 1, col++, fileRow.score.toString())
+                    sheet.value(index + 1, col++, fileRow.count.toString())
+                    sheet.value(index + 1, col++, fileRow.size.toString())
                 }
 
 
@@ -152,6 +157,12 @@ object ResultWriter {
             val pathElement = doc.createElement("path")
             pathElement.appendChild(doc.createTextNode(fileRow.path))
             fileElement.appendChild(pathElement)
+
+            fileRow.columnName?.let { columnName ->
+                val columnElement = doc.createElement("column")
+                columnElement.appendChild(doc.createTextNode(columnName))
+                fileElement.appendChild(columnElement)
+            }
 
             val attributesElement = doc.createElement("attributes")
             fileElement.appendChild(attributesElement)

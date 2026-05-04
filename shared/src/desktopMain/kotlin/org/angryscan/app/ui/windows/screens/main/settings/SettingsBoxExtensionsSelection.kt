@@ -1,136 +1,186 @@
 package org.angryscan.app.ui.windows.screens.main.settings
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.resources.Res
 import org.angryscan.app.resources.ScanSettings_FileExtensions
-import org.angryscan.app.resources.ScanSettings_SelectAll
 import org.angryscan.app.scan.common.files.types.CertFileType
 import org.angryscan.app.scan.common.files.types.CodeFileType
 import org.angryscan.app.scan.common.files.types.IFileType
+import org.angryscan.app.ui.windows.components.DescriptionTooltip
+import org.angryscan.app.ui.windows.screens.main.LocalMainScreenAdaptiveTokens
+import org.angryscan.app.ui.windows.screens.main.settings.items.SettingsSelectAllTextButton
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
+private data class ExtensionsGroup(
+    val title: String,
+    val typeNames: Set<String>,
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsBoxExtensionsSelection(scanSettings: ScanSettings) {
-    val expandedState = scanSettings.extensionsSettingsExpanded
-    val expanded by expandedState
+fun SettingsBoxExtensionsSelection(
+    scanSettings: ScanSettings,
+    showTitle: Boolean = true,
+    unifiedBlock: Boolean = false,
+    errorHighlight: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val fileTypeEntries = remember {
+        IFileType.getAll().filter { it !in CodeFileType.entries && it !in CertFileType.entries }
+    }
+    val allSelected = scanSettings.extensions.containsAll(fileTypeEntries)
 
+    val dense = unifiedBlock
+    val settingsTokens = LocalMainScreenAdaptiveTokens.current.settings
+    val adaptiveScale = LocalMainScreenAdaptiveTokens.current.scale
+    val groupLabelWidth = if (dense) adaptiveScale.dp(108.dp, min = 102.dp, max = 160.dp) else settingsTokens.groupLabelWidth
+    val groupRowHGap = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 9.dp) else adaptiveScale.dp(10.dp, min = 8.dp, max = 16.dp)
+    val chipCorner = if (dense) adaptiveScale.dp(4.dp, min = 3.dp, max = 7.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
+    val chipPadH = if (dense) adaptiveScale.dp(1.dp, min = 1.dp, max = 2.dp) else adaptiveScale.dp(2.dp, min = 1.dp, max = 4.dp)
+    val chipLabelFs = if (dense) adaptiveScale.sp(8.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(10.sp, min = 10.sp, max = 12.sp)
+    val groupLabelFs = if (dense) adaptiveScale.sp(8.5.sp, min = 8.sp, max = 10.sp) else adaptiveScale.sp(10.sp, min = 10.sp, max = 12.sp)
+    val flowHGap = if (dense) adaptiveScale.dp(7.dp, min = 6.dp, max = 12.dp) else adaptiveScale.dp(9.dp, min = 8.dp, max = 14.dp)
+    val flowVGap = if (dense) adaptiveScale.dp(5.dp, min = 4.dp, max = 9.dp) else adaptiveScale.dp(6.dp, min = 5.dp, max = 10.dp)
+    // Сейчас общий левый отступ секции даёт 4.dp (внутренний padding карточки).
+    // Чтобы визуально получить "в 3 раза больше" слева в первой колонке, добавляем ещё +8.dp.
+    val firstColumnExtraStartPadding = adaptiveScale.dp(8.dp, min = 6.dp, max = 14.dp)
 
-    SettingsBoxSpan(
-        text = stringResource(Res.string.ScanSettings_FileExtensions),
-        expanded = expanded,
-        onExpandClick = {
-            expandedState.value = !expandedState.value
-            scanSettings.save()
-        }
-    ) {
-        val fileTypeEntries = IFileType
-            .getAll()
-            .filter {
-                it !in CodeFileType.entries && it !in CertFileType.entries
+    val content: @Composable ColumnScope.() -> Unit = {
+        Column(modifier = Modifier.wrapContentWidth()) {
+            val groups = remember {
+                listOf(
+                    ExtensionsGroup(title = "word", typeNames = setOf("DOCX", "DOC", "ODT")),
+                    ExtensionsGroup(title = "text", typeNames = setOf("Text")),
+                    ExtensionsGroup(title = "presentations", typeNames = setOf("PPTX", "PPT", "ODP")),
+                    ExtensionsGroup(title = "tables", typeNames = setOf("XLSX", "XLS", "ODS")),
+                    ExtensionsGroup(title = "archives", typeNames = setOf("ZIP", "RAR")),
+                )
             }
-        val rows = fileTypeEntries.size / 5 + if (fileTypeEntries.size % 5 > 0) 1 else 0
 
-        val height = (24 * rows + (6 * (rows - 1))).dp + 52.dp
+            val visibleGroups = remember(fileTypeEntries) {
+                groups.mapNotNull { group ->
+                    val groupTypes = fileTypeEntries.filter { it.name in group.typeNames }
+                    if (groupTypes.isEmpty()) null else group to groupTypes
+                }
+            }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(5),
-            verticalArrangement = Arrangement.spacedBy(5.dp),
-            modifier = Modifier
-                .height(height)
-                .fillMaxWidth()
-        ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.height(42.dp)
+            visibleGroups.forEachIndexed { idx, (group, groupTypes) ->
+                SettingsTableRowWithContentWidthDivider(
+                    dense = dense,
+                    showDividerBelow = idx != visibleGroups.lastIndex,
                 ) {
-                    Checkbox(
-                        checked = scanSettings.extensions.containsAll(fileTypeEntries),
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                scanSettings.extensions.addAll(fileTypeEntries.filter {
-                                    !scanSettings.extensions.contains(
-                                        it
+                    Row(
+                        modifier = Modifier
+                            .wrapContentWidth()
+                            .height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(groupRowHGap),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = group.title,
+                            modifier = Modifier
+                                .width(groupLabelWidth)
+                                .padding(start = firstColumnExtraStartPadding),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontSize = groupLabelFs,
+                            lineHeight = if (dense) 10.sp else TextUnit.Unspecified,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        SettingsTableColumnDivider()
+                        FlowRow(
+                            modifier = Modifier,
+                            horizontalArrangement = Arrangement.spacedBy(flowHGap),
+                            verticalArrangement = Arrangement.spacedBy(flowVGap)
+                        ) {
+                            for (fileType in groupTypes) {
+                                val selected = scanSettings.extensions.contains(fileType)
+                                DescriptionTooltip(description = fileType.name) {
+                                    SettingsFlowToggleChip(
+                                        selected = selected,
+                                        onClick = {
+                                            if (selected) scanSettings.extensions.remove(fileType)
+                                            else scanSettings.extensions.add(fileType)
+                                            scanSettings.save()
+                                        },
+                                        label = fileType.name,
+                                        chipCorner = chipCorner,
+                                        chipPadH = chipPadH,
+                                        chipLabelFs = chipLabelFs
                                     )
-                                })
-                            } else {
-                                scanSettings.extensions.clear()
+                                }
                             }
-                            scanSettings.save()
                         }
-                    )
-                    CompositionLocalProvider(LocalRippleConfiguration provides null) {
-                        Text(
-                            text = stringResource(Res.string.ScanSettings_SelectAll),
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable {
-                                if (!scanSettings.extensions.containsAll(fileTypeEntries))
-                                    scanSettings.extensions.addAll(fileTypeEntries.filter {
-                                        !scanSettings.extensions.contains(
-                                            it
-                                        )
-                                    })
-                                else
-                                    scanSettings.extensions.clear()
-                                scanSettings.save()
-                            }
-                        )
-                    }
-                }
-            }
-            items(fileTypeEntries) { extension ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(1f)
-                        .height(24.dp)
-                ) {
-                    Checkbox(
-                        checked = scanSettings.extensions.contains(extension),
-                        onCheckedChange = { checked ->
-                            if (checked && !scanSettings.extensions.contains(extension))
-                                scanSettings.extensions.add(extension)
-                            else if (!checked)
-                                scanSettings.extensions.remove(extension)
-                            scanSettings.save()
-                        }
-                    )
-                    CompositionLocalProvider(LocalRippleConfiguration provides null) {
-                        Text(
-                            text = extension.name,
-                            fontSize = 14.sp,
-                            modifier = Modifier.clickable {
-                                if (scanSettings.extensions.contains(extension))
-                                    scanSettings.extensions.remove(extension)
-                                else
-                                    scanSettings.extensions.add(extension)
-                                scanSettings.save()
-                            }
-                        )
                     }
                 }
             }
         }
+    }
+    if (showTitle) {
+        if (unifiedBlock) {
+            SettingsUnifiedSubsection(
+                title = stringResource(Res.string.ScanSettings_FileExtensions),
+                modifier = modifier.then(
+                    if (errorHighlight) {
+                        Modifier.border(
+                            width = adaptiveScale.dp(1.5.dp, min = 1.2.dp, max = 2.2.dp),
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(adaptiveScale.dp(10.dp, min = 8.dp, max = 14.dp))
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
+                contentTopPadding = (settingsTokens.contentBelowHeaderSpacing * 3) / 2f,
+                titleTrailingInline = true,
+                titleTrailingInlineSpacing = settingsTokens.headerInlineActionSpacing,
+                titleTrailing = {
+                    SettingsSelectAllTextButton(
+                        allSelected = allSelected,
+                        onClick = {
+                            if (allSelected) scanSettings.extensions.clear()
+                            else scanSettings.extensions.addAll(fileTypeEntries.filter { it !in scanSettings.extensions })
+                            scanSettings.save()
+                        }
+                    )
+                },
+                content = content
+            )
+        } else {
+            SettingsSectionCard(
+                title = stringResource(Res.string.ScanSettings_FileExtensions),
+                modifier = modifier,
+                contentTopPadding = (settingsTokens.contentBelowHeaderSpacing * 3) / 2f,
+                titleTrailingInline = true,
+                titleTrailingInlineSpacing = settingsTokens.headerInlineActionSpacing,
+                titleTrailing = {
+                    SettingsSelectAllTextButton(
+                        allSelected = allSelected,
+                        onClick = {
+                            if (allSelected) scanSettings.extensions.clear()
+                            else scanSettings.extensions.addAll(fileTypeEntries.filter { it !in scanSettings.extensions })
+                            scanSettings.save()
+                        }
+                    )
+                },
+                content = content
+            )
+        }
+    } else {
+        Column(modifier = modifier, content = content)
     }
 }

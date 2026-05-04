@@ -1,218 +1,100 @@
 package org.angryscan.app.ui.windows.screens.main.subscreens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.angryscan.app.common.SavedS3Connection
+import org.angryscan.app.common.SavedS3ConnectionsRepository
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.ScreenStateSettings
-import org.angryscan.app.resources.MainScreen_ScanStartButton
-import org.angryscan.app.resources.MainScreen_SelectPathPlaceholder
-import org.angryscan.app.resources.Res
-import org.angryscan.app.resources.S3Screen_Tooltip_ConnectionSettings
+import org.angryscan.app.resources.*
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorS3
-import org.angryscan.app.ui.windows.components.DescriptionTooltip
-import org.angryscan.app.ui.windows.components.RadioButtonNavigation
-import org.angryscan.app.ui.windows.screens.main.components.MainScreenConnector
-import org.angryscan.app.ui.windows.screens.main.components.S3FileChooser
-import org.angryscan.app.ui.windows.screens.main.components.ScanValidationErrorDialog
-import org.angryscan.app.ui.windows.screens.main.components.rememberScanValidation
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsBox
-import org.angryscan.app.ui.windows.screens.main.settings.SettingsButton
+import org.angryscan.app.ui.hasSelectedMatchersForScan
+import org.angryscan.app.ui.windows.screens.main.components.*
+import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
-private fun CustomOutlinedTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    placeholder: String = "",
-    isError: Boolean = false,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    textStyle: TextStyle = MaterialTheme.typography.bodyMedium
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
-    val borderColor = when {
-        isError -> MaterialTheme.colorScheme.error
-        isFocused -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.outline
-    }
-    
-    Box(
-        modifier = modifier
-            .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = MaterialTheme.shapes.medium
-            )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.weight(1f),
-                textStyle = textStyle.copy(
-                    color = MaterialTheme.colorScheme.onSurface
-                ),
-                singleLine = true,
-                visualTransformation = visualTransformation,
-                interactionSource = interactionSource,
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-                decorationBox = { innerTextField ->
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        if (value.isEmpty()) {
-                            Text(
-                                text = placeholder,
-                                style = textStyle.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                modifier = Modifier.align(Alignment.CenterStart)
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
 fun S3Screen(
     navController: androidx.navigation.NavController,
-    settingsExpanded: Boolean,
-    expandSettings: () -> Unit,
-    hideSettings: () -> Unit,
-    expandScanState: (Int) -> Unit
+    expandScanState: (Int) -> Unit,
+    onRequireScanSettings: (missingExtensions: Boolean, missingMatchers: Boolean) -> Unit = { _, _ -> },
+    onRequireSourceInputs: () -> Unit = {},
+    setSidebarContent: (@Composable () -> Unit) -> Unit = {},
+    setBottomBarContent: (@Composable () -> Unit) -> Unit = {},
+    setUnderSourceContent: (@Composable () -> Unit) -> Unit = {}
 ) {
     val scanService = koinInject<ScanService>()
 
     val scanSettings = koinInject<ScanSettings>()
     val screenStateSettings = koinInject<ScreenStateSettings>()
+    val savedS3ConnectionsRepository = koinInject<SavedS3ConnectionsRepository>()
 
     val helperPath by ScanPathHelper.path.collectAsState()
     var path by remember { mutableStateOf(screenStateSettings.s3ScreenState.path) }
     var endpoint by remember { mutableStateOf(screenStateSettings.s3ScreenState.endpoint) }
     var accessKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.accessKey) }
-    var secretKey by remember { mutableStateOf(screenStateSettings.s3ScreenState.secretKey) }
+    var secretKey by remember { mutableStateOf("") }
     var bucket by remember { mutableStateOf(screenStateSettings.s3ScreenState.bucket) }
-
-    val settingsButtonTransition = updateTransition(settingsExpanded)
-
-    val settingsBoxTransition = updateTransition(settingsExpanded)
 
     val coroutineScope = rememberCoroutineScope()
 
     var selectPathError by remember { mutableStateOf(false) }
-
-    var scanNotCorrectPath by remember { mutableStateOf(false) }
     var incorrectConnection by remember { mutableStateOf(false) }
-    var incorrectPathError by remember { mutableStateOf(false) }
 
-    var endpointError by remember { mutableStateOf(false) }
-    var accessKeyError by remember { mutableStateOf(false) }
-    var secretKeyError by remember { mutableStateOf(false) }
-    var bucketError by remember { mutableStateOf(false) }
-    
     val (validationErrorDialog, validateAndShowError, dismissValidationError) = rememberScanValidation(scanSettings)
+    val s3ConnectionSuccessMessage = stringResource(Res.string.ScanSettings_PostgresConnectionSuccess)
+    val s3ConnectionErrorMessage = stringResource(Res.string.Validation_S3ConnectionMessage)
 
-    LaunchedEffect(scanNotCorrectPath, incorrectConnection) {
-        if (scanNotCorrectPath || incorrectConnection) {
-            if (incorrectPathError)
-                selectPathError = true
-            if (endpoint.isEmpty())
-                endpointError = true
-            if (accessKey.isEmpty())
-                accessKeyError = true
-            if (secretKey.isEmpty())
-                secretKeyError = true
-            if (bucket.isEmpty())
-                bucketError = true
-            delay(200)
+    var isTestingConnection by remember { mutableStateOf(false) }
+    var connectionTestOk by remember { mutableStateOf<Boolean?>(null) }
+    var connectionTestMessage by remember { mutableStateOf<String?>(null) }
+    var secretKeyVisible by remember { mutableStateOf(false) }
+    var savedConnectionsExpanded by remember { mutableStateOf(false) }
+    var selectedSavedConnectionKey by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteConnection by remember { mutableStateOf<SavedS3Connection?>(null) }
+    var pendingConnectionNameDialog by remember { mutableStateOf(false) }
+    var pendingConnectionName by remember { mutableStateOf("") }
+    var pendingConnectionNameError by remember { mutableStateOf(false) }
+    var savedConnections by remember { mutableStateOf<List<SavedS3Connection>>(emptyList()) }
 
-            selectPathError = false
-            endpointError = false
-            accessKeyError = false
-            secretKeyError = false
-            bucketError = false
-            delay(400)
-
-            if (incorrectPathError)
-                selectPathError = true
-            if (endpoint.isEmpty())
-                endpointError = true
-            if (accessKey.isEmpty())
-                accessKeyError = true
-            if (secretKey.isEmpty())
-                secretKeyError = true
-            if (bucket.isEmpty())
-                bucketError = true
-            delay(200)
-
-            selectPathError = false
-            endpointError = false
-            accessKeyError = false
-            secretKeyError = false
-            bucketError = false
-            delay(400)
-
-            if (incorrectPathError)
-                selectPathError = true
-            if (endpoint.isEmpty())
-                endpointError = true
-            if (accessKey.isEmpty())
-                accessKeyError = true
-            if (secretKey.isEmpty())
-                secretKeyError = true
-            if (bucket.isEmpty())
-                bucketError = true
-            delay(200)
-
-            selectPathError = false
-            endpointError = false
-            accessKeyError = false
-            secretKeyError = false
-            bucketError = false
-            scanNotCorrectPath = false
-            incorrectConnection = false
+    LaunchedEffect(selectPathError) {
+        if (selectPathError) {
+            delay(2000)
+            if (selectPathError) {
+                selectPathError = false
+            }
+        }
+    }
+    LaunchedEffect(incorrectConnection) {
+        if (incorrectConnection) {
+            delay(2000)
+            if (incorrectConnection) {
+                incorrectConnection = false
+            }
         }
     }
 
@@ -224,7 +106,7 @@ fun S3Screen(
             coroutineScope.launch {
                 delay(100)
                 screenStateSettings.s3ScreenState.path = path
-                screenStateSettings.save()
+                withContext(Dispatchers.IO) { screenStateSettings.save() }
             }
             if (focusRequested)
                 ScanPathHelper.resetFocus()
@@ -232,10 +114,9 @@ fun S3Screen(
     }
 
     var selectPathDialog by remember { mutableStateOf(false) }
-    var connectionSettingsExpanded by remember { mutableStateOf(screenStateSettings.s3ScreenState.connectionSettingsExpanded) }
-    
+
     var saveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
-    
+
     fun saveScreenState() {
         saveJob?.cancel()
         saveJob = coroutineScope.launch {
@@ -243,9 +124,8 @@ fun S3Screen(
             screenStateSettings.s3ScreenState.path = path
             screenStateSettings.s3ScreenState.endpoint = endpoint
             screenStateSettings.s3ScreenState.accessKey = accessKey
-            screenStateSettings.s3ScreenState.secretKey = secretKey
+            screenStateSettings.s3ScreenState.secretKey = ""
             screenStateSettings.s3ScreenState.bucket = bucket
-            screenStateSettings.s3ScreenState.connectionSettingsExpanded = connectionSettingsExpanded
             screenStateSettings.s3ScreenState.extensions.clear()
             screenStateSettings.s3ScreenState.extensions.addAll(scanSettings.extensions)
             screenStateSettings.s3ScreenState.matchers.clear()
@@ -253,7 +133,108 @@ fun S3Screen(
             screenStateSettings.s3ScreenState.userSignatures.clear()
             screenStateSettings.s3ScreenState.userSignatures.addAll(scanSettings.userSignatures)
             screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
+        }
+    }
+
+    fun savedConnectionUrl(conn: SavedS3Connection): String {
+        val endpointPart = conn.endpoint.trim()
+        val bucketPart = conn.bucket.trim()
+        return if (bucketPart.isNotBlank()) "$endpointPart/$bucketPart" else endpointPart
+    }
+
+    fun savedConnectionPrimary(conn: SavedS3Connection): String =
+        conn.name.trim().ifBlank { savedConnectionUrl(conn) }
+
+    fun savedConnectionSecondary(conn: SavedS3Connection): String =
+        "url: ${savedConnectionUrl(conn)}"
+
+    fun savedConnectionTertiary(conn: SavedS3Connection): String =
+        buildString {
+            if (conn.bucket.isNotBlank()) append("bucket: ${conn.bucket}")
+            if (conn.accessKey.isNotBlank()) {
+                if (isNotEmpty()) append(" · ")
+                append("access key: ${conn.accessKey}")
+            }
+        }
+
+    fun defaultConnectionName(): String {
+        val endpointPart = endpoint.trim().ifBlank { "s3-connection" }
+        val bucketPart = bucket.trim()
+        return if (bucketPart.isNotBlank()) "$endpointPart/$bucketPart" else endpointPart
+    }
+
+    fun normalizeEndpointLookup(raw: String): String {
+        return raw
+            .trim()
+            .lowercase()
+            .removePrefix("https://")
+            .removePrefix("http://")
+            .trimEnd('/')
+    }
+
+    fun normalizeBucketLookup(raw: String): String {
+        val trimmed = raw.trim().lowercase()
+        if (trimmed.isBlank()) return ""
+        val noScheme = trimmed.substringAfter("://", trimmed)
+        val firstSegment = noScheme.substringBefore('/').ifBlank { noScheme }
+        return firstSegment.trim()
+    }
+
+    fun normalizeAccessKeyLookup(raw: String): String =
+        raw.trim().lowercase()
+
+    fun refreshSavedConnections() {
+        coroutineScope.launch {
+            savedConnections = scanService.withHistoryBatchesPaused {
+                savedS3ConnectionsRepository.list()
+            }
+        }
+    }
+
+    fun applySavedConnection(conn: SavedS3Connection) {
+        coroutineScope.launch {
+            val storedSecret = savedS3ConnectionsRepository.getSecretKey(conn.connectionKey).orEmpty()
+            endpoint = conn.endpoint
+            bucket = conn.bucket
+            accessKey = conn.accessKey
+            secretKey = storedSecret
+            selectedSavedConnectionKey = conn.connectionKey
+            connectionTestOk = false
+            connectionTestMessage = null
+            saveScreenState()
+        }
+    }
+
+    fun saveCurrentS3Connection(connectionName: String? = null) {
+        val finalName = connectionName?.trim()?.takeIf { it.isNotBlank() } ?: defaultConnectionName()
+        coroutineScope.launch {
+            val key = scanService.withHistoryBatchesPaused {
+                savedS3ConnectionsRepository.upsert(
+                    name = finalName,
+                    endpoint = endpoint,
+                    bucket = bucket,
+                    accessKey = accessKey,
+                    secretKey = secretKey
+                )
+            }
+            selectedSavedConnectionKey = key
+            refreshSavedConnections()
+        }
+    }
+
+    fun removeSavedConnection(conn: SavedS3Connection) {
+        coroutineScope.launch {
+            scanService.withHistoryBatchesPaused {
+                savedS3ConnectionsRepository.remove(conn.connectionKey)
+            }
+            if (selectedSavedConnectionKey == conn.connectionKey) {
+                selectedSavedConnectionKey = null
+            }
+            refreshSavedConnections()
+            if (savedConnections.isEmpty()) {
+                savedConnectionsExpanded = false
+            }
         }
     }
     
@@ -262,19 +243,44 @@ fun S3Screen(
     
     var hasLoadedS3Settings by remember { mutableStateOf(false) }
     
+    // Sync S3 connection params from settings when entering S3 screen (they are edited in Scan options)
+    LaunchedEffect(isOnS3Screen) {
+        if (isOnS3Screen) {
+            endpoint = screenStateSettings.s3ScreenState.endpoint
+            accessKey = screenStateSettings.s3ScreenState.accessKey
+            bucket = screenStateSettings.s3ScreenState.bucket
+            if (endpoint.isNotBlank() && bucket.isNotBlank() && accessKey.isNotBlank()) {
+                val restoredSecret = scanService.withHistoryBatchesPaused {
+                    val directKey = savedS3ConnectionsRepository.connectionKey(
+                        endpoint = endpoint,
+                        bucket = bucket,
+                        accessKey = accessKey
+                    )
+                    savedS3ConnectionsRepository.getSecretKey(directKey)
+                        ?: savedS3ConnectionsRepository
+                            .list()
+                            .firstOrNull { conn ->
+                                normalizeEndpointLookup(conn.endpoint) == normalizeEndpointLookup(endpoint) &&
+                                    normalizeBucketLookup(conn.bucket) == normalizeBucketLookup(bucket) &&
+                                    normalizeAccessKeyLookup(conn.accessKey) == normalizeAccessKeyLookup(accessKey)
+                            }
+                            ?.let { matched -> savedS3ConnectionsRepository.getSecretKey(matched.connectionKey) }
+                }
+                secretKey = restoredSecret.orEmpty()
+            } else {
+                secretKey = ""
+            }
+            refreshSavedConnections()
+        }
+    }
+
     // Load detection settings when entering this screen
     LaunchedEffect(isOnS3Screen) {
         if (isOnS3Screen && !hasLoadedS3Settings) {
             val hasSavedDetectionSettings = screenStateSettings.s3ScreenState.extensions.isNotEmpty() || 
                                            screenStateSettings.s3ScreenState.matchers.isNotEmpty() || 
                                            screenStateSettings.s3ScreenState.userSignatures.isNotEmpty()
-            val hasOtherSavedState = screenStateSettings.s3ScreenState.path.isNotEmpty() ||
-                                    screenStateSettings.s3ScreenState.endpoint.isNotEmpty() ||
-                                    screenStateSettings.s3ScreenState.accessKey.isNotEmpty() ||
-                                    screenStateSettings.s3ScreenState.bucket.isNotEmpty()
-            val hasSavedState = hasSavedDetectionSettings || hasOtherSavedState
-            
-            if (hasSavedState) {
+            if (hasSavedDetectionSettings) {
                 scanSettings.extensions.clear()
                 scanSettings.extensions.addAll(screenStateSettings.s3ScreenState.extensions)
                 scanSettings.matchers.clear()
@@ -282,7 +288,7 @@ fun S3Screen(
                 scanSettings.userSignatures.clear()
                 scanSettings.userSignatures.addAll(screenStateSettings.s3ScreenState.userSignatures)
                 scanSettings.fastScan.value = screenStateSettings.s3ScreenState.fastScan.value
-                scanSettings.save()
+                withContext(Dispatchers.IO) { scanSettings.save() }
             }
             hasLoadedS3Settings = true
         } else if (!isOnS3Screen) {
@@ -314,16 +320,16 @@ fun S3Screen(
                     screenStateSettings.s3ScreenState.userSignatures.clear()
                     screenStateSettings.s3ScreenState.userSignatures.addAll(scanSettings.userSignatures)
                     screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
-                    screenStateSettings.save()
+                    withContext(Dispatchers.IO) { screenStateSettings.save() }
                 }
             }
         }
     }
-    
+
     LaunchedEffect(isOnS3Screen, scanSettings.fastScan.value) {
         if (isOnS3Screen) {
             screenStateSettings.s3ScreenState.fastScan.value = scanSettings.fastScan.value
-            screenStateSettings.save()
+            withContext(Dispatchers.IO) { screenStateSettings.save() }
         }
     }
 
@@ -344,328 +350,646 @@ fun S3Screen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = if (settingsExpanded) 0.dp else 150.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        OutlinedTextField(
-            modifier = Modifier
-                .height(80.dp)
-                .width(700.dp),
-            value = path,
-            onValueChange = { 
-                path = it
-                saveScreenState()
-            },
-            placeholder = { Text(text = stringResource(Res.string.MainScreen_SelectPathPlaceholder)) },
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium,
-            isError = selectPathError,
-            leadingIcon = {
-                Box(
-                    modifier = Modifier
-                        .height(40.dp)
-                        .width(64.dp)
-                        .size(48.dp)
-                        .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = null
-                    )
-                }
-            },
-            trailingIcon = {
+    setSidebarContent { }
+    setBottomBarContent {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlHeight = sourceTokens.controlHeight
+            val controlShape = RoundedCornerShape(sourceTokens.controlCorner)
+            val scanButtonWidth = when {
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
+            val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .widthIn(min = blockMinWidth)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(controlGap)
                 ) {
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val isHovered by interactionSource.collectIsHoveredAsState()
-                    
-                    val scale by animateFloatAsState(
-                        targetValue = if (isHovered) 1.1f else 1f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        ),
-                        label = "scale"
-                    )
-                    
-                    DescriptionTooltip(
-                        description = stringResource(Res.string.S3Screen_Tooltip_ConnectionSettings)
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(controlHeight)
+                            .then(
+                                if (selectPathError) Modifier.border(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                    controlShape
+                                )
+                                else Modifier
+                            ),
+                        shape = controlShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        tonalElevation = 0.dp
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(38.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .background(
-                                    when {
-                                        connectionSettingsExpanded -> 
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-                                        isHovered -> 
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                        else -> 
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                .fillMaxSize()
+                                .padding(
+                                    horizontal = sourceTokens.inlinePaddingHorizontal,
+                                    vertical = sourceTokens.inlinePaddingVertical
+                                ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
+                    ) {
+                            OutlinedTextField(
+                                value = path,
+                                onValueChange = { path = it; saveScreenState() },
+                                modifier = Modifier.weight(1f).heightIn(min = sourceTokens.fieldMinHeight),
+                                placeholder = { Text(stringResource(Res.string.MainScreen_SelectPathPlaceholder), style = MaterialTheme.typography.bodyMedium) },
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                shape = MaterialTheme.shapes.small,
+                                isError = selectPathError,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    disabledBorderColor = Color.Transparent,
+                                    errorBorderColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    disabledContainerColor = Color.Transparent,
+                                    errorContainerColor = Color.Transparent
+                                )
+                            )
+                            IconButton(
+                                onClick = {
+                                    if (endpoint.isNotEmpty() && accessKey.isNotEmpty() && secretKey.isNotEmpty() && bucket.isNotEmpty()) {
+                                        selectPathDialog = true
+                                    } else {
+                                        incorrectConnection = true
+                                    }
+                                },
+                            modifier = Modifier.size(sourceTokens.iconButtonSize)
+                            ) {
+                                Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null, modifier = Modifier.size(sourceTokens.iconSize), tint = SourceActionBlue)
+                            }
+                        }
+                    }
+
+                    Button(
+                        enabled = true,
+                        onClick = {
+                            val normalizedPath = path.trim()
+                            val hasConnectionSettings = endpoint.isNotBlank() &&
+                                bucket.isNotBlank() &&
+                                accessKey.isNotBlank() &&
+                                secretKey.isNotBlank()
+                            val missingExtensions = scanSettings.extensions.isEmpty()
+                            val missingMatchers = !hasSelectedMatchersForScan(scanSettings)
+                            if (missingExtensions || missingMatchers) {
+                                onRequireScanSettings(missingExtensions, missingMatchers)
+                                return@Button
+                            }
+                            if (!hasConnectionSettings) {
+                                onRequireSourceInputs()
+                                incorrectConnection = true
+                                return@Button
+                            }
+                            if (normalizedPath.isEmpty()) {
+                                onRequireSourceInputs()
+                                selectPathError = true
+                                return@Button
+                            }
+                            if (!validateAndShowError()) return@Button
+                            path = normalizedPath
+                            saveScreenState()
+                            coroutineScope.launch {
+                                val task = scanService.createTask(
+                                    path = normalizedPath,
+                                    extensions = scanSettings.extensions,
+                                    matchers = scanSettings.matchers + scanSettings.userSignatures,
+                                    fastScan = scanSettings.fastScan.value,
+                                    connector = ConnectorS3(
+                                        endpointStr = endpoint,
+                                        accessKey = accessKey,
+                                        secretKey = secretKey,
+                                        bucketStr = bucket
+                                    )
+                                )
+                                scanService.startTask(task)
+                                task.id.value?.let { expandScanState(it) }
+                            }
+                        },
+                        modifier = ScanButtonModifier(
+                            isReady = true,
+                            modifier = Modifier.width(scanButtonWidth).height(controlHeight)
+                        ).scanButtonHoverFeedback(enabled = true).scanButtonChipBorder(),
+                        shape = controlShape,
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
+                            disabledElevation = 0.dp
+                        ),
+                        colors = startScanButtonColors()
+                    ) {
+                        StartScanButtonContent()
+                    }
+                }
+            }
+        }
+    }
+
+    // AWS connection params should appear under the source radio buttons.
+    setUnderSourceContent {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val sourceTokens = rememberMainSourceRowTokens(maxWidth, maxHeight)
+            val controlGap = if (maxWidth < 1200.dp) sourceTokens.controlGapCompact else sourceTokens.controlGapRegular
+            val scanButtonWidth = when {
+                maxWidth >= 1500.dp -> sourceTokens.scanButtonWidthWide
+                maxWidth < 1200.dp -> sourceTokens.scanButtonWidthCompact
+                else -> sourceTokens.scanButtonWidthRegular
+            }
+            val pathMinWidth = if (maxWidth < 1200.dp) sourceTokens.pathMinWidthCompact else sourceTokens.pathMinWidthRegular
+            val blockMinWidth = pathMinWidth + controlGap + scanButtonWidth
+
+            // Connection parameters (compact, single row)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .widthIn(min = blockMinWidth)
+                        .fillMaxWidth()
+                        .padding(
+                            start = sourceTokens.inlinePaddingHorizontal,
+                            end = sourceTokens.inlinePaddingHorizontal,
+                            top = 2.dp,
+                            bottom = 2.dp
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Same "feel" as the path block (bodyMedium), but keep compact size.
+                    val compactSize = MaterialTheme.typography.bodySmall.fontSize
+                    val compactLineHeight = MaterialTheme.typography.bodySmall.lineHeight
+                    val fieldTextStyle = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = compactSize,
+                        lineHeight = compactLineHeight
+                    )
+                    val placeholderStyle = fieldTextStyle.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                    )
+
+                    @Composable
+                    fun CompactField(
+                        value: String,
+                        onValueChange: (String) -> Unit,
+                        placeholder: String,
+                        modifier: Modifier,
+                        isError: Boolean = false,
+                        visualTransformation: VisualTransformation = VisualTransformation.None,
+                        isPassword: Boolean = false
+                    ) {
+                        val shape = RoundedCornerShape(sourceTokens.compactFieldCorner)
+                        Surface(
+                            modifier = modifier
+                                .height(sourceTokens.compactFieldHeight)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isError) {
+                                        MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)
+                                    },
+                                    shape = shape
+                                ),
+                            shape = shape,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+                            tonalElevation = 0.dp
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(
+                                        horizontal = sourceTokens.inlineControlGap,
+                                        vertical = sourceTokens.inlinePaddingVertical - 2.dp
+                                    ),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                BasicTextField(
+                                    value = value,
+                                    onValueChange = onValueChange,
+                                    singleLine = true,
+                                    textStyle = fieldTextStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                    visualTransformation = if (isPassword && !secretKeyVisible) PasswordVisualTransformation() else visualTransformation,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(end = if (isPassword) sourceTokens.iconSize + 2.dp else 0.dp),
+                                    decorationBox = { inner ->
+                                        if (value.isEmpty()) {
+                                            Text(placeholder, style = placeholderStyle, maxLines = 1)
+                                        }
+                                        inner()
                                     }
                                 )
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable(
-                                    interactionSource = interactionSource,
-                                    indication = null,
-                                    onClick = { 
-                                        connectionSettingsExpanded = !connectionSettingsExpanded
-                                        saveScreenState()
+                                if (isPassword) {
+                                    IconButton(
+                                        onClick = { secretKeyVisible = !secretKeyVisible },
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .size(sourceTokens.iconSize - 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (secretKeyVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                            contentDescription = if (secretKeyVisible) "Hide secret key" else "Show secret key",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                                            modifier = Modifier.size(sourceTokens.iconSize - 8.dp)
+                                        )
                                     }
-                                ),
-                            contentAlignment = Alignment.Center
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(sourceTokens.controlGapCompact),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CompactField(
+                            value = endpoint,
+                            onValueChange = {
+                                endpoint = it
+                                selectedSavedConnectionKey = null
+                                saveScreenState()
+                                connectionTestOk = null
+                                connectionTestMessage = null
+                            },
+                            placeholder = "Endpoint",
+                            modifier = Modifier.weight(1.2f).widthIn(min = 180.dp),
+                            isError = incorrectConnection && endpoint.isBlank()
+                        )
+                        CompactField(
+                            value = bucket,
+                            onValueChange = {
+                                bucket = it
+                                selectedSavedConnectionKey = null
+                                saveScreenState()
+                                connectionTestOk = null
+                                connectionTestMessage = null
+                            },
+                            placeholder = "Bucket",
+                            modifier = Modifier.weight(0.85f).widthIn(min = 120.dp),
+                            isError = incorrectConnection && bucket.isBlank()
+                        )
+                        CompactField(
+                            value = accessKey,
+                            onValueChange = {
+                                accessKey = it
+                                selectedSavedConnectionKey = null
+                                saveScreenState()
+                                connectionTestOk = null
+                                connectionTestMessage = null
+                            },
+                            placeholder = "Access key",
+                            modifier = Modifier.weight(1f).widthIn(min = 140.dp),
+                            isError = incorrectConnection && accessKey.isBlank()
+                        )
+                        CompactField(
+                            value = secretKey,
+                            onValueChange = {
+                                secretKey = it
+                                selectedSavedConnectionKey = null
+                                saveScreenState()
+                                connectionTestOk = null
+                                connectionTestMessage = null
+                            },
+                            placeholder = "Secret key",
+                            modifier = Modifier.weight(0.82f).widthIn(min = 112.dp),
+                            isError = incorrectConnection && secretKey.isBlank(),
+                            isPassword = true
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val canTest = endpoint.isNotBlank() && bucket.isNotBlank() && accessKey.isNotBlank() && secretKey.isNotBlank()
+                        Button(
+                            enabled = canTest && !isTestingConnection,
+                            onClick = {
+                                isTestingConnection = true
+                                connectionTestOk = null
+                                connectionTestMessage = null
+                                coroutineScope.launch {
+                                    runCatching {
+                                        ConnectorS3(
+                                            endpointStr = endpoint,
+                                            accessKey = accessKey,
+                                            secretKey = secretKey,
+                                            bucketStr = bucket
+                                        ).use { it.testConnection(prefix = "") }
+                                    }.onSuccess {
+                                        connectionTestOk = true
+                                        connectionTestMessage = s3ConnectionSuccessMessage
+                                    }.onFailure {
+                                        connectionTestOk = false
+                                        connectionTestMessage = s3ConnectionErrorMessage
+                                    }
+                                    isTestingConnection = false
+                                }
+                            },
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
+                            colors = startScanButtonColors()
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Key,
-                                contentDescription = "Connection settings",
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .scale(scale),
-                                tint = when {
-                                    connectionSettingsExpanded -> MaterialTheme.colorScheme.primary
-                                    isHovered -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            Text(
+                                text = stringResource(Res.string.ScanSettings_PostgresTestConnection),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+
+                        OutlinedButton(
+                            enabled = canTest,
+                            onClick = {
+                                pendingConnectionName = defaultConnectionName()
+                                pendingConnectionNameError = false
+                                pendingConnectionNameDialog = true
+                            },
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.ScanSettings_PostgresAddConnection),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        TextButton(
+                            onClick = { savedConnectionsExpanded = true },
+                            enabled = savedConnections.isNotEmpty(),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(sourceTokens.compactFieldCorner),
+                            modifier = Modifier.height(sourceTokens.compactFieldHeight)
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.MainScreen_SavedConnections, savedConnections.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (savedConnections.isNotEmpty()) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
                                 }
                             )
                         }
                     }
+
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
-                            .clip(
-                                MaterialTheme.shapes.large
-                            )
-                            .background(MaterialTheme.colorScheme.onBackground)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                val areFieldsFilled = endpoint.isNotEmpty() &&
-                                    accessKey.isNotEmpty() &&
-                                    secretKey.isNotEmpty() &&
-                                    bucket.isNotEmpty()
-                                
-                                if (areFieldsFilled) {
-                                    selectPathDialog = true
-                                } else {
-                                    // Если поля не заполнены и блок не раскрыт, раскрыть его
-                                    if (!connectionSettingsExpanded) {
-                                        connectionSettingsExpanded = true
-                                        saveScreenState()
-                                    }
-                                    // Активировать моргающую красную обводку через LaunchedEffect
-                                    incorrectConnection = true
-                                }
-                            },
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(18.dp),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.FolderOpen,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.background
-                        )
+                        connectionTestMessage?.let { message ->
+                            Text(
+                                text = message,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = if (connectionTestOk == true) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                }
+            }
+        }
+    }
+
+    pendingDeleteConnection?.let { connToDelete ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteConnection = null },
+            title = { Text(stringResource(Res.string.MainScreen_DeleteSavedConnectionTypeTitle, "S3")) },
+            text = { Text(savedConnectionPrimary(connToDelete)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        removeSavedConnection(connToDelete)
+                        pendingDeleteConnection = null
+                    }
+                ) {
+                    Text(stringResource(Res.string.ScanSettings_Profiles_Delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteConnection = null }) {
+                    Text(stringResource(Res.string.Common_Cancel))
                 }
             }
         )
-        
-        Box(
-            modifier = Modifier
-                .width(700.dp)
-                .padding(vertical = 0.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            RadioButtonNavigation(
-                navController = navController
-            )
-        }
-        
-        AnimatedVisibility(
-            visible = connectionSettingsExpanded,
-            enter = expandVertically(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-            exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
-        ) {
-            Column(
-                modifier = Modifier
-                    .width(700.dp)
-                    .padding(top = 8.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    CustomOutlinedTextField(
-                        modifier = Modifier
-                            .height(32.dp)
-                            .weight(1f),
-                        value = endpoint,
-                        onValueChange = { 
-                            endpoint = it
-                            if (it.isNotEmpty()) endpointError = false
-                            saveScreenState()
-                        },
-                        placeholder = "Endpoint",
-                        isError = endpointError,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 14.sp
-                        )
-                    )
-                    CustomOutlinedTextField(
-                        modifier = Modifier
-                            .height(32.dp)
-                            .weight(1f),
-                        value = bucket,
-                        onValueChange = { 
-                            bucket = it
-                            if (it.isNotEmpty()) bucketError = false
-                            saveScreenState()
-                        },
-                        placeholder = "Bucket",
-                        isError = bucketError,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 14.sp
-                        )
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    CustomOutlinedTextField(
-                        modifier = Modifier
-                            .height(32.dp)
-                            .weight(1f),
-                        value = accessKey,
-                        onValueChange = { 
-                            accessKey = it
-                            if (it.isNotEmpty()) accessKeyError = false
-                            saveScreenState()
-                        },
-                        placeholder = "Access key",
-                        isError = accessKeyError,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 14.sp
-                        )
-                    )
-                    CustomOutlinedTextField(
-                        modifier = Modifier
-                            .height(32.dp)
-                            .weight(1f),
-                        value = secretKey,
-                        onValueChange = { 
-                            secretKey = it
-                            if (it.isNotEmpty()) secretKeyError = false
-                            saveScreenState()
-                        },
-                        placeholder = "Secret key",
-                        isError = secretKeyError,
-                        visualTransformation = PasswordVisualTransformation(),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 14.sp
-                        )
-                    )
-                }
-            }
-        }
+    }
 
-        Row {
-                Button(
-                    onClick = {
-                        val areFieldsFilled = endpoint.isNotEmpty() &&
-                            accessKey.isNotEmpty() &&
-                            secretKey.isNotEmpty() &&
-                            bucket.isNotEmpty()
-                        
-                        if (!areFieldsFilled) {
-                            // Если поля не заполнены и блок не раскрыт, раскрыть его
-                            if (!connectionSettingsExpanded) {
-                                connectionSettingsExpanded = true
-                                saveScreenState()
+    if (pendingConnectionNameDialog) {
+        AlertDialog(
+            onDismissRequest = { pendingConnectionNameDialog = false },
+            title = { Text(stringResource(Res.string.MainScreen_ConnectionNameTitle)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedTextField(
+                        value = pendingConnectionName,
+                        onValueChange = {
+                            pendingConnectionName = it
+                            if (pendingConnectionNameError && it.isNotBlank()) {
+                                pendingConnectionNameError = false
                             }
-                            // Активировать моргающую красную обводку через LaunchedEffect
-                            incorrectConnection = true
-                            scanNotCorrectPath = true
-                            return@Button
-                        }
-                        
-                        // Validate scan settings
-                        if (!validateAndShowError()) {
-                            return@Button
-                        }
-                        
-                        // Save state before scanning
-                        saveScreenState()
-                        coroutineScope.launch {
-                            val task = scanService.createTask(
-                                path = path,
-                                extensions = scanSettings.extensions,
-                                matchers = scanSettings.matchers + scanSettings.userSignatures,
-                                fastScan = scanSettings.fastScan.value,
-                                connector = ConnectorS3(
-                                    endpointStr = endpoint,
-                                    accessKey = accessKey,
-                                    secretKey = secretKey,
-                                    bucketStr = bucket
-                                )
-                            )
-                            scanService.startTask(task)
-                            task.id.value?.let { taskId ->
-                                expandScanState(taskId)
-                            }
-
-                        }
-                    },
-                    modifier = Modifier
-                        .width(268.dp)
-                        .height(56.dp),
-                    shape = MaterialTheme.shapes.medium.copy(
-                        topEnd = CornerSize(0.dp),
-                        bottomEnd = CornerSize(0.dp)
+                        },
+                        placeholder = { Text(stringResource(Res.string.MainScreen_ConnectionNamePlaceholder)) },
+                        singleLine = true,
+                        isError = pendingConnectionNameError,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                ) {
-                    Text(
-                        text = stringResource(Res.string.MainScreen_ScanStartButton),
-                        fontSize = 24.sp
-                    )
+                    if (pendingConnectionNameError) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_ConnectionNameRequired),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
-                SettingsButton(
-                    transition = settingsButtonTransition,
+            },
+            confirmButton = {
+                TextButton(
                     onClick = {
-                        if (!settingsExpanded) {
-                            expandSettings()
+                        val trimmed = pendingConnectionName.trim()
+                        if (trimmed.isBlank()) {
+                            pendingConnectionNameError = true
                         } else {
-                            hideSettings()
+                            saveCurrentS3Connection(connectionName = trimmed)
+                            pendingConnectionNameDialog = false
                         }
                     }
-                )
+                ) {
+                    Text(stringResource(Res.string.Common_Save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingConnectionNameDialog = false }) {
+                    Text(stringResource(Res.string.Common_Cancel))
+                }
             }
-        
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 16.dp)
-        ) {
-            SettingsBox(
-                transition = settingsBoxTransition
-            )
+        )
+    }
+
+    if (savedConnectionsExpanded) {
+        Dialog(onDismissRequest = { savedConnectionsExpanded = false }) {
+            val dialogScroll = rememberScrollState()
+            val cs = MaterialTheme.colorScheme
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                tonalElevation = 3.dp,
+                color = cs.surfaceVariant,
+                border = BorderStroke(1.dp, cs.outlineVariant.copy(alpha = 0.56f)),
+                modifier = Modifier.widthIn(min = 440.dp, max = 580.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_SavedConnections, savedConnections.size),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = cs.onSurface
+                        )
+                        TextButton(
+                            onClick = { savedConnectionsExpanded = false },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.Common_Cancel),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.onSurfaceVariant
+                            )
+                        }
+                    }
+                    HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.34f))
+                    if (savedConnections.isEmpty()) {
+                        Text(
+                            text = stringResource(Res.string.MainScreen_NoSavedConnections),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cs.onSurfaceVariant
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 320.dp)
+                                .verticalScroll(dialogScroll),
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                        ) {
+                            savedConnections.forEachIndexed { index, conn ->
+                                val isSelected = conn.connectionKey == selectedSavedConnectionKey
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            if (isSelected) cs.primaryContainer.copy(alpha = 0.18f) else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable {
+                                            applySavedConnection(conn)
+                                            savedConnectionsExpanded = false
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (isSelected) Icons.Outlined.RadioButtonChecked else Icons.Outlined.RadioButtonUnchecked,
+                                        contentDescription = null,
+                                        tint = if (isSelected) cs.primary else cs.onSurfaceVariant.copy(alpha = 0.75f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                                    ) {
+                                        Text(
+                                            text = savedConnectionPrimary(conn),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = if (isSelected) cs.primary else cs.onSurface
+                                        )
+                                        Text(
+                                            text = savedConnectionSecondary(conn),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = cs.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = savedConnectionTertiary(conn).ifBlank { " " },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = cs.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { pendingDeleteConnection = conn },
+                                        modifier = Modifier.size(30.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Close,
+                                            contentDescription = "Delete saved connection",
+                                            tint = cs.onSurfaceVariant.copy(alpha = 0.85f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                                if (index < savedConnections.lastIndex) {
+                                    HorizontalDivider(
+                                        color = cs.outlineVariant.copy(alpha = 0.24f),
+                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-    
+
     // Validation error dialog
     ScanValidationErrorDialog(
         validationError = validationErrorDialog,
         onDismiss = dismissValidationError
     )
+
 }

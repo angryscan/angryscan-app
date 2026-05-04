@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
 import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
@@ -29,12 +29,32 @@ class ConnectorS3(
     val bucketStr: String,
     @Serializable
     val regionStr: String? = null,
-) : IConnector, AutoCloseable {
+ ) : IFileConnector, AutoCloseable {
+
+    private fun normalizeEndpoint(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return trimmed
+        return if ("://" in trimmed) trimmed else "https://$trimmed"
+    }
+
+    private fun normalizeBucket(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return trimmed
+
+        // Accept inputs like:
+        // - "bucket-name"
+        // - "obs://bucket-name"
+        // - "s3://bucket-name/prefix"
+        // - "https://endpoint/bucket-name" (keep only last path segment)
+        val noScheme = trimmed.substringAfter("://", trimmed)
+        val firstSegment = noScheme.substringBefore('/').ifBlank { noScheme }
+        return firstSegment.trim()
+    }
 
     private val s3Client by lazy {
         runBlocking {
             val client = S3Client.fromEnvironment {
-                endpointUrl = Url.parse(endpointStr)
+                endpointUrl = Url.parse(normalizeEndpoint(endpointStr))
                 region = regionStr ?: "auto"
                 credentialsProvider = StaticCredentialsProvider {
                     accessKeyId = accessKey
@@ -48,6 +68,20 @@ class ConnectorS3(
 
     val pathDelimiter = '/'
 
+    /**
+     * Throws on auth/endpoint/bucket errors.
+     * Used by UI "Test connection" button.
+     */
+    suspend fun testConnection(prefix: String = ""): Unit =
+        withContext(Dispatchers.Default) {
+            val request = ListObjectsV2Request {
+                bucket = normalizeBucket(bucketStr)
+                this.prefix = prefix
+                maxKeys = 1
+            }
+            s3Client.listObjectsV2(request)
+        }
+
     suspend fun getFiles(dir: String): List<S3File> =
         withContext(Dispatchers.Default) {
             var contToken: String? = null
@@ -55,7 +89,7 @@ class ConnectorS3(
 
             do {
                 val request = ListObjectsV2Request {
-                    bucket = bucketStr
+                    bucket = normalizeBucket(bucketStr)
                     prefix = dir
                     delimiter = pathDelimiter.toString()
                     maxKeys = 1000
@@ -107,7 +141,7 @@ class ConnectorS3(
     override suspend fun getFile(filePath: String): File =
         withContext(Dispatchers.Default) {
             val request = GetObjectRequest {
-                bucket = bucketStr
+                bucket = normalizeBucket(bucketStr)
                 key = filePath
             }
 
@@ -130,13 +164,13 @@ class ConnectorS3(
         dir: String,
         extensions: List<IFileType>,
         fileSelected: (file: FoundedFile) -> Unit
-    ): FilesCounter =
+    ): ObjectCounter =
         withContext(Dispatchers.Default) {
-            var filesCounter = FilesCounter()
+            var filesCounter = ObjectCounter()
             var contToken: String? = null
             do {
                 val request = ListObjectsV2Request {
-                    bucket = bucketStr
+                    bucket = normalizeBucket(bucketStr)
                     prefix = dir
                     continuationToken = contToken
                     delimiter = pathDelimiter.toString()

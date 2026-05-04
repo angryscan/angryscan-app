@@ -7,8 +7,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.db.DatabaseConnector
 import org.angryscan.app.db.models.*
+import org.angryscan.app.scan.common.connectors.IDatabaseConnector
+import org.angryscan.app.scan.common.connectors.IFileConnector
 import org.angryscan.app.scan.common.files.extensions.requireKeywords
-import org.angryscan.app.scan.common.files.types.*
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.engine.EngineChainCache
 import org.angryscan.app.scan.engine.EngineChainKey
 import org.angryscan.app.scan.engine.buildEngineChain
@@ -22,6 +24,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.reflect.KClass
 import kotlin.system.measureTimeMillis
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -96,6 +99,25 @@ class ScanThread : KoinComponent {
 
                     if (dbFile == null) {
                         scanningFileId.set(-1)
+
+                        val rescuedPending = database.transaction {
+                            TaskFiles.update(
+                                where = {
+                                    TaskFiles.task.eq(taskEntity.dbTask.id) and
+                                        TaskFiles.state.eq(TaskState.PENDING)
+                                }
+                            ) {
+                                it[state] = TaskState.SEARCHING
+                            }
+                        }
+
+                        if (rescuedPending > 0) {
+                            logger.debug { "Rescued $rescuedPending PENDING files for task ${taskEntity.id.value}" }
+                            continue
+                        }
+
+                        taskEntity.checkProgress()
+
                         retryCount++
                         if (retryCount > 3) {
                             retryCount = 0
@@ -108,26 +130,53 @@ class ScanThread : KoinComponent {
                     val meta = taskMetadataCache[taskId]!!
                     val fileId = dbFile[TaskFiles.id].value
                     val filePath = dbFile[TaskFiles.path]
-                    val fileObject = taskEntity.dbTask.connector.getFile(filePath)
-
-                    val fileTypes = IFileType
-                        .getFileType(fileObject)
-                        .filter { ft -> ft in meta.extensions }
-
-                    val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
-
+                    val connector = taskEntity.dbTask.connector
                     val primaryEngineClass = scanSettings.value.engine.value
-                    val key = EngineChainKey.of(primaryEngineClass, meta.matchers.keys.toList(), requireKeywords)
-                    val engines = engineCache.getOrCreate(key) {
-                        buildEngineChain(primaryEngineClass, meta.matchers.keys.toList(), requireKeywords)
-                    }
 
-                    scanningFileId.set(fileId)
+                    when (connector) {
+                        is IFileConnector -> {
+                            val fileObject = connector.getFile(filePath)
+                            val fileTypes = IFileType
+                                .getFileType(fileObject)
+                                .filter { ft -> ft in meta.extensions }
 
-                    val timer = measureTimeMillis {
-                        scanFile(fileObject, fileId, fileTypes, engines, meta, taskEntity)
+                            val requireKeywords = fileTypes.requireKeywords(fileObject.extension)
+                            val engines = cachedEngineChain(primaryEngineClass, meta, requireKeywords)
+
+                            scanningFileId.set(fileId)
+
+                            val timer = measureTimeMillis {
+                                scanFile(fileObject, fileId, fileTypes, engines, meta, taskEntity)
+                            }
+                            logger.debug {
+                                "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms"
+                            }
+                        }
+
+                        is IDatabaseConnector -> {
+                            val structuredRows = connector.getTableContentStructured(filePath)
+                            val engines = cachedEngineChain(primaryEngineClass, meta, requireKeywords = false)
+
+                            scanningFileId.set(fileId)
+
+                            val timer = measureTimeMillis {
+                                scanDatabaseTable(filePath, fileId, structuredRows, engines, meta, taskEntity)
+                            }
+                            logger.debug {
+                                "Scanned database table $filePath with ${structuredRows.size} rows in $timer ms"
+                            }
+                        }
+
+                        else -> {
+                            scanningFileId.set(fileId)
+                            logger.warn { "Unsupported connector for scan task ${taskEntity.id.value}" }
+                            database.transaction {
+                                TaskFiles.update(where = { TaskFiles.id.eq(fileId) }) {
+                                    it[state] = TaskState.FAILED
+                                }
+                            }
+                        }
                     }
-                    logger.debug { "Scanned file with extension ${fileObject.extension} and size ${fileObject.length()} in $timer ms" }
 
                     taskEntity.checkProgress()
                     evictStaleTasks()
@@ -142,6 +191,18 @@ class ScanThread : KoinComponent {
         }
     }
 
+    private fun cachedEngineChain(
+        primaryEngineClass: KClass<out IScanEngine>,
+        meta: TaskMetadata,
+        requireKeywords: Boolean
+    ): List<IScanEngine> {
+        val matchers = meta.matchers.keys.toList()
+        val key = EngineChainKey.of(primaryEngineClass, matchers, requireKeywords)
+        return engineCache.getOrCreate(key) {
+            buildEngineChain(primaryEngineClass, matchers, requireKeywords)
+        }
+    }
+
     @OptIn(ExperimentalTime::class)
     private suspend fun claimFileAndFetchMetadata(
         taskEntity: TaskEntityViewModel,
@@ -151,7 +212,7 @@ class ScanThread : KoinComponent {
             val resultRow = TaskFiles.selectAll()
                 .where {
                     TaskFiles.task.eq(taskEntity.dbTask.id) and
-                            TaskFiles.state.eq(TaskState.SEARCHING)
+                        TaskFiles.state.eq(TaskState.SEARCHING)
                 }
                 .limit(1)
                 .firstOrNull()
@@ -233,6 +294,51 @@ class ScanThread : KoinComponent {
                 TaskFiles.update(
                     where = { TaskFiles.id.eq(fileId) }
                 ) {
+                    it[state] = TaskState.FAILED
+                }
+            }
+        }
+    }
+
+    private suspend fun scanDatabaseTable(
+        filePath: String,
+        fileId: Int,
+        rows: List<Map<String, String>>,
+        engines: List<IScanEngine>,
+        meta: TaskMetadata,
+        taskEntity: TaskEntityViewModel
+    ) {
+        val scanRes = DatabaseContentScanner.scanContentStructured(
+            path = filePath,
+            rows = rows,
+            engines = engines
+        )
+
+        if (!scanRes.skipped()) {
+            database.transaction {
+                scanRes.columnFields.forEach { (columnName, fields) ->
+                    fields.forEach { (matcher, cnt) ->
+                        TaskFileScanResults.insert {
+                            it[file] = fileId
+                            it[TaskFileScanResults.matcher] = meta.matchers[matcher] ?: 0
+                            it[count] = cnt
+                            it[TaskFileScanResults.columnName] = columnName
+                        }
+                    }
+                }
+                scanRes.getDocumentFields().forEach { (matcher, count) ->
+                    taskEntity.addFoundAttribute(matcher, count)
+                }
+                if (!scanRes.isEmpty()) {
+                    taskEntity.incrementFoundFiles()
+                }
+                TaskFiles.update(where = { TaskFiles.id.eq(fileId) }) {
+                    it[state] = TaskState.COMPLETED
+                }
+            }
+        } else {
+            database.transaction {
+                TaskFiles.update(where = { TaskFiles.id.eq(fileId) }) {
                     it[state] = TaskState.FAILED
                 }
             }

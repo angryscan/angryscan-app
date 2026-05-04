@@ -5,6 +5,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kover)
 }
+
+configurations.configureEach {
+    exclude(group = "org.slf4j", module = "slf4j-simple")
+}
+
 kotlin {
     jvm("desktop")
     sourceSets {
@@ -28,6 +33,14 @@ kotlin {
 
                 implementation(libs.sql.sqlite)
                 implementation(libs.sql.postgresql)
+                implementation(libs.sql.mysql)
+                implementation(libs.sql.clickhouse)
+                implementation(libs.sql.redshift)
+                implementation(libs.sql.mssql)
+                // Uber-jar: thin hive-jdbc omits RPC/Thrift. Woodstox on classpath fixes
+                // META-INF/services XMLOutputFactory entries that reference com.ctc.wstx.*.
+                implementation("org.apache.hive:hive-jdbc:4.2.0:standalone@jar")
+                implementation("com.fasterxml.woodstox:woodstox-core:6.6.2")
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)
@@ -91,6 +104,9 @@ kotlin {
                 implementation(compose.desktop.uiTestJUnit4)
                 implementation(libs.koin.test)
                 implementation(libs.koin.test.junit4)
+                implementation(libs.testcontainers.core)
+                implementation(libs.testcontainers.postgresql)
+                implementation(libs.testcontainers.mysql)
             }
         }
         @Suppress("Unused")

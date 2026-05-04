@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.angryscan.app.scan.common.files.types.*
+import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.serializers.MutableStateKClassSerializer
 import org.angryscan.app.serializers.MutableStateSerializer
 import org.angryscan.app.serializers.PolymorphicFormatter
@@ -15,7 +15,6 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.engine.IScanEngine
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.kotlin.KotlinEngine
-import org.angryscan.common.extensions.Matchers
 import org.angryscan.common.matchers.UserSignature
 import org.angryscan.gitleaks.matcher.GitleaksMatcher
 import org.koin.core.component.KoinComponent
@@ -31,6 +30,8 @@ class ScanSettings : KoinComponent {
     class SettingsFile(path: String) : File(path)
 
     private val settingsFile: SettingsFile by inject()
+
+    private val appSettings: AppSettings by inject()
 
     @Serializable
     val extensions: MutableList<IFileType> = mutableStateListOf()
@@ -106,15 +107,10 @@ class ScanSettings : KoinComponent {
         } catch (_: Exception) {
             logger.error { "Failed to load ScanSettings. Loading default." }
             this.extensions.clear()
-            this.extensions.addAll(
-                IFileType.getAll().filter {
-                    it !in CertFileType.entries +
-                            CodeFileType.entries
-                }
-            )
+            this.extensions.addAll(ScanSettingsDefaults.defaultExtensions())
             this.extensionsSettingsExpanded.value = false
             this.matchers.clear()
-            this.matchers.addAll(Matchers)
+            this.matchers.addAll(ScanSettingsDefaults.defaultMatchers(appSettings))
             this.matchersSettingsExpanded.value = false
             this.fastScan.value = false
             this.userSignatureSettingsExpanded.value = false

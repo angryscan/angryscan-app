@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "PackageDirectoryMismatch")
+
 package org.angryscan.app.ui.windows.screens.scans.components
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -11,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.angryscan.app.di.PreviewModule
 import org.angryscan.app.ui.strings.composableName
 import org.angryscan.app.ui.windows.components.MatcherTooltip
@@ -19,7 +20,7 @@ import org.angryscan.common.engine.IMatcher
 import org.angryscan.common.matchers.FullName
 
 @Composable
-fun AttributeCard(
+fun AttributeChip(
     attribute: IMatcher,
     count: Int
 ) {
@@ -32,14 +33,12 @@ fun AttributeCard(
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(color = MaterialTheme.colorScheme.secondary)
-                .padding(vertical = 2.dp, horizontal = 4.dp)
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.55f))
+                .padding(vertical = 3.dp, horizontal = 6.dp)
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 14.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.1.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }
@@ -47,7 +46,12 @@ fun AttributeCard(
 }
 
 @Composable
-fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled: Boolean) {
+fun AttributeChip(
+    attribute: IMatcher,
+    count: Int,
+    onClick: () -> Unit,
+    enabled: Boolean
+) {
     MatcherTooltip(
         matcher = attribute,
         count = count
@@ -57,23 +61,16 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
                 .clip(
                     MaterialTheme.shapes.small
                 )
-                .background(
-                    color = if (enabled)
-                        MaterialTheme.colorScheme.secondary
-                    else
-                        MaterialTheme.colorScheme.outlineVariant
-                )
+                .background(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.55f))
                 .clickable(
                     onClick = onClick,
                     enabled = enabled
                 )
-                .padding(vertical = 2.dp, horizontal = 4.dp)
+                .padding(vertical = 3.dp, horizontal = 6.dp)
         ) {
             Text(
                 text = attribute.composableName(),
-                fontSize = 14.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.1.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondary
             )
         }
@@ -82,9 +79,9 @@ fun AttributeCard(attribute: IMatcher, count: Int, onClick: () -> Unit, enabled:
 
 @Preview
 @Composable
-fun AttributeCardPreview() {
+fun AttributeChipPreview() {
     PreviewModule {
-        AttributeCard(
+        AttributeChip(
             FullName,
             5
         )

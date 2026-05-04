@@ -7,7 +7,12 @@ import org.koin.test.KoinTest
 import org.koin.test.KoinTestRule
 import org.koin.test.get
 import org.angryscan.app.common.AppSettings
+import org.angryscan.app.common.DesktopS3ConnectionSecretStore
+import org.angryscan.app.common.DesktopSqlConnectionSecretStore
+import org.angryscan.app.common.S3ConnectionSecretStore
+import org.angryscan.app.common.SqlConnectionSecretStore
 import org.angryscan.app.db.DatabaseSettings
+import org.angryscan.app.di.s3Module
 import org.angryscan.app.di.scanModule
 import org.angryscan.app.di.settingsModule
 import org.angryscan.app.ui.MainWindow
@@ -28,10 +33,12 @@ internal class MainKtTest : KoinTest {
                         driver = "org.sqlite.JDBC"
                     )
                 }
-
+                single<SqlConnectionSecretStore> { DesktopSqlConnectionSecretStore() }
+                single<S3ConnectionSecretStore> { DesktopS3ConnectionSecretStore() }
             },
             settingsModule,
-            scanModule
+            scanModule,
+            s3Module,
         )
     }
 

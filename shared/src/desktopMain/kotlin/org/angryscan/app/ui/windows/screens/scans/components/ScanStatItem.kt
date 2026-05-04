@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun ScanStatItem(
@@ -35,14 +34,12 @@ fun ScanStatItem(
     ) {
         Text(
             text = title,
-            fontSize = 14.sp,
-            letterSpacing = 0.1.sp,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = text,
-            fontSize = 14.sp,
-            letterSpacing = 0.1.sp,
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }

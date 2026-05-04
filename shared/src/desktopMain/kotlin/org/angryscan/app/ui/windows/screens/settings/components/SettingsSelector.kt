@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,22 +23,26 @@ fun SettingsSelector(
     text: String,
     icon: Painter? = null
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+    val borderColor = if (selected) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.85f)
+    val backgroundColor = if (selected) colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
+    val contentColor = if (selected) colorScheme.primary else colorScheme.onSurface
+
     Box(
         modifier = Modifier
-            .size(width = 150.dp, height = 34.dp)
+            .size(width = 172.dp, height = 32.dp)
             .clip(
                 MaterialTheme.shapes.large
             )
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.primary,
+                color = borderColor,
                 shape = MaterialTheme.shapes.large
             )
             .background(
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                color = backgroundColor,
             )
             .clickable(
-                enabled = !selected,
                 onClick = onClick
             )
             .padding(horizontal = 10.dp),
@@ -51,13 +56,15 @@ fun SettingsSelector(
         ) {
             Text(
                 text = text,
-                fontSize = 14.sp,
-                lineHeight = 14.sp
+                fontSize = 13.sp,
+                lineHeight = 13.sp,
+                color = contentColor
             )
             if(icon != null) {
                 Icon(
                     painter = icon,
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = contentColor
                 )
             }
         }

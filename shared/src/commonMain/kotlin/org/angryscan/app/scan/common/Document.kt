@@ -4,7 +4,7 @@ package org.angryscan.app.scan.common
 
 import org.angryscan.common.engine.IMatcher
 
-class Document(val size: Long, val path: String) {
+class Document(val size: Long, val path: String) : IScanResult {
 /* This is main struct in this library - searcher.Document. All texts represent as searcher.Document finally */
 
     private var skipped = false
@@ -16,7 +16,7 @@ class Document(val size: Long, val path: String) {
         return this
     }
 
-    fun skipped() = skipped
+    override fun skipped() = skipped
 
     // update document value
     fun updateDocument(field: IMatcher, value: Int) {
@@ -28,12 +28,12 @@ class Document(val size: Long, val path: String) {
     fun funDetected(): Int = documentFields.size
 
     // is document empty
-    fun isEmpty(): Boolean = documentFields.isEmpty()
+    override fun isEmpty(): Boolean = documentFields.isEmpty()
 
     fun length(): Int = this.documentFields.size
 
     // getValue document
-    fun getDocumentFields(): Map<IMatcher, Int> {
+    override fun getDocumentFields(): Map<IMatcher, Int> {
         return documentFields.toMap()
     }
 

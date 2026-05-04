@@ -3,12 +3,12 @@ package org.angryscan.app.scan.common.connectors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.angryscan.app.scan.common.FilesCounter
+import org.angryscan.app.scan.common.ObjectCounter
 import org.angryscan.app.scan.common.files.types.IFileType
 import java.io.File
 
 @Serializable
-class ConnectorFileShare: IConnector {
+class ConnectorFileShare: IFileConnector {
     override suspend fun getFile(filePath: String): File =
         withContext(Dispatchers.IO) {
             return@withContext File(filePath)
@@ -18,13 +18,13 @@ class ConnectorFileShare: IConnector {
         dir: String,
         extensions: List<IFileType>,
         fileSelected: (FoundedFile) -> Unit
-    ): FilesCounter =
+    ): ObjectCounter =
         withContext(Dispatchers.IO) {
             val d = File(dir)
-            var filesCounter = FilesCounter()
+            var filesCounter = ObjectCounter()
 
             if (d.isDirectory) {
-                val items = d.listFiles() ?: return@withContext FilesCounter()
+                val items = d.listFiles() ?: return@withContext ObjectCounter()
                 for (item in items) {
                     if (item.isDirectory) {
                         try {
