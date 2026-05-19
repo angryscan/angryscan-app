@@ -1011,7 +1011,15 @@ private fun RecentScansPreview(
         )
 
         if (visibleTasks.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // Do not use fillMaxSize here: the parent Column gets the window max height, and an
+            // expanding empty box would stretch the bottom Surface over the whole main area and
+            // block clicks on path / source controls.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = verticalScale.dp(20.dp, min = 16.dp, max = 28.dp)),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = stringResource(Res.string.MainScreen_RecentScans_Empty),
                     style = MaterialTheme.typography.bodyMedium,
