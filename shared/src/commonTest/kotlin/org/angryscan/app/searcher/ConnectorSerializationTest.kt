@@ -161,6 +161,29 @@ internal class ConnectorSerializationTest {
     }
 
     @Test
+    fun `ConnectorMongoDB is serialized polymorphically`() {
+        val connector: IConnector = ConnectorMongoDB(
+            host = "localhost",
+            port = 27017,
+            database = "scanner",
+            user = "app",
+            password = "secret",
+            rowLimit = 800,
+        )
+
+        val serialized = PolymorphicFormatter.encodeToString(connector)
+        val decoded: IConnector = PolymorphicFormatter.decodeFromString(serialized)
+        val mongo = assertIs<ConnectorMongoDB>(decoded)
+
+        assertEquals("localhost", mongo.host)
+        assertEquals(27017, mongo.port)
+        assertEquals("scanner", mongo.database)
+        assertEquals("app", mongo.user)
+        assertEquals("secret", mongo.password)
+        assertEquals(800, mongo.rowLimit)
+    }
+
+    @Test
     fun `connectors expose correct runtime contracts`() {
         assertIs<IFileConnector>(ConnectorFileShare())
         assertIs<IFileConnector>(ConnectorS3("access", "secret", "http://localhost:9000", "bucket"))
@@ -219,5 +242,15 @@ internal class ConnectorSerializationTest {
             password = "secret",
             rowLimit = 1000
         ))
+        assertIs<IDatabaseConnector>(
+            ConnectorMongoDB(
+                host = "localhost",
+                port = 27017,
+                database = "test",
+                user = "root",
+                password = "secret",
+                rowLimit = 500,
+            ),
+        )
     }
 }

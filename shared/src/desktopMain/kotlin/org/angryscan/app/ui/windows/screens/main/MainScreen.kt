@@ -303,6 +303,16 @@ fun MainScreen(
                         password = connector.password,
                         filePath = ""
                     )
+                    is ConnectorMongoDB -> currentSql.copy(
+                        databaseType = DatabaseType.MongoDB,
+                        host = connector.host,
+                        port = connector.port.toString(),
+                        database = connector.database,
+                        schema = replay.path,
+                        user = connector.user,
+                        password = connector.password,
+                        filePath = ""
+                    )
                     is ConnectorSqlite -> currentSql.copy(
                         databaseType = DatabaseType.SQLite,
                         filePath = connector.filePath,

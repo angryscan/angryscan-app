@@ -8,10 +8,12 @@ private const val DefaultCockroachDBPort = 26257
 private const val DefaultClickHousePort = 8123
 private const val DefaultRedshiftPort = 5439
 private const val DefaultSqlServerPort = 1433
+private const val DefaultMongoPort = 27_017
 
 /**
  * Required connection fields for database types.
- * - Server DBs (PostgreSQL, MySQL, GreenPlum, Hive, Redshift, Microsoft SQL Server, …): HOST, PORT, DATABASE, USER, PASSWORD
+ * - Server DBs (PostgreSQL, MySQL, …): HOST, PORT, DATABASE, USER, PASSWORD
+ * - MongoDB: HOST, PORT, DATABASE (user/password optional for unauthenticated deployments)
  * - SQLite: FILE_PATH only
  */
 enum class DatabaseConnectionRequiredField {
@@ -26,7 +28,12 @@ enum class DatabaseConnectionRequiredField {
 
 fun ScreenStateSettings.SqlDatabaseScreenState.missingRequiredConnectionFields(): Set<DatabaseConnectionRequiredField> =
     when (databaseType) {
-        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB -> buildSet {
+        DatabaseType.MongoDB -> buildSet {
+            if (host.isBlank()) add(DatabaseConnectionRequiredField.HOST)
+            if (port.toIntOrNull() == null) add(DatabaseConnectionRequiredField.PORT)
+            if (database.isBlank()) add(DatabaseConnectionRequiredField.DATABASE)
+        }
+        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> buildSet {
             if (host.isBlank()) add(DatabaseConnectionRequiredField.HOST)
             if (port.toIntOrNull() == null) add(DatabaseConnectionRequiredField.PORT)
             if (database.isBlank()) add(DatabaseConnectionRequiredField.DATABASE)
@@ -48,7 +55,8 @@ fun ScreenStateSettings.SqlDatabaseScreenState.hasRequiredConnectionSettings(): 
 
 fun ScreenStateSettings.SqlDatabaseScreenState.connectionPort(): Int =
     when (databaseType) {
-        DatabaseType.PostgreSQL, DatabaseType.MongoDB -> port.toIntOrNull() ?: DefaultPostgresPort
+        DatabaseType.PostgreSQL -> port.toIntOrNull() ?: DefaultPostgresPort
+        DatabaseType.MongoDB -> port.toIntOrNull() ?: DefaultMongoPort
         DatabaseType.MySQL -> port.toIntOrNull() ?: DefaultMySqlPort
         DatabaseType.GreenPlum -> port.toIntOrNull() ?: DefaultGreenPlumPort
         DatabaseType.Hive -> port.toIntOrNull() ?: DefaultHivePort

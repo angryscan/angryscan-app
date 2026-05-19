@@ -337,12 +337,20 @@ fun DatabaseScreen(
                         return@launch
                     }
                     val connector = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MongoDB -> ConnectorPostgres(
+                        DatabaseType.PostgreSQL -> ConnectorPostgres(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
                             user = sqlScreenState.user,
                             password = sqlScreenState.password
+                        )
+                        DatabaseType.MongoDB -> ConnectorMongoDB(
+                            host = sqlScreenState.host,
+                            port = sqlScreenState.connectionPort(),
+                            database = sqlScreenState.database,
+                            user = sqlScreenState.user,
+                            password = sqlScreenState.password,
+                            rowLimit = sqlScreenState.rowLimit.toIntOrNull()?.takeIf { it > 0 } ?: 1000
                         )
                         DatabaseType.MySQL -> ConnectorMySQL(
                             host = sqlScreenState.host,
@@ -1074,7 +1082,7 @@ fun DatabaseScreen(
                     return (6f + labelLen).coerceAtLeast(8f)
                 }
 
-                val chipTypes = databaseTypesForPicker()
+                val chipTypes = DatabaseType.entries
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1102,8 +1110,8 @@ fun DatabaseScreen(
                                     DatabaseType.ClickHouse -> "8123"
                                     DatabaseType.Redshift -> "5439"
                                     DatabaseType.SqlServer -> "1433"
+                                    DatabaseType.MongoDB -> "27017"
                                     DatabaseType.SQLite -> sqlScreenState.port
-                                    DatabaseType.MongoDB -> "5432"
                                 }
                                 val updated = sqlScreenState.copy(databaseType = dbType, port = defaultPort)
                                 sqlScreenState = updated

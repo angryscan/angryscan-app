@@ -37,6 +37,7 @@ kotlin {
                 implementation(libs.sql.clickhouse)
                 implementation(libs.sql.redshift)
                 implementation(libs.sql.mssql)
+                implementation(libs.sql.mongodb)
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)

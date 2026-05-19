@@ -19,8 +19,10 @@ object DatabaseConnectionValidator {
         filePath: String = ""
     ): DatabaseConnectionError? = withContext(Dispatchers.IO) {
         when (databaseType) {
-            DatabaseType.PostgreSQL, DatabaseType.MongoDB ->
+            DatabaseType.PostgreSQL ->
                 PostgresConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.MongoDB ->
+                MongoConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.MySQL ->
                 MySqlConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.GreenPlum ->

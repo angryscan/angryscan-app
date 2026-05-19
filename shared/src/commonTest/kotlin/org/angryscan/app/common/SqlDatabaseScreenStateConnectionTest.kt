@@ -75,6 +75,21 @@ internal class SqlDatabaseScreenStateConnectionTest {
     }
 
     @Test
+    fun `MongoDB does not require user or password`() {
+        val state = ScreenStateSettings.SqlDatabaseScreenState(
+            databaseType = DatabaseType.MongoDB,
+            host = "localhost",
+            port = "27017",
+            database = "test",
+            user = "",
+            password = "",
+        )
+        assertTrue(state.missingRequiredConnectionFields().isEmpty())
+        assertTrue(state.hasRequiredConnectionSettings())
+        assertEquals(27017, state.connectionPort())
+    }
+
+    @Test
     fun `empty fields are not highlighted before validation click`() {
         val state = ScreenStateSettings.SqlDatabaseScreenState(
             databaseType = DatabaseType.PostgreSQL,
