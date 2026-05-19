@@ -3,7 +3,7 @@ package org.angryscan.app.common
 import kotlinx.serialization.Serializable
 
 /**
- * Supported SQL database types for scanning.
+ * Supported database types for scanning (relational SQL engines and MongoDB).
  */
 @Serializable
 enum class DatabaseType {
@@ -15,7 +15,8 @@ enum class DatabaseType {
     CockroachDB,
     ClickHouse,
     Redshift,
-    SqlServer
+    SqlServer,
+    MongoDB,
 }
 
 /** Short label for type picker (sidebar, chips). */

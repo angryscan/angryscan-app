@@ -157,6 +157,7 @@ fun MainScreenSidebar(
                                 DatabaseType.ClickHouse -> "8123"
                                 DatabaseType.Redshift -> "5439"
                                 DatabaseType.SqlServer -> "1433"
+                                DatabaseType.MongoDB -> "27017"
                                 DatabaseType.SQLite -> sqlScreenState.port
                             }
                             screenStateSettings.sqlScreenState.value = sqlScreenState.copy(

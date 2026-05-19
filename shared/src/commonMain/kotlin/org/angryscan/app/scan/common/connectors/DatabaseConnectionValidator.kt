@@ -21,6 +21,8 @@ object DatabaseConnectionValidator {
         when (databaseType) {
             DatabaseType.PostgreSQL ->
                 PostgresConnectionValidator.validate(host, port, database, user, password)
+            DatabaseType.MongoDB ->
+                MongoConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.MySQL ->
                 MySqlConnectionValidator.validate(host, port, database, user, password)
             DatabaseType.GreenPlum ->

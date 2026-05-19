@@ -273,6 +273,7 @@ fun ScanTaskCard(
         is ConnectorClickHouse -> "${connector.host}:${connector.port}/${connector.database}"
         is ConnectorRedshift -> "${connector.host}:${connector.port}/${connector.database}"
         is ConnectorSqlServer -> "${connector.host}:${connector.port}/${connector.database}"
+        is ConnectorMongoDB -> "${connector.host}:${connector.port}/${connector.database}"
         is ConnectorSqlite -> connector.filePath
         else -> null
     }

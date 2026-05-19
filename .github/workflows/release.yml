@@ -81,15 +81,22 @@ jobs:
 
       - name: Install conveyor
         run: |
-          wget https://downloads.hydraulic.dev/conveyor/conveyor-18.0-linux-amd64.tar.gz
-          tar -xzf conveyor-18.0-linux-amd64.tar.gz
-          chmod +x conveyor-18.0/bin/conveyor
-          echo "$(pwd)/conveyor-18.0/bin" >> $GITHUB_PATH
+          wget https://downloads.hydraulic.dev/conveyor/conveyor-22.0-linux-amd64.tar.gz
+          tar -xzf conveyor-22.0-linux-amd64.tar.gz
+          chmod +x conveyor-22.0/bin/conveyor
+          echo "$(pwd)/conveyor-22.0/bin" >> $GITHUB_PATH
 
       - name: Build and push with conveyor
-        uses: coactions/setup-xvfb@v1
-        with:
-          run: ./gradlew conveyUnixCI
+        run: |
+          for attempt in 1 2 3; do
+            echo "conveyUnixCI attempt ${attempt}/3"
+            ./gradlew conveyUnixCI && exit 0
+            if [ "${attempt}" -lt 3 ]; then
+              echo "Conveyor failed (often Debian mirror timeout), retrying in 45s..."
+              sleep 45
+            fi
+          done
+          exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
@@ -135,10 +142,10 @@ jobs:
 
       - name: Install conveyor
         run: |
-          wget https://downloads.hydraulic.dev/conveyor/conveyor-18.0-linux-amd64.tar.gz
-          tar -xzf conveyor-18.0-linux-amd64.tar.gz
-          chmod +x conveyor-18.0/bin/conveyor
-          echo "$(pwd)/conveyor-18.0/bin" >> $GITHUB_PATH
+          wget https://downloads.hydraulic.dev/conveyor/conveyor-22.0-linux-amd64.tar.gz
+          tar -xzf conveyor-22.0-linux-amd64.tar.gz
+          chmod +x conveyor-22.0/bin/conveyor
+          echo "$(pwd)/conveyor-22.0/bin" >> $GITHUB_PATH
 
       - name: Build and push with conveyor
         uses: coactions/setup-xvfb@v1
