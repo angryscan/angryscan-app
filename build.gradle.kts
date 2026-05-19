@@ -140,11 +140,13 @@ subprojects {
             }
         }
 
-        tasks.named("fixConveyorConfig").configure {
-            doLast {
-                val configFile = layout.projectDirectory.file("generated.conveyor.conf").asFile
-                if (configFile.exists()) {
-                    reorderConveyorJarInputBlocks(configFile)
+        afterEvaluate {
+            tasks.named("fixConveyorConfig").configure {
+                doLast {
+                    val configFile = layout.projectDirectory.file("generated.conveyor.conf").asFile
+                    if (configFile.exists()) {
+                        reorderConveyorJarInputBlocks(configFile)
+                    }
                 }
             }
         }
