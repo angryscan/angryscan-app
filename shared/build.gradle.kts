@@ -37,10 +37,6 @@ kotlin {
                 implementation(libs.sql.clickhouse)
                 implementation(libs.sql.redshift)
                 implementation(libs.sql.mssql)
-                // Uber-jar: thin hive-jdbc omits RPC/Thrift. Woodstox on classpath fixes
-                // META-INF/services XMLOutputFactory entries that reference com.ctc.wstx.*.
-                implementation("org.apache.hive:hive-jdbc:4.2.0:standalone@jar")
-                implementation("com.fasterxml.woodstox:woodstox-core:6.6.2")
                 implementation(libs.sql.flyway)
 
                 api(libs.exposed.core)
@@ -75,6 +71,12 @@ kotlin {
 
                 implementation(libs.logging.oshai)
                 implementation(libs.logging.logback)
+
+                // Uber-jar: thin hive-jdbc omits RPC/Thrift. Woodstox on classpath fixes
+                // META-INF/services XMLOutputFactory entries that reference com.ctc.wstx.*.
+                // Declared after logging so slf4j-api/logback precede hive's embedded SLF4J 1.7 on the classpath.
+                implementation("com.fasterxml.woodstox:woodstox-core:6.6.2")
+                implementation("org.apache.hive:hive-jdbc:4.2.0:standalone@jar")
 
                 api(libs.koin.core)
                 api(libs.koin.compose)
