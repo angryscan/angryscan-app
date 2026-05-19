@@ -177,7 +177,7 @@ tasks.register("fixConveyorConfig") {
         tempFile.renameTo(inputFile)
         println("Removed android/ios entries from generated.conveyor.conf")
     }
-    dependsOn("build", "writeConveyorConfig")
+    dependsOn("assemble", "writeConveyorConfig")
 }
 
 tasks.register("printVersion") {
