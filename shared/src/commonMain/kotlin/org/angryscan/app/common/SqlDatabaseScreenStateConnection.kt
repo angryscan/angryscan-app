@@ -26,7 +26,7 @@ enum class DatabaseConnectionRequiredField {
 
 fun ScreenStateSettings.SqlDatabaseScreenState.missingRequiredConnectionFields(): Set<DatabaseConnectionRequiredField> =
     when (databaseType) {
-        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> buildSet {
+        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB -> buildSet {
             if (host.isBlank()) add(DatabaseConnectionRequiredField.HOST)
             if (port.toIntOrNull() == null) add(DatabaseConnectionRequiredField.PORT)
             if (database.isBlank()) add(DatabaseConnectionRequiredField.DATABASE)
@@ -48,7 +48,7 @@ fun ScreenStateSettings.SqlDatabaseScreenState.hasRequiredConnectionSettings(): 
 
 fun ScreenStateSettings.SqlDatabaseScreenState.connectionPort(): Int =
     when (databaseType) {
-        DatabaseType.PostgreSQL -> port.toIntOrNull() ?: DefaultPostgresPort
+        DatabaseType.PostgreSQL, DatabaseType.MongoDB -> port.toIntOrNull() ?: DefaultPostgresPort
         DatabaseType.MySQL -> port.toIntOrNull() ?: DefaultMySqlPort
         DatabaseType.GreenPlum -> port.toIntOrNull() ?: DefaultGreenPlumPort
         DatabaseType.Hive -> port.toIntOrNull() ?: DefaultHivePort

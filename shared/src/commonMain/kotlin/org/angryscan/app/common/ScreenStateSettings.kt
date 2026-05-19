@@ -278,8 +278,12 @@ class ScreenStateSettings : KoinComponent {
                 )
                 this.httpScreenState.fastScan = prop.httpScreenState.fastScan
 
-                // Restore SqlDatabase state (migration: old PostgresScreenState → SqlDatabaseScreenState, databaseType defaults to PostgreSQL)
-                this.sqlScreenState.value = prop.sqlScreenState.value.copy(password = "")
+                // Restore SqlDatabase state (migration: old PostgresScreenState → SqlDatabaseScreenState; legacy MongoDB → PostgreSQL)
+                var restoredSql = prop.sqlScreenState.value.copy(password = "")
+                if (restoredSql.databaseType == DatabaseType.MongoDB) {
+                    restoredSql = restoredSql.copy(databaseType = DatabaseType.PostgreSQL)
+                }
+                this.sqlScreenState.value = restoredSql
                 this.sqlScreenState.value.extensions.clear()
                 this.sqlScreenState.value.extensions.addAll(prop.sqlScreenState.value.extensions)
                 this.sqlScreenState.value.matchers.clear()
@@ -290,7 +294,15 @@ class ScreenStateSettings : KoinComponent {
                 )
                 this.sqlScreenState.value.fastScan = prop.sqlScreenState.value.fastScan
                 this.sqlSavedConnections.clear()
-                this.sqlSavedConnections.addAll(prop.sqlSavedConnections)
+                this.sqlSavedConnections.addAll(
+                    prop.sqlSavedConnections.map { conn ->
+                        if (conn.databaseType == DatabaseType.MongoDB) {
+                            conn.copy(databaseType = DatabaseType.PostgreSQL)
+                        } else {
+                            conn
+                        }
+                    }
+                )
 
                 this.scanProfiles.clear()
                 this.scanProfiles.addAll(

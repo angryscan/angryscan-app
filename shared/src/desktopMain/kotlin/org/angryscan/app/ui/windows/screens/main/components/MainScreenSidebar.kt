@@ -38,6 +38,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import org.angryscan.app.common.DatabaseType
+import org.angryscan.app.common.databaseTypesForPicker
 import org.angryscan.app.common.typePickerLabel
 import org.angryscan.app.common.ScreenStateSettings
 import org.angryscan.app.resources.drawableResource
@@ -142,7 +143,7 @@ fun MainScreenSidebar(
                 modifier = Modifier.padding(start = DB_TYPE_INDENT, top = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                DatabaseType.entries.forEach { dbType ->
+                databaseTypesForPicker().forEach { dbType ->
                     SidebarDbTypeItem(
                         label = dbType.typePickerLabel(),
                         iconDrawable = dbType.drawableResource(),
@@ -158,6 +159,7 @@ fun MainScreenSidebar(
                                 DatabaseType.Redshift -> "5439"
                                 DatabaseType.SqlServer -> "1433"
                                 DatabaseType.SQLite -> sqlScreenState.port
+                                DatabaseType.MongoDB -> "5432"
                             }
                             screenStateSettings.sqlScreenState.value = sqlScreenState.copy(
                                 databaseType = dbType,

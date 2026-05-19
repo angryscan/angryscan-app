@@ -337,7 +337,7 @@ fun DatabaseScreen(
                         return@launch
                     }
                     val connector = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL -> ConnectorPostgres(
+                        DatabaseType.PostgreSQL, DatabaseType.MongoDB -> ConnectorPostgres(
                             host = sqlScreenState.host,
                             port = sqlScreenState.connectionPort(),
                             database = sqlScreenState.database,
@@ -398,13 +398,13 @@ fun DatabaseScreen(
                         )
                     }
                     val taskName = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer ->
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB ->
                             "${sqlScreenState.host}:${sqlScreenState.connectionPort()}/${sqlScreenState.database}" +
                                 if (sqlScreenState.schema.isNotEmpty()) " schema: ${sqlScreenState.schema}" else ""
                         DatabaseType.SQLite -> sqlScreenState.filePath
                     }
                     val path = when (sqlScreenState.databaseType) {
-                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> sqlScreenState.schema
+                        DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB -> sqlScreenState.schema
                         DatabaseType.SQLite -> ""
                     }
                     val task = scanService.createTask(
@@ -445,7 +445,7 @@ fun DatabaseScreen(
                         horizontalArrangement = Arrangement.spacedBy(sourceTokens.inlineControlGap)
                     ) {
                         when (sqlScreenState.databaseType) {
-                            DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer -> {
+                            DatabaseType.PostgreSQL, DatabaseType.MySQL, DatabaseType.GreenPlum, DatabaseType.Hive, DatabaseType.CockroachDB, DatabaseType.ClickHouse, DatabaseType.Redshift, DatabaseType.SqlServer, DatabaseType.MongoDB -> {
                                 OutlinedTextField(
                                     value = sqlScreenState.host,
                                     onValueChange = {
@@ -1074,7 +1074,7 @@ fun DatabaseScreen(
                     return (6f + labelLen).coerceAtLeast(8f)
                 }
 
-                val chipTypes = DatabaseType.entries
+                val chipTypes = databaseTypesForPicker()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1103,6 +1103,7 @@ fun DatabaseScreen(
                                     DatabaseType.Redshift -> "5439"
                                     DatabaseType.SqlServer -> "1433"
                                     DatabaseType.SQLite -> sqlScreenState.port
+                                    DatabaseType.MongoDB -> "5432"
                                 }
                                 val updated = sqlScreenState.copy(databaseType = dbType, port = defaultPort)
                                 sqlScreenState = updated
