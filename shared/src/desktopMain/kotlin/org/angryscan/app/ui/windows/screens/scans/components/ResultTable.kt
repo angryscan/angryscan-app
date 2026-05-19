@@ -297,7 +297,7 @@ fun ResultTable(
                     modifier = Modifier
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
-                    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                         Checkbox(
                             checked = selectedFiles.isNotEmpty() && selectedFiles.containsAll(sortedFiles.map { it.id }),
                             onCheckedChange = { checkState ->
@@ -648,7 +648,7 @@ fun ResultTable(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
 
-                                CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                                CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                                     Checkbox(
                                         checked = selectedFiles.contains(file.id),
                                         onCheckedChange = { checkState ->

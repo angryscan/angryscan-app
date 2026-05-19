@@ -12,7 +12,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import org.testcontainers.containers.MySQLContainer
+import org.testcontainers.mysql.MySQLContainer
 import kotlin.test.assertTrue
 
 /**
