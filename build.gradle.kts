@@ -40,6 +40,47 @@ fun slf4jBindingPriority(classpathEntry: String): Int? = when {
     else -> null
 }
 
+/** Reorders jar path lines inside Conveyor `app.inputs = [...]` blocks (plugin lists deps alphabetically). */
+fun reorderConveyorJarInputBlocks(cfgFile: File) {
+    val lines = cfgFile.readLines()
+    val result = ArrayList<String>(lines.size)
+    var i = 0
+    while (i < lines.size) {
+        val line = lines[i]
+        val trimmed = line.trim()
+        if (trimmed.endsWith("[") && trimmed.contains(".inputs")) {
+            result.add(line)
+            i++
+            val jarLines = ArrayList<String>()
+            while (i < lines.size && !lines[i].trim().startsWith("]")) {
+                val current = lines[i]
+                if (current.trim().endsWith(".jar")) {
+                    jarLines.add(current)
+                } else {
+                    result.add(current)
+                }
+                i++
+            }
+            if (jarLines.isNotEmpty()) {
+                val indent = jarLines.first().takeWhile(Char::isWhitespace)
+                val ordered = jarLines
+                    .map { it.trim() }
+                    .sortedWith(compareBy({ slf4jBindingPriority(it) ?: 3 }, { it }))
+                    .map { "$indent$it" }
+                result.addAll(ordered)
+            }
+            if (i < lines.size) {
+                result.add(lines[i])
+            }
+            i++
+        } else {
+            result.add(line)
+            i++
+        }
+    }
+    cfgFile.writeText(result.joinToString("\n", postfix = "\n"))
+}
+
 /** Reorders app.classpath lines in jpackage-generated .cfg (alphabetical order puts hive before slf4j-api). */
 fun reorderJpackageAppClasspath(cfgFile: File) {
     val lines = cfgFile.readLines()
@@ -95,6 +136,15 @@ subprojects {
                 if (!appRoot.exists()) return@doLast
                 appRoot.walkTopDown().filter { it.isFile && it.extension == "cfg" }.forEach { cfg ->
                     reorderJpackageAppClasspath(cfg)
+                }
+            }
+        }
+
+        tasks.named("fixConveyorConfig").configure {
+            doLast {
+                val configFile = layout.projectDirectory.file("generated.conveyor.conf").asFile
+                if (configFile.exists()) {
+                    reorderConveyorJarInputBlocks(configFile)
                 }
             }
         }
