@@ -82,7 +82,8 @@ compose.desktop {
             copyright = "Open Source Software, 2025"
             licenseFile.set(rootProject.file("LICENSE"))
 
-            modules("java.sql", "jdk.charsets", "jdk.unsupported", "java.naming")
+            // java.management: required by postgresql JDBC (ManagementFactory / max result buffer)
+            modules("java.sql", "jdk.charsets", "jdk.unsupported", "java.naming", "java.management")
 
             targetFormats(
                 TargetFormat.Msi,
