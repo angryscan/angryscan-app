@@ -32,13 +32,17 @@ import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.common.ScanPathHelper
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
 import org.angryscan.app.scan.common.createDialogSettings
+import org.angryscan.app.ui.FileShareScanPaths
 import org.angryscan.app.ui.components.SelectionTypes
 import org.angryscan.app.ui.hasSelectedMatchersForScan
 import org.angryscan.app.ui.windows.screens.main.components.*
 import org.angryscan.app.ui.windows.screens.main.rememberMainSourceRowTokens
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
+
+private val fileShareScanLogger = KotlinLogging.logger {}
 
 @Composable
 fun FileShareScreen(
@@ -157,6 +161,7 @@ fun FileShareScreen(
     ) { result ->
         if (result != null) {
             path = result.joinToString(";")
+            selectionType = SelectionTypes.File
             saveScreenState()
         }
 
@@ -168,6 +173,7 @@ fun FileShareScreen(
     ) { dir ->
         if (dir != null) {
             path = dir.path
+            selectionType = SelectionTypes.Folder
             saveScreenState()
         }
     }
@@ -180,6 +186,7 @@ fun FileShareScreen(
     ) { result ->
         if (result != null) {
             path = result.path
+            selectionType = SelectionTypes.FileWithPaths
             saveScreenState()
         }
     }
@@ -209,19 +216,8 @@ fun FileShareScreen(
         }
     }
 
-    fun detectSelectionType(rawPath: String): SelectionTypes {
-        if (rawPath.isBlank()) return SelectionTypes.File
-        val parts = rawPath.split(";").map { it.trim() }.filter { it.isNotEmpty() }
-        if (parts.size == 1) {
-            val single = File(parts.first())
-            if (single.isDirectory) return SelectionTypes.Folder
-            if (single.isFile && single.extension.lowercase() in setOf("txt", "csv")) {
-                return SelectionTypes.FileWithPaths
-            }
-        }
-        return SelectionTypes.File
-    }
     var browseMenuExpanded by remember { mutableStateOf(false) }
+    val uiSelectionType = FileShareScanPaths.guessUiSelectionType(path, selectionType)
 
     setSidebarContent { }
     setUnderSourceContent { }
@@ -279,7 +275,7 @@ fun FileShareScreen(
                         modifier = Modifier.weight(1f).heightIn(min = sourceTokens.fieldMinHeight),
                         placeholder = {
                             Text(
-                                text = when (detectSelectionType(path)) {
+                                text = when (uiSelectionType) {
                                     SelectionTypes.FileWithPaths -> stringResource(Res.string.MainScreen_SelectFileWithPathsPlaceholder)
                                     else -> stringResource(Res.string.MainScreen_SelectPathPlaceholder)
                                 },
@@ -303,7 +299,6 @@ fun FileShareScreen(
                         )
                     )
                     Box {
-                        val currentType = detectSelectionType(path)
                         FilledTonalButton(
                             onClick = { browseMenuExpanded = true },
                             shape = RoundedCornerShape(sourceTokens.compactFieldCorner + 4.dp),
@@ -312,7 +307,7 @@ fun FileShareScreen(
                             colors = sourceActionFilledTonalButtonColors()
                         ) {
                             Icon(
-                                imageVector = when (currentType) {
+                                imageVector = when (uiSelectionType) {
                                     SelectionTypes.Folder -> Icons.Outlined.FolderOpen
                                     SelectionTypes.File -> Icons.Outlined.FileOpen
                                     SelectionTypes.FileWithPaths -> Icons.Outlined.DocumentScanner
@@ -438,13 +433,22 @@ fun FileShareScreen(
                     }
                     if (!validateAndShowError()) return@Button
                     val normalizedPath = pathParts.joinToString(";")
-                    val detectedType = detectSelectionType(normalizedPath)
-                    val scanPath = if (detectedType == SelectionTypes.FileWithPaths) {
-                        File(normalizedPath).readLines().joinToString(separator = ";")
-                    } else {
-                        normalizedPath
+                    // Prefer explicit picker mode. Never treat a lone .csv/.txt as a path-list
+                    // unless the user chose "file with paths" — otherwise a data CSV becomes
+                    // thousands of fake paths and the scan appears stuck in SCANNING forever.
+                    val resolved = FileShareScanPaths.resolve(normalizedPath, selectionType)
+                    if (resolved.scanPath.isEmpty()) {
+                        onRequireSourceInputs()
+                        selectPathError = true
+                        return@Button
                     }
-                    selectionType = detectedType
+                    if (resolved.missingPathCount > 0) {
+                        // Do not drop listed paths silently — surface via log; scan continues with existing ones.
+                        fileShareScanLogger.warn {
+                            "Path list skipped ${resolved.missingPathCount} of ${resolved.listedPathCount} " +
+                                "entries (not found on disk) from \"$normalizedPath\""
+                        }
+                    }
                     path = normalizedPath
                     saveScreenState()
                     screenStateSettings.fileShareScreenState.matchers.clear()
@@ -455,8 +459,8 @@ fun FileShareScreen(
                     }
                     coroutineScope.launch {
                         val task = scanService.createTask(
-                            name = if (detectedType == SelectionTypes.FileWithPaths) normalizedPath else null,
-                            path = scanPath,
+                            name = resolved.listFilePath,
+                            path = resolved.scanPath,
                             extensions = scanSettings.extensions.toList(),
                             matchers = scanSettings.matchers.toList() + scanSettings.userSignatures.toList(),
                             fastScan = scanSettings.fastScan.value,

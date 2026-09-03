@@ -12,9 +12,6 @@ import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
-import org.angryscan.app.scan.common.files.types.CertFileType
-import org.angryscan.app.scan.common.files.types.CodeFileType
-import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.common.engine.IScanEngine
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
@@ -129,20 +126,17 @@ class Settings : SuspendingCliktCommand(
         "-e", "--extensions",
         help = "Comma separated list of file extensions to scan \u0085" +
                 "Supported extensions: \u0085" +
-                IFileType
-                    .getAll()
-                    .filter { it !in (CertFileType.entries + CodeFileType.entries) }
+                ScanCliFileTypes
+                    .selectableFileTypes()
                     .joinToString("\u0085")
                     { "- ${it.name.replace(" ", "_")} (${it.extensions().joinToString(",")})" }
     )
         .convert { inputValue ->
-            IFileType
-                .getAll()
-                .filterNot {
-                    it in (CertFileType.entries + CodeFileType.entries)
-                }
-                .find { it.name.replace(" ", "_") == inputValue }
-                ?: throw PrintMessage("Unknown extension: $inputValue")
+            try {
+                ScanCliFileTypes.resolveExtension(inputValue)
+            } catch (e: IllegalArgumentException) {
+                throw PrintMessage(e.message ?: "Unknown extension: $inputValue")
+            }
         }
         .split(",")
         .validate {

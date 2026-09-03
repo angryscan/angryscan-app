@@ -6,9 +6,6 @@ import org.angryscan.app.common.AppSettings
 import org.angryscan.app.common.MatchersRegister
 import org.angryscan.app.common.ScanSettings
 import org.angryscan.app.common.UserSignatureSettings
-import org.angryscan.app.scan.common.files.types.CertFileType
-import org.angryscan.app.scan.common.files.types.CodeFileType
-import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.common.engine.hyperscan.HyperScanEngine
 import org.angryscan.common.engine.kotlin.KotlinEngine
@@ -371,9 +368,7 @@ class InteractiveSettingsMenu constructor(
     }
 
     private fun editExtensions() {
-        val all = IFileType
-            .getAll()
-            .filter { it !in (CertFileType.entries + CodeFileType.entries) }
+        val all = ScanCliFileTypes.selectableFileTypes()
         val selected = selectMulti(
             title = "Extensions",
             allIds = all.map { it.name.replace(" ", "_") },

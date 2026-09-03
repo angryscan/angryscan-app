@@ -25,9 +25,6 @@ import org.angryscan.app.db.models.TaskState
 import org.angryscan.app.scan.ScanService
 import org.angryscan.app.scan.TaskFilesViewModel
 import org.angryscan.app.scan.common.connectors.ConnectorFileShare
-import org.angryscan.app.scan.common.files.types.CertFileType
-import org.angryscan.app.scan.common.files.types.CodeFileType
-import org.angryscan.app.scan.common.files.types.IFileType
 import org.angryscan.app.scan.common.writer.ResultWriter
 import org.angryscan.app.ui.windows.screens.scans.components.SortColumn
 import org.angryscan.app.ui.windows.screens.scans.components.comparator
@@ -92,21 +89,17 @@ class Scan : SuspendingCliktCommand(), KoinComponent {
         "-e", "--extensions",
         help = "Comma separated list of file extensions to scan \u0085" +
                 "Supported extensions: \u0085\n" +
-                IFileType
-                    .getAll()
-                    .filter { it !in (CertFileType.entries + CodeFileType.entries) }
+                ScanCliFileTypes
+                    .selectableFileTypes()
                     .joinToString("\n")
                     { "- ${it.name.replace(" ", "_")} (${it.extensions().joinToString(",")})" }
     )
         .convert { inputValue ->
-            IFileType
-                .getAll()
-                .filterNot {
-                    it !in (CertFileType.entries +
-                            CodeFileType.entries)
-                }
-                .find { it.name.replace(" ", "_") == inputValue }
-                ?: throw PrintMessage("Unknown extension: $inputValue")
+            try {
+                ScanCliFileTypes.resolveExtension(inputValue)
+            } catch (e: IllegalArgumentException) {
+                throw PrintMessage(e.message ?: "Unknown extension: $inputValue")
+            }
         }
         .split(",")
         .default(

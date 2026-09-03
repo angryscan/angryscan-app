@@ -32,9 +32,8 @@ class ConnectorFileShare: IFileConnector {
                         } catch (_: Exception) {
 
                         }
-                    } else {
+                    } else if (item.isFile) {
                         filesCounter.add(item.length())
-
 
                         if (extensions.any { it.allowExtension(item.extension) }) {
                             val foundedFile = FoundedFile(
@@ -45,7 +44,8 @@ class ConnectorFileShare: IFileConnector {
                         }
                     }
                 }
-            } else {
+            } else if (d.isFile) {
+                // Skip non-existent paths (e.g. CSV data rows mistaken for paths).
                 filesCounter.add(d.length())
 
                 if (extensions.any { it.allowExtension(d.extension) }) {
